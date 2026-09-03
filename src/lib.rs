@@ -1,4 +1,4 @@
-//! 3D geospatial core (#105 → the CesiumJS 3D app #114).
+//! 3D geospatial core (→ the CesiumJS 3D app).
 //!
 //! Our 2D stack (the `geo` crate, geodatafusion, OpenSearch `geo_point`) is 2D and stays that way. True 3D
 //! geometry cannot be done on geodetic `(lat, lon, alt)` directly — it is NOT a Euclidean space — so this
