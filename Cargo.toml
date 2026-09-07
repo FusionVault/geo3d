@@ -1,11 +1,11 @@
-# dv-geo3d — the 3D geospatial core (→). Zero-dependency on purpose: WGS84 geodetic↔ECEF/ENU
+# fv-geo3d — the 3D geospatial core (→). Zero-dependency on purpose: WGS84 geodetic↔ECEF/ENU
 # frame math + closed-form volumetric primitives (slant range, extruded prism, sphere, cone), all pure
 # f64. The 2D stack (geo crate / geodatafusion / OpenSearch geo_point) stays 2D; this is the PARALLEL 3D
 # vocabulary. Reused by the value dialect, DataFusion UDFs, and the materializer; ECEF is Cesium's native
 # frame, so the renderer consumes it directly. Analytic today; a mesh/ray lib (parry3d) can back Tier-2
 # line-of-sight later without changing these signatures.
 [package]
-name = "dv-geo3d"
+name = "fv-geo3d"
 version = "0.1.0"
 edition.workspace = true
 license.workspace = true
