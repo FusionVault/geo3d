@@ -13,3 +13,6 @@ rust-version.workspace = true
 description = "3D geospatial core for the FusionVault engine: WGS84 ECEF/ENU frames + volumetric primitives."
 
 [dependencies]
+
+[lints]
+workspace = true
