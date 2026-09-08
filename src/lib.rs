@@ -56,7 +56,7 @@ pub fn ecef_to_enu(reference: Geo, target_ecef: Vec3) -> Vec3 {
     let (slon, clon) = lon.sin_cos();
     let d = sub(target_ecef, geodetic_to_ecef(reference));
     [
-        dot([-slon, clon, 0.0], d),               // East
+        dot([-slon, clon, 0.0], d),                 // East
         dot([-slat * clon, -slat * slon, clat], d), // North
         dot([clat * clon, clat * slon, slat], d),   // Up
     ]
@@ -139,7 +139,11 @@ pub fn ecef_to_geodetic([x, y, z]: Vec3) -> Geo {
     let p = (x * x + y * y).sqrt();
     let lon = y.atan2(x);
     if p < 1e-9 {
-        let lat = if z >= 0.0 { std::f64::consts::FRAC_PI_2 } else { -std::f64::consts::FRAC_PI_2 };
+        let lat = if z >= 0.0 {
+            std::f64::consts::FRAC_PI_2
+        } else {
+            -std::f64::consts::FRAC_PI_2
+        };
         return (lat.to_degrees(), lon.to_degrees(), z.abs() - b);
     }
     let theta = (z * WGS84_A).atan2(p * b);
@@ -208,7 +212,11 @@ pub fn look_angles(observer: Geo, target: Geo) -> (f64, f64, f64) {
     let [e, n, u] = enu_offset(observer, target);
     let range = (e * e + n * n + u * u).sqrt();
     let az = e.atan2(n).to_degrees().rem_euclid(360.0);
-    let el = if range == 0.0 { 0.0 } else { (u / range).asin().to_degrees() };
+    let el = if range == 0.0 {
+        0.0
+    } else {
+        (u / range).asin().to_degrees()
+    };
     (az, el, range)
 }
 
@@ -296,7 +304,7 @@ mod tests {
         assert!(!altitude_between(2000.0, Some(3000.0), Some(10000.0)));
         assert!(altitude_between(999_999.0, None, None)); // unbounded
         assert!(altitude_between(1000.0, None, Some(2000.0))); // ceiling only
-        // A 10 km sphere about a site: a point 1 km up is inside, 20 km away is outside.
+                                                               // A 10 km sphere about a site: a point 1 km up is inside, 20 km away is outside.
         let site = (34.0, -118.0, 0.0);
         assert!(within_sphere(site, 10_000.0, (34.0, -118.0, 1000.0)));
         assert!(!within_sphere(site, 10_000.0, (34.2, -118.0, 0.0)));
@@ -305,12 +313,24 @@ mod tests {
     #[test]
     fn cone_directional_volume() {
         // A cone pointing straight up (elevation 90°), 30° half-angle, 20 km range, from a ground site.
-        let c = Cone { apex: (0.0, 0.0, 0.0), azimuth_deg: 0.0, elevation_deg: 90.0, half_angle_deg: 30.0, range_m: 20_000.0 };
+        let c = Cone {
+            apex: (0.0, 0.0, 0.0),
+            azimuth_deg: 0.0,
+            elevation_deg: 90.0,
+            half_angle_deg: 30.0,
+            range_m: 20_000.0,
+        };
         assert!(c.contains((0.0, 0.0, 5000.0))); // straight up, in range
         assert!(!c.contains((0.0, 0.0, 25_000.0))); // straight up but beyond range
         assert!(!c.contains((0.2, 0.0, 1000.0))); // low + off to the side → outside the 30° spread
-        // A cone aimed due east at the horizon includes a point to the east, not one to the north.
-        let east = Cone { apex: (0.0, 0.0, 1000.0), azimuth_deg: 90.0, elevation_deg: 0.0, half_angle_deg: 20.0, range_m: 100_000.0 };
+                                                  // A cone aimed due east at the horizon includes a point to the east, not one to the north.
+        let east = Cone {
+            apex: (0.0, 0.0, 1000.0),
+            azimuth_deg: 90.0,
+            elevation_deg: 0.0,
+            half_angle_deg: 20.0,
+            range_m: 100_000.0,
+        };
         assert!(east.contains((0.0, 0.3, 1000.0)));
         assert!(!east.contains((0.3, 0.0, 1000.0)));
     }
@@ -324,9 +344,18 @@ mod tests {
 
     #[test]
     fn ecef_to_geodetic_round_trips() {
-        for g in [(0.0, 0.0, 0.0), (34.05, -118.24, 100.0), (-33.87, 151.21, 2000.0), (89.9, 10.0, 500.0)] {
+        for g in [
+            (0.0, 0.0, 0.0),
+            (34.05, -118.24, 100.0),
+            (-33.87, 151.21, 2000.0),
+            (89.9, 10.0, 500.0),
+        ] {
             let (lat, lon, alt) = ecef_to_geodetic(geodetic_to_ecef(g));
-            assert!(close(lat, g.0, 1e-8) && close(lon, g.1, 1e-8) && close(alt, g.2, 1e-4), "{g:?} -> {:?}", (lat, lon, alt));
+            assert!(
+                close(lat, g.0, 1e-8) && close(lon, g.1, 1e-8) && close(alt, g.2, 1e-4),
+                "{g:?} -> {:?}",
+                (lat, lon, alt)
+            );
         }
     }
 
@@ -369,7 +398,15 @@ mod tests {
     fn helmert_identity_and_translation() {
         let p = [1000.0, 2000.0, 3000.0];
         assert_eq!(helmert(p, &Helmert7::default()), p); // no params = identity
-        let shifted = helmert(p, &Helmert7 { tx: 10.0, ty: -5.0, tz: 2.0, ..Default::default() });
+        let shifted = helmert(
+            p,
+            &Helmert7 {
+                tx: 10.0,
+                ty: -5.0,
+                tz: 2.0,
+                ..Default::default()
+            },
+        );
         assert_eq!(shifted, [1010.0, 1995.0, 3002.0]); // pure translation
     }
 }
