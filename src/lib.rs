@@ -58,7 +58,9 @@ mod types;
 mod volume;
 
 pub use datum::Helmert7;
-pub use ellipsoid::{Ellipsoid, AIRY_1830, BESSEL_1841, CLARKE_1866, GRS80, INTERNATIONAL_1924, PZ90, WGS72, WGS84};
+pub use ellipsoid::{
+    Ellipsoid, Geodesic, AIRY_1830, BESSEL_1841, CLARKE_1866, GRS80, INTERNATIONAL_1924, PZ90, WGS72, WGS84,
+};
 pub use frame::{Course, LocalFrame};
 pub use kinematics::{closest_approach, Cpa, Track};
 pub use types::{Aer, Ecef, Eci, Enu, Geodetic, Ned, Vec3};

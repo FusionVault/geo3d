@@ -331,7 +331,7 @@ impl Aer {
         let elevation_deg = if range == 0.0 {
             0.0
         } else {
-            (v.up / range).asin().to_degrees()
+            (v.up / range).clamp(-1.0, 1.0).asin().to_degrees()
         };
         Aer {
             azimuth_deg,

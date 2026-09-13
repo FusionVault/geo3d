@@ -53,6 +53,18 @@ ecosystem), map projections (`proj`, `geodesy`), geodesics to millimetre accurac
 (`geographiclib`), terrain and meshes (`parry3d`), and precession/nutation/polar motion (the `eci`
 module is the plain GMST rotation).
 
+## Precision
+
+Every function states its accuracy class, and the tests hold it to that:
+
+| class | functions | how it is held |
+|---|---|---|
+| **exact closed form** | geodetic → ECEF, ENU/NED ↔ ECEF, look angles, ray–ellipsoid, volumes, CPA, Helmert `apply`/`apply_inverse` | round trips to 1e-11° / 1e-6 m over a global grid; cross-validated against `map_3d` (dev-only dependency) to 1e-6 m |
+| **iterated to machine precision** | ECEF → geodetic (Bowring, to 1e-15 rad) | same grid, from −11 km to geostationary height |
+| **geodesic, ~0.5 mm** | `geodesic_inverse` / `geodesic_direct` (Vincenty) | pinned to GeographicLib (Karney) reference values: Flinders Peak–Buninyong on two ellipsoids and four direct problems from 1 m to 9 000 km; exact quarter-equator and quarter-meridian lengths; worldwide direct↔inverse round trips to 1e-6 m. Nearly antipodal pairs return `None` rather than a wrong answer. |
+| **spherical approximation (mean radius)** | `great_circle_*`, `horizon_distance_m` | named as such; within 0.5 % of the geodesic |
+| **first-order / linearised** | `Helmert7::inverse` (use `apply_inverse` for exact), `interpolate` (ECEF chord), `Track` (constant velocity), `eci` (GMST only) | documented on each item |
+
 ## Develop
 
 ```bash
