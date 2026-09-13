@@ -17,6 +17,7 @@ license = "Apache-2.0"
 description = "3D geodesy in pure f64, zero dependencies: geodetic/ECEF/ENU/NED frames on a reference ellipsoid, look angles, ray–ellipsoid intersection, volumes, closest approach, Helmert."
 repository = "https://github.com/FusionVault/geo3d"
 readme = "README.md"
+documentation = "https://docs.rs/geo3d"
 keywords = ["geodesy", "wgs84", "ecef", "enu", "geospatial"]
 categories = ["science::geo", "mathematics", "no-std::no-alloc"]
 # Repo tooling that has no place in the published crate.

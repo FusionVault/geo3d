@@ -49,6 +49,11 @@
 #![forbid(unsafe_code)]
 #![warn(missing_docs)]
 
+/// Every Rust code block in the README is compiled and run as a doctest.
+#[cfg(doctest)]
+#[doc = include_str!("../README.md")]
+pub struct ReadmeDoctests;
+
 mod datum;
 pub mod eci;
 mod ellipsoid;
