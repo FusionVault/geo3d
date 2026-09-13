@@ -11,8 +11,12 @@
 //!   its rotation once, so converting many points against one reference is a few multiplies each.
 //!   Look angles ([`LocalFrame::look_angles`]) and their inverse ([`LocalFrame::destination`]) live here.
 //! - [`ground_strike`] / [`Ellipsoid::ray_intersect`] — where a pointing ray meets the surface.
-//! - [`Volume`]s — [`AltitudeBand`], [`Sphere`], [`Cone`]; compose with any 2D footprint test.
-//! - [`closest_approach`] — first-order conflict/collision estimate between two moving objects.
+//! - [`Volume`]s — [`AltitudeBand`], [`Sphere`], [`Cone`], [`Cylinder`]; compose with any 2D
+//!   footprint test.
+//! - [`Track`] / [`closest_approach`] — dead reckoning and first-order conflict detection;
+//!   [`Course`] converts between ECEF velocities and course-over-ground/speed/climb.
+//! - Great circles, radii of curvature, horizon distance and geometric line of sight on
+//!   [`Ellipsoid`]; [`eci`] for inertial ↔ Earth-fixed via sidereal time.
 //! - [`Helmert7`] — 7-parameter datum shifts.
 //!
 //! Everything is `Copy`, allocation-free and `#![forbid(unsafe_code)]`. Angles in the public API are
@@ -46,6 +50,7 @@
 #![warn(missing_docs)]
 
 mod datum;
+pub mod eci;
 mod ellipsoid;
 mod frame;
 mod kinematics;
@@ -54,10 +59,10 @@ mod volume;
 
 pub use datum::Helmert7;
 pub use ellipsoid::{Ellipsoid, AIRY_1830, BESSEL_1841, CLARKE_1866, GRS80, INTERNATIONAL_1924, PZ90, WGS72, WGS84};
-pub use frame::LocalFrame;
-pub use kinematics::{closest_approach, Cpa};
-pub use types::{Aer, Ecef, Enu, Geodetic, Ned, Vec3};
-pub use volume::{AltitudeBand, Cone, Sphere, Volume};
+pub use frame::{Course, LocalFrame};
+pub use kinematics::{closest_approach, Cpa, Track};
+pub use types::{Aer, Ecef, Eci, Enu, Geodetic, Ned, Vec3};
+pub use volume::{AltitudeBand, Cone, Cylinder, Sphere, Volume};
 
 /// WGS84 geodetic → ECEF. Shorthand for [`WGS84.to_ecef`](Ellipsoid::to_ecef).
 #[inline]

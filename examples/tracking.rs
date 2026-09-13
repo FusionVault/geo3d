@@ -3,7 +3,7 @@
 //!
 //! `cargo run --example tracking`
 
-use geo3d::{closest_approach, distance3d_m, Cone, Geodetic, LocalFrame, Sphere, Vec3, Volume, WGS84};
+use geo3d::{distance3d_m, eci, Cone, Course, Geodetic, LocalFrame, Sphere, Track, Volume, WGS84};
 
 fn main() {
     let station = Geodetic::new(-33.94, 151.18, 21.0); // ellipsoidal height, metres
@@ -34,12 +34,37 @@ fn main() {
         Sphere::new(station, 30_000.0).contains(aircraft)
     );
 
-    // Conflict check: the aircraft heading south-west at 120 m/s vs another heading north at 100 m/s.
+    // Conflict check: the aircraft heading south-west at 120 m/s vs another heading north at 100 m/s,
+    // each expressed as a course over ground at its own position and turned into an ECEF velocity.
     let other = Geodetic::new(-33.90, 151.25, 2_400.0);
-    let (a, b) = (WGS84.to_ecef(aircraft), WGS84.to_ecef(other));
-    let va = frame.dir_to_ecef(geo3d::Aer::new(225.0, 0.0, 120.0).to_enu());
-    let vb = frame.dir_to_ecef(geo3d::Aer::new(0.0, 0.0, 100.0).to_enu());
-    let cpa = closest_approach(a, va, b, vb);
-    println!("closest approach in {:.0} s at {:.0} m", cpa.time_s, cpa.distance_m);
-    let _ = Vec3::ZERO;
+    let a = Track::new(
+        WGS84.to_ecef(aircraft),
+        LocalFrame::new(aircraft).velocity_of_course(Course::new(225.0, 120.0, 0.0)),
+    );
+    let b = Track::new(
+        WGS84.to_ecef(other),
+        LocalFrame::new(other).velocity_of_course(Course::new(0.0, 100.0, 0.0)),
+    );
+    let cpa = a.closest_approach(b);
+    println!(
+        "closest approach in {:.0} s at {:.0} m; conflict inside 1 km: {}",
+        cpa.time_s,
+        cpa.distance_m,
+        a.conflict(b, 1_000.0).is_some()
+    );
+    println!("aircraft in 60 s (dead reckoning): {:?}", WGS84.to_geodetic(a.at(60.0)));
+
+    // Line of sight to a satellite and its inertial position at a given time.
+    let sat_ecef = WGS84.to_ecef(Geodetic::new(-20.0, 140.0, 500_000.0));
+    println!(
+        "station sees the satellite: {}",
+        WGS84.line_of_sight(WGS84.to_ecef(station), sat_ecef)
+    );
+    let gmst = eci::gmst_from_unix(1_800_000_000.0);
+    println!("satellite in ECI at that time: {:?}", sat_ecef.to_eci(gmst));
+    println!(
+        "great-circle to the other aircraft: {:.0} m, bearing {:.1}°",
+        WGS84.great_circle_distance_m(aircraft, other),
+        WGS84.initial_bearing_deg(aircraft, other)
+    );
 }

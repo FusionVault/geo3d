@@ -358,3 +358,279 @@ mod serde_tests {
         );
     }
 }
+
+// ── 0.2 additions ────────────────────────────────────────────────────────────────────────────────────
+
+impl Vec3 {
+    /// Distance between two points, metres.
+    #[inline]
+    pub fn distance_to(self, o: Vec3) -> f64 {
+        (self - o).norm()
+    }
+
+    /// The angle between two vectors, radians in `[0, π]`; `0` if either is the zero vector.
+    pub fn angle_to(self, o: Vec3) -> f64 {
+        let d = self.norm() * o.norm();
+        if d == 0.0 {
+            return 0.0;
+        }
+        (self.dot(o) / d).clamp(-1.0, 1.0).acos()
+    }
+
+    /// The projection of this vector onto `onto` (the zero vector if `onto` is zero).
+    #[inline]
+    pub fn project_onto(self, onto: Vec3) -> Vec3 {
+        let d = onto.dot(onto);
+        if d == 0.0 {
+            Vec3::ZERO
+        } else {
+            onto * (self.dot(onto) / d)
+        }
+    }
+}
+
+impl core::ops::Div<f64> for Vec3 {
+    type Output = Vec3;
+    #[inline]
+    fn div(self, k: f64) -> Vec3 {
+        Vec3::new(self.x / k, self.y / k, self.z / k)
+    }
+}
+
+macro_rules! local_vector_ops {
+    ($t:ident { $a:ident, $b:ident, $c:ident }) => {
+        impl Add for $t {
+            type Output = $t;
+            #[inline]
+            fn add(self, o: $t) -> $t {
+                $t::new(self.$a + o.$a, self.$b + o.$b, self.$c + o.$c)
+            }
+        }
+        impl Sub for $t {
+            type Output = $t;
+            #[inline]
+            fn sub(self, o: $t) -> $t {
+                $t::new(self.$a - o.$a, self.$b - o.$b, self.$c - o.$c)
+            }
+        }
+        impl Mul<f64> for $t {
+            type Output = $t;
+            #[inline]
+            fn mul(self, k: f64) -> $t {
+                $t::new(self.$a * k, self.$b * k, self.$c * k)
+            }
+        }
+        impl Neg for $t {
+            type Output = $t;
+            #[inline]
+            fn neg(self) -> $t {
+                $t::new(-self.$a, -self.$b, -self.$c)
+            }
+        }
+        impl From<[f64; 3]> for $t {
+            #[inline]
+            fn from([a, b, c]: [f64; 3]) -> Self {
+                $t::new(a, b, c)
+            }
+        }
+        impl From<$t> for [f64; 3] {
+            #[inline]
+            fn from(v: $t) -> Self {
+                [v.$a, v.$b, v.$c]
+            }
+        }
+    };
+}
+local_vector_ops!(Enu { east, north, up });
+local_vector_ops!(Ned { north, east, down });
+
+impl Ned {
+    /// As a plain vector `(north, east, down)`.
+    #[inline]
+    pub const fn vec(self) -> Vec3 {
+        Vec3::new(self.north, self.east, self.down)
+    }
+
+    /// Azimuth / elevation / range of this vector.
+    #[inline]
+    pub fn to_aer(self) -> Aer {
+        Aer::from_enu(self.to_enu())
+    }
+}
+
+impl Aer {
+    /// The pointing that reaches a NED vector.
+    #[inline]
+    pub fn from_ned(v: Ned) -> Aer {
+        Aer::from_enu(v.to_enu())
+    }
+
+    /// The NED vector of this pointing at its range.
+    #[inline]
+    pub fn to_ned(self) -> Ned {
+        self.to_enu().to_ned()
+    }
+
+    /// Whether the pointing is above the local horizon (elevation > 0).
+    #[inline]
+    pub fn is_above_horizon(self) -> bool {
+        self.elevation_deg > 0.0
+    }
+
+    /// The same pointing with azimuth wrapped into `[0, 360)`.
+    #[inline]
+    pub fn normalized(self) -> Aer {
+        Aer {
+            azimuth_deg: self.azimuth_deg.rem_euclid(360.0),
+            ..self
+        }
+    }
+}
+
+impl Geodetic {
+    /// Longitude wrapped into `(-180, 180]` and latitude clamped into `[-90, 90]`; height unchanged.
+    pub fn normalized(self) -> Geodetic {
+        let mut lon = self.lon_deg.rem_euclid(360.0);
+        if lon > 180.0 {
+            lon -= 360.0;
+        }
+        Geodetic::new(self.lat_deg.clamp(-90.0, 90.0), lon, self.height_m)
+    }
+
+    /// The diametrically opposite point at the same height.
+    pub fn antipode(self) -> Geodetic {
+        Geodetic::new(-self.lat_deg, self.lon_deg + 180.0, self.height_m).normalized()
+    }
+}
+
+/// An Earth-Centred Inertial position (metres): ECEF rotated by the sidereal angle, see [`crate::eci`].
+#[derive(Clone, Copy, Debug, Default, PartialEq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+pub struct Eci {
+    /// X, metres (towards the vernal equinox).
+    pub x: f64,
+    /// Y, metres.
+    pub y: f64,
+    /// Z, metres (along the rotation axis).
+    pub z: f64,
+}
+
+impl Eci {
+    /// Build from components in metres.
+    #[inline]
+    pub const fn new(x: f64, y: f64, z: f64) -> Self {
+        Eci { x, y, z }
+    }
+
+    /// As a plain vector.
+    #[inline]
+    pub const fn vec(self) -> Vec3 {
+        Vec3::new(self.x, self.y, self.z)
+    }
+
+    /// As `[x, y, z]`.
+    #[inline]
+    pub const fn to_array(self) -> [f64; 3] {
+        [self.x, self.y, self.z]
+    }
+}
+
+impl From<Vec3> for Eci {
+    #[inline]
+    fn from(v: Vec3) -> Self {
+        Eci::new(v.x, v.y, v.z)
+    }
+}
+
+#[cfg(test)]
+mod tests_0_2 {
+    use super::*;
+
+    fn close(a: f64, b: f64, tol: f64) -> bool {
+        (a - b).abs() <= tol
+    }
+
+    #[test]
+    fn vec3_extras() {
+        let a = Vec3::new(1.0, 0.0, 0.0);
+        let b = Vec3::new(0.0, 2.0, 0.0);
+        assert!(close(a.angle_to(b), core::f64::consts::FRAC_PI_2, 1e-12));
+        assert_eq!(a.angle_to(Vec3::ZERO), 0.0);
+        assert_eq!(Vec3::new(3.0, 4.0, 0.0).project_onto(a), Vec3::new(3.0, 0.0, 0.0));
+        assert_eq!(Vec3::new(1.0, 1.0, 1.0).project_onto(Vec3::ZERO), Vec3::ZERO);
+        assert_eq!(Vec3::new(2.0, 4.0, 6.0) / 2.0, Vec3::new(1.0, 2.0, 3.0));
+        assert!(close(Vec3::new(3.0, 4.0, 0.0).distance_to(Vec3::ZERO), 5.0, 1e-12));
+        assert_eq!(Vec3::new(1.0, 2.0, 2.0).normalized().unwrap().norm(), 1.0);
+        assert!(Vec3::ZERO.normalized().is_none());
+        assert_eq!(<[f64; 3]>::from(Vec3::new(1.0, 2.0, 3.0)), [1.0, 2.0, 3.0]);
+    }
+
+    #[test]
+    fn local_vector_operators() {
+        let e = Enu::new(1.0, 2.0, 3.0);
+        assert_eq!(e + e, Enu::new(2.0, 4.0, 6.0));
+        assert_eq!(e - e, Enu::default());
+        assert_eq!(e * 2.0, Enu::new(2.0, 4.0, 6.0));
+        assert_eq!(-e, Enu::new(-1.0, -2.0, -3.0));
+        assert_eq!(Enu::from([1.0, 2.0, 3.0]), e);
+        assert_eq!(<[f64; 3]>::from(e), [1.0, 2.0, 3.0]);
+        let n = e.to_ned();
+        assert_eq!(n, Ned::new(2.0, 1.0, -3.0));
+        assert_eq!(n + n, Ned::new(4.0, 2.0, -6.0));
+        assert_eq!(n.vec(), Vec3::new(2.0, 1.0, -3.0));
+        assert_eq!(n.to_enu(), e);
+        assert!(close(n.norm(), e.norm(), 1e-12));
+    }
+
+    #[test]
+    fn aer_ned_and_horizon() {
+        let aer = Aer::new(45.0, 10.0, 1000.0);
+        let back = Aer::from_ned(aer.to_ned());
+        assert!(
+            close(back.azimuth_deg, 45.0, 1e-9)
+                && close(back.elevation_deg, 10.0, 1e-9)
+                && close(back.range_m, 1000.0, 1e-9)
+        );
+        assert_eq!(aer.to_ned().to_aer().normalized().azimuth_deg.round(), 45.0);
+        assert!(aer.is_above_horizon() && !Aer::new(0.0, -1.0, 1.0).is_above_horizon());
+        assert_eq!(Aer::new(-90.0, 0.0, 1.0).normalized().azimuth_deg, 270.0);
+        assert_eq!(Aer::from_enu(Enu::default()), Aer::new(0.0, 0.0, 0.0));
+    }
+
+    #[test]
+    fn geodetic_normalisation_and_antipode() {
+        let g = Geodetic::new(95.0, 190.0, 5.0).normalized();
+        assert_eq!(g, Geodetic::new(90.0, -170.0, 5.0));
+        assert_eq!(Geodetic::new(0.0, 180.0, 0.0).normalized().lon_deg, 180.0);
+        assert_eq!(Geodetic::new(0.0, -180.0, 0.0).normalized().lon_deg, 180.0);
+        assert_eq!(
+            Geodetic::new(10.0, 20.0, 1.0).antipode(),
+            Geodetic::new(-10.0, -160.0, 1.0)
+        );
+        assert_eq!(
+            Geodetic::new(10.0, 20.0, 1.0).antipode().antipode(),
+            Geodetic::new(10.0, 20.0, 1.0)
+        );
+        assert_eq!(Geodetic::new(1.0, 2.0, 3.0).with_height(9.0).height_m, 9.0);
+        assert!(close(
+            Geodetic::new(90.0, 180.0, 0.0).lat_rad(),
+            core::f64::consts::FRAC_PI_2,
+            1e-15
+        ));
+        assert!(close(
+            Geodetic::new(90.0, 180.0, 0.0).lon_rad(),
+            core::f64::consts::PI,
+            1e-15
+        ));
+    }
+
+    #[test]
+    fn ecef_and_eci_helpers() {
+        let e = Ecef::from([1.0, 2.0, 3.0]);
+        assert_eq!(<[f64; 3]>::from(e), [1.0, 2.0, 3.0]);
+        assert_eq!(e.offset(Vec3::new(1.0, 1.0, 1.0)), Ecef::new(2.0, 3.0, 4.0));
+        let i = Eci::from(Vec3::new(1.0, 2.0, 3.0));
+        assert_eq!(i.vec(), Vec3::new(1.0, 2.0, 3.0));
+        assert_eq!(i.to_array(), [1.0, 2.0, 3.0]);
+    }
+}

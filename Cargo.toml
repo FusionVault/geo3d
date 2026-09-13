@@ -9,7 +9,7 @@
 # unchanged from its own repository.
 [package]
 name = "geo3d"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2021"
 # No dependencies; the floor the code itself needs, verified by the CI `msrv` job.
 rust-version = "1.85"

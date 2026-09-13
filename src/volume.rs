@@ -251,3 +251,85 @@ mod tests {
         assert_eq!(east.half_angle_deg(), 20.0);
     }
 }
+
+// ── 0.2 additions ────────────────────────────────────────────────────────────────────────────────────
+
+/// A vertical cylinder: a circular footprint of `radius_m` about a centre, extruded through an
+/// [`AltitudeBand`] — a circular airspace, a geofence with a height range, a well-defined
+/// "within R of the site between these heights". Horizontal distance is measured in the centre's
+/// local tangent plane, so it is a flat-Earth approximation valid for radii up to a few hundred km.
+///
+/// ```
+/// use geo3d::{AltitudeBand, Cylinder, Geodetic, Volume};
+/// let ctr = Cylinder::new(Geodetic::new(0.0, 0.0, 0.0), 10_000.0, AltitudeBand::new(Some(0.0), Some(3_000.0)));
+/// assert!(ctr.contains(Geodetic::new(0.05, 0.0, 1_000.0)));   // ~5.5 km out, 1 km up
+/// assert!(!ctr.contains(Geodetic::new(0.05, 0.0, 5_000.0)));  // too high
+/// assert!(!ctr.contains(Geodetic::new(0.2, 0.0, 1_000.0)));   // ~22 km out
+/// ```
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct Cylinder {
+    frame: LocalFrame,
+    radius_m: f64,
+    band: AltitudeBand,
+}
+
+impl Cylinder {
+    /// A cylinder on [`WGS84`].
+    #[inline]
+    pub fn new(center: Geodetic, radius_m: f64, band: AltitudeBand) -> Self {
+        Self::on(WGS84, center, radius_m, band)
+    }
+
+    /// A cylinder on the given ellipsoid.
+    pub fn on(ellipsoid: Ellipsoid, center: Geodetic, radius_m: f64, band: AltitudeBand) -> Self {
+        Cylinder {
+            frame: LocalFrame::on(ellipsoid, center),
+            radius_m,
+            band,
+        }
+    }
+
+    /// The centre.
+    #[inline]
+    pub const fn center(&self) -> Geodetic {
+        self.frame.origin()
+    }
+
+    /// The radius, metres.
+    #[inline]
+    pub const fn radius_m(&self) -> f64 {
+        self.radius_m
+    }
+
+    /// The height band.
+    #[inline]
+    pub const fn band(&self) -> AltitudeBand {
+        self.band
+    }
+}
+
+impl Volume for Cylinder {
+    fn contains(&self, point: Geodetic) -> bool {
+        if !self.band.contains_height(point.height_m) {
+            return false;
+        }
+        let v = self.frame.enu_of(point);
+        v.east * v.east + v.north * v.north <= self.radius_m * self.radius_m
+    }
+}
+
+#[cfg(test)]
+mod tests_0_2 {
+    use super::*;
+
+    #[test]
+    fn cylinder() {
+        let c = Cylinder::new(Geodetic::new(34.0, -118.0, 0.0), 5_000.0, AltitudeBand::above(100.0));
+        assert!(c.contains(Geodetic::new(34.0, -118.0, 200.0)));
+        assert!(!c.contains(Geodetic::new(34.0, -118.0, 50.0))); // under the floor
+        assert!(!c.contains(Geodetic::new(34.1, -118.0, 200.0))); // ~11 km north
+        assert_eq!(c.center(), Geodetic::new(34.0, -118.0, 0.0));
+        assert_eq!(c.radius_m(), 5_000.0);
+        assert_eq!(c.band(), AltitudeBand::above(100.0));
+    }
+}
