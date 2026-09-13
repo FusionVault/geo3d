@@ -1,18 +1,42 @@
-# fv-geo3d — the 3D geospatial core (→). Zero-dependency on purpose: WGS84 geodetic↔ECEF/ENU
-# frame math + closed-form volumetric primitives (slant range, extruded prism, sphere, cone), all pure
-# f64. The 2D stack (geo crate / geodatafusion / OpenSearch geo_point) stays 2D; this is the PARALLEL 3D
-# vocabulary. Reused by the value dialect, DataFusion UDFs, and the materializer; ECEF is Cesium's native
-# frame, so the renderer consumes it directly. Analytic today; a mesh/ray lib (parry3d) can back Tier-2
-# line-of-sight later without changing these signatures.
+# geo3d — 3D geodesy in pure f64, zero dependencies.
+#
+# Geodetic ↔ ECEF ↔ local ENU/NED frames on a reference ellipsoid (WGS84 by default), look angles
+# and destinations, ray–ellipsoid intersection, volumes (altitude band, sphere, cone), closest
+# approach, and Helmert datum shifts. Allocation-free; frames precompute their rotation so
+# many-points-per-reference loops stay cheap.
+#
+# Package metadata is pinned here rather than inherited from a workspace so the crate publishes
+# unchanged from its own repository.
 [package]
-name = "fv-geo3d"
+name = "geo3d"
 version = "0.1.0"
-edition.workspace = true
-license.workspace = true
-rust-version.workspace = true
-description = "3D geospatial core for the FusionVault engine: WGS84 ECEF/ENU frames + volumetric primitives."
+edition = "2021"
+# No dependencies; the floor the code itself needs, verified by the CI `msrv` job.
+rust-version = "1.85"
+license = "Apache-2.0"
+description = "3D geodesy in pure f64, zero dependencies: geodetic/ECEF/ENU/NED frames on a reference ellipsoid, look angles, ray–ellipsoid intersection, volumes, closest approach, Helmert."
+repository = "https://github.com/FusionVault/geo3d"
+readme = "README.md"
+keywords = ["geodesy", "wgs84", "ecef", "enu", "geospatial"]
+categories = ["science::geo", "mathematics", "no-std::no-alloc"]
+# Repo tooling that has no place in the published crate.
+exclude = [".github/", ".gitignore", "rustfmt.toml"]
 
 [dependencies]
+# Optional: `Serialize`/`Deserialize` on every public type (feature `serde`).
+serde = { version = "1", features = ["derive"], optional = true }
 
-[lints]
-workspace = true
+[features]
+serde = ["dep:serde"]
+
+[dev-dependencies]
+serde_json = "1"
+
+# Clippy's default set, warned here and denied in CI (`-D warnings`). A lint that is wrong for one
+# site is allowed at that site with a reason.
+[lints.clippy]
+all = { level = "warn", priority = -1 }
+
+# Keeps file:line in panics and backtraces without the heavy DWARF that a step-debugger would use.
+[profile.dev]
+debug = "line-tables-only"
