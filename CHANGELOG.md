@@ -2,6 +2,10 @@
 
 All notable changes to `geo3d`. Plain semver; tags `vX.Y.Z` at the published commit.
 
+## 0.2.1 — 2026-09-13
+
+Documentation only: the rewritten README (task-by-task guide, every example doctested) ships in the crate. No code changes.
+
 ## 0.2.0 — 2026-09-13
 
 Additive. Closes the gaps against `map_3d` and adds what it does not have.
