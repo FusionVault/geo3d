@@ -9,9 +9,10 @@
 # unchanged from its own repository.
 [package]
 name = "geo3d"
-version = "0.2.1"
+version = "0.2.2"
 edition = "2021"
-# No dependencies; the floor the code itself needs, verified by the CI `msrv` job.
+# No *required* dependencies; the floor the code itself needs, verified by the CI `msrv` job. The
+# optional interop features (mint/glam/nalgebra/geo-types) pull those crates only when enabled.
 rust-version = "1.85"
 license = "Apache-2.0"
 description = "3D geodesy in pure f64, zero dependencies: geodetic/ECEF/ENU/NED frames on a reference ellipsoid, look angles, ray–ellipsoid intersection, volumes, closest approach, Helmert."
@@ -26,9 +27,23 @@ exclude = [".github/", ".gitignore", "rustfmt.toml"]
 [dependencies]
 # Optional: `Serialize`/`Deserialize` on every public type (feature `serde`).
 serde = { version = "1", features = ["derive"], optional = true }
+# Optional interop bridges: `From`/`Into` between the coordinate types and the common math/GIS crates.
+# All default-off, so the default build stays dependency-free.
+mint = { version = "0.5", optional = true }
+glam = { version = "0.33", optional = true }
+nalgebra = { version = "0.35", optional = true }
+geo-types = { version = "0.7", optional = true }
 
 [features]
 serde = ["dep:serde"]
+# Math-Interoperability-Types bridge — and, transitively, glam/nalgebra/cgmath, which speak `mint`.
+mint = ["dep:mint"]
+# `glam::DVec3` conversions.
+glam = ["dep:glam"]
+# `nalgebra::Vector3<f64>` / `Point3<f64>` conversions.
+nalgebra = ["dep:nalgebra"]
+# `geo_types::Point<f64>` / `Coord<f64>` conversions for `Geodetic` (2D GIS pipelines).
+geo-types = ["dep:geo-types"]
 
 [dev-dependencies]
 serde_json = "1"

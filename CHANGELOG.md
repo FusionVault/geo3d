@@ -2,6 +2,14 @@
 
 All notable changes to `geo3d`. Plain semver; tags `vX.Y.Z` at the published commit.
 
+## 0.2.2 — 2026-09-14
+
+Additive: optional ecosystem interop, all default-off so the default build stays dependency-free.
+
+- `From`/`Into` between the coordinate types and `mint` (`Vector3`/`Point3`), `glam` (`DVec3`) and `nalgebra` (`Vector3`/`Point3`) — features `mint`, `glam`, `nalgebra`.
+- `Geodetic` ↔ `geo_types::Point`/`Coord` (longitude `x`, latitude `y`; height dropped) — feature `geo-types`.
+- The interop features track their upstream crates' minimum Rust; the zero-dependency core's MSRV is unchanged (1.85).
+
 ## 0.2.1 — 2026-09-13
 
 Documentation only: the rewritten README (task-by-task guide, every example doctested) ships in the crate. No code changes.

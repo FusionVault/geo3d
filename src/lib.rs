@@ -58,6 +58,7 @@ mod datum;
 pub mod eci;
 mod ellipsoid;
 mod frame;
+mod interop;
 mod kinematics;
 mod types;
 mod volume;

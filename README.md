@@ -273,6 +273,39 @@ let json = serde_json::to_string(&geo3d::Geodetic::new(34.05, -118.24, 100.0))?;
 // {"lat_deg":34.05,"lon_deg":-118.24,"height_m":100.0}
 ```
 
+### Interoperability
+
+The coordinate types are deliberately small and `Copy`, but you will want to move them into the math
+and GIS crates you already use. Optional, **default-off** features add `From`/`Into` conversions, so
+the default build stays dependency-free:
+
+- `mint` — `mint::Vector3<f64>` (every vector type) and `mint::Point3<f64>` (the position types).
+  `mint` is the common interop layer, so this one bridge also reaches `glam`, `nalgebra` and `cgmath`.
+- `glam` — `glam::DVec3`.
+- `nalgebra` — `nalgebra::Vector3<f64>` / `Point3<f64>`.
+- `geo-types` — `Geodetic` ↔ `geo_types::Point<f64>` / `Coord<f64>`, for piping into the 2D
+  [`geo`](https://crates.io/crates/geo) ecosystem (polygon tests, PostGIS, shapefiles). **Longitude
+  is `x`, latitude is `y`** (the `geo` convention); the ellipsoidal height is dropped.
+
+```rust
+# #[cfg(all(feature = "glam", feature = "geo-types"))] {
+use geo3d::{Ecef, Geodetic};
+
+// An ECEF position straight into a glam DVec3 and back.
+let e = Ecef::new(4_510_731.0, 4_510_731.0, 0.0);
+let v: glam::DVec3 = e.into();
+assert_eq!(Ecef::from(v), e);
+
+// A geodetic point into geo-types for 2D GIS (x = lon, y = lat).
+let p: geo_types::Point<f64> = Geodetic::new(-33.87, 151.21, 20.0).into();
+assert!((p.x() - 151.21).abs() < 1e-9 && (p.y() + 33.87).abs() < 1e-9);
+# }
+```
+
+```bash
+cargo add geo3d --features glam,geo-types
+```
+
 ## Precision
 
 Each function states its accuracy class, and the tests hold it:
@@ -294,7 +327,8 @@ Each function states its accuracy class, and the tests hold it:
 
 ## Design
 
-- Zero dependencies, pure `f64`, every type `Copy`, nothing allocates, `#![forbid(unsafe_code)]`.
+- Zero required dependencies, pure `f64`, every type `Copy`, nothing allocates,
+  `#![forbid(unsafe_code)]`. Optional features add `serde` and the interop bridges, nothing else.
 - Precompute per reference, not per point: `LocalFrame`, `Sphere`, `Cone` and `Cylinder` do their
   trigonometry once at construction.
 - Closed forms wherever one exists; iteration only where it must be, and then to convergence.
