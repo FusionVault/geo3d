@@ -2,6 +2,21 @@
 
 use core::ops::{Add, Mul, Neg, Sub};
 
+/// Fused multiply-add `a·b + c`, but only where the target actually has an FMA instruction. Real
+/// FMA rounds once (more accurate) and is a single instruction, but on a target *without* FMA
+/// hardware `f64::mul_add` lowers to a slow software `fma()` libcall — several times slower than a
+/// plain multiply-add. So on those targets we use the plain form: identical speed to hand-written
+/// `a*b + c`, and the accuracy the crate has always had. Build with `-C target-cpu=native` (or
+/// `-C target-feature=+fma`) to get the fused path.
+#[inline(always)]
+pub(crate) fn fma(a: f64, b: f64, c: f64) -> f64 {
+    if cfg!(target_feature = "fma") {
+        a.mul_add(b, c)
+    } else {
+        a * b + c
+    }
+}
+
 /// A Cartesian 3-vector (metres, or unitless for directions).
 #[derive(Clone, Copy, Debug, Default, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
@@ -24,19 +39,21 @@ impl Vec3 {
         Vec3 { x, y, z }
     }
 
-    /// Dot product.
+    /// Dot product. On FMA-enabled targets this fuses to one rounding per term and one instruction
+    /// each; on other targets it is the plain multiply-add.
     #[inline]
     pub fn dot(self, o: Vec3) -> f64 {
-        self.x * o.x + self.y * o.y + self.z * o.z
+        fma(self.x, o.x, fma(self.y, o.y, self.z * o.z))
     }
 
-    /// Cross product (right-handed).
+    /// Cross product (right-handed). On FMA targets each component fuses `a·b − c·d`, which halves
+    /// the rounding error — what keeps the cross of two nearly-parallel vectors honest.
     #[inline]
     pub fn cross(self, o: Vec3) -> Vec3 {
         Vec3::new(
-            self.y * o.z - self.z * o.y,
-            self.z * o.x - self.x * o.z,
-            self.x * o.y - self.y * o.x,
+            fma(self.y, o.z, -(self.z * o.y)),
+            fma(self.z, o.x, -(self.x * o.z)),
+            fma(self.x, o.y, -(self.y * o.x)),
         )
     }
 
@@ -560,7 +577,8 @@ mod tests_0_2 {
         assert_eq!(Vec3::new(1.0, 1.0, 1.0).project_onto(Vec3::ZERO), Vec3::ZERO);
         assert_eq!(Vec3::new(2.0, 4.0, 6.0) / 2.0, Vec3::new(1.0, 2.0, 3.0));
         assert!(close(Vec3::new(3.0, 4.0, 0.0).distance_to(Vec3::ZERO), 5.0, 1e-12));
-        assert_eq!(Vec3::new(1.0, 2.0, 2.0).normalized().unwrap().norm(), 1.0);
+        // A unit vector's norm is 1 only to within rounding (here (1,2,2)/3), not bit-exact.
+        assert!(close(Vec3::new(1.0, 2.0, 2.0).normalized().unwrap().norm(), 1.0, 1e-15));
         assert!(Vec3::ZERO.normalized().is_none());
         assert_eq!(<[f64; 3]>::from(Vec3::new(1.0, 2.0, 3.0)), [1.0, 2.0, 3.0]);
     }

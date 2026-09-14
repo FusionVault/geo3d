@@ -325,6 +325,25 @@ Each function states its accuracy class, and the tests hold it:
 - **Linearised** — `Helmert7::inverse` (use `apply_inverse` for exact), `interpolate` (an ECEF chord),
   `Track` (constant velocity) and `eci` (GMST only) are documented as such on each item.
 
+## Performance
+
+The geometry is closed-form and precomputes per reference, so per-call cost is dominated by the
+hardware `sin`/`cos`/`atan2`/`sqrt`. Two things make that measurable and a little faster:
+
+- **Benchmarks.** `cargo bench` runs a [criterion](https://crates.io/crates/criterion) suite over the
+  hot paths (conversions, look angles, geodesics, Helmert, ray intersection, vector ops), so a
+  regression shows up as a number.
+- **FMA, where it pays.** The dot/cross products, the geodetic ↔ ECEF conversions, the Vincenty
+  series and the Helmert transform are written as fused multiply-adds — but the fused form is taken
+  **only when the target has an FMA instruction**, because `f64::mul_add` lowers to a slow software
+  libcall otherwise. On a stock target the code is the plain multiply-add it always was (identical
+  speed and results); build with FMA enabled to get the fused path — one instruction, one rounding
+  (marginally more accurate), and a few percent faster on the geodesy operations:
+
+  ```bash
+  RUSTFLAGS="-C target-cpu=native" cargo build --release   # or -C target-feature=+fma
+  ```
+
 ## Design
 
 - Zero required dependencies, pure `f64`, every type `Copy`, nothing allocates,

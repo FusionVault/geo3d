@@ -1,6 +1,6 @@
 //! Reference ellipsoids and the geodetic ↔ ECEF conversions on them.
 
-use crate::types::{Ecef, Geodetic, Vec3};
+use crate::types::{fma, Ecef, Geodetic, Vec3};
 
 /// A reference ellipsoid of revolution: semi-major axis `a` (metres) and flattening `f`.
 ///
@@ -86,12 +86,10 @@ impl Ellipsoid {
     pub fn to_ecef(self, g: Geodetic) -> Ecef {
         let (slat, clat) = g.lat_rad().sin_cos();
         let (slon, clon) = g.lon_rad().sin_cos();
-        let n = self.a / (1.0 - self.e2() * slat * slat).sqrt();
-        Ecef::new(
-            (n + g.height_m) * clat * clon,
-            (n + g.height_m) * clat * slon,
-            (n * (1.0 - self.e2()) + g.height_m) * slat,
-        )
+        let e2 = self.e2();
+        let n = self.a / fma(e2, -(slat * slat), 1.0).sqrt();
+        let nh = n + g.height_m;
+        Ecef::new(nh * clat * clon, nh * clat * slon, fma(n, 1.0 - e2, g.height_m) * slat)
     }
 
     /// ECEF → geodetic by Bowring's method, iterated to convergence (two or three passes; the first
@@ -100,7 +98,7 @@ impl Ellipsoid {
     /// GNSS orbit.
     pub fn to_geodetic(self, e: Ecef) -> Geodetic {
         let (a, b, e2, ep2) = (self.a, self.b(), self.e2(), self.ep2());
-        let p = (e.x * e.x + e.y * e.y).sqrt();
+        let p = fma(e.x, e.x, e.y * e.y).sqrt();
         let lon = e.y.atan2(e.x);
         if p < 1e-9 {
             // On the polar axis: latitude is ±90°, height is the distance from the pole.
@@ -113,7 +111,10 @@ impl Ellipsoid {
         let mut lat = 0.0;
         for _ in 0..5 {
             let (st, ct) = theta.sin_cos();
-            let next = (e.z + ep2 * b * st * st * st).atan2(p - e2 * a * ct * ct * ct);
+            // Fuse the `z + (e′²b)·sin³θ` and `p − (e²a)·cos³θ` terms (one rounding each on FMA targets).
+            let num = fma(ep2 * b, st * st * st, e.z);
+            let den = fma(e2 * a, -(ct * ct * ct), p);
+            let next = num.atan2(den);
             let converged = (next - lat).abs() < 1e-15;
             lat = next;
             if converged {
@@ -122,12 +123,12 @@ impl Ellipsoid {
             theta = (b * lat.tan()).atan2(a);
         }
         let (slat, clat) = lat.sin_cos();
-        let n = a / (1.0 - e2 * slat * slat).sqrt();
+        let n = a / fma(e2, -(slat * slat), 1.0).sqrt();
         // Height from whichever of cos/sin is better conditioned (near the poles cos φ → 0).
         let height = if clat.abs() > 0.1 {
             p / clat - n
         } else {
-            e.z / slat - n * (1.0 - e2)
+            fma(n, -(1.0 - e2), e.z / slat)
         };
         Geodetic::new(lat.to_degrees(), lon.to_degrees(), height)
     }
@@ -537,27 +538,29 @@ impl Ellipsoid {
     fn vincenty_ab(self, cos2_alpha: f64) -> (f64, f64) {
         let b = self.b();
         let u2 = cos2_alpha * (self.a * self.a - b * b) / (b * b);
-        let big_a = 1.0 + u2 / 16384.0 * (4096.0 + u2 * (-768.0 + u2 * (320.0 - 175.0 * u2)));
-        let big_b = u2 / 1024.0 * (256.0 + u2 * (-128.0 + u2 * (74.0 - 47.0 * u2)));
+        // Horner form of the series, fused where the target has FMA (one rounding per term).
+        let big_a = fma(
+            u2 / 16384.0,
+            fma(u2, fma(u2, fma(-175.0, u2, 320.0), -768.0), 4096.0),
+            1.0,
+        );
+        let big_b = (u2 / 1024.0) * fma(u2, fma(u2, fma(-47.0, u2, 74.0), -128.0), 256.0);
         (big_a, big_b)
     }
 
     #[inline]
     fn vincenty_c(self, cos2_alpha: f64) -> f64 {
-        self.f / 16.0 * cos2_alpha * (4.0 + self.f * (4.0 - 3.0 * cos2_alpha))
+        self.f / 16.0 * cos2_alpha * fma(self.f, fma(-3.0, cos2_alpha, 4.0), 4.0)
     }
 
     #[inline]
     fn vincenty_delta_sigma(big_b: f64, sin_sigma: f64, cos_sigma: f64, cos2_sigma_m: f64) -> f64 {
-        big_b
-            * sin_sigma
-            * (cos2_sigma_m
-                + big_b / 4.0
-                    * (cos_sigma * (-1.0 + 2.0 * cos2_sigma_m * cos2_sigma_m)
-                        - big_b / 6.0
-                            * cos2_sigma_m
-                            * (-3.0 + 4.0 * sin_sigma * sin_sigma)
-                            * (-3.0 + 4.0 * cos2_sigma_m * cos2_sigma_m)))
+        let c2m2 = cos2_sigma_m * cos2_sigma_m;
+        let t_cos = fma(2.0, c2m2, -1.0);
+        let t_sin = fma(4.0, sin_sigma * sin_sigma, -3.0);
+        let t_c2m = fma(4.0, c2m2, -3.0);
+        let inner = fma(cos_sigma, t_cos, -(big_b / 6.0 * cos2_sigma_m * t_sin * t_c2m));
+        big_b * sin_sigma * fma(big_b / 4.0, inner, cos2_sigma_m)
     }
 
     /// One evaluation of the inverse state at `lambda`; `None` for coincident points.

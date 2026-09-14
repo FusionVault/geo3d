@@ -1,6 +1,6 @@
 //! Datum shifts.
 
-use crate::types::{Ecef, Vec3};
+use crate::types::{fma, Ecef, Vec3};
 
 /// A 7-parameter Helmert (Bursa-Wolf) transformation between ECEF frames: translations (metres),
 /// rotations (**radians**) and a scale factor (unitless, e.g. `ppm × 1e-6`).
@@ -92,14 +92,15 @@ impl Helmert7 {
         Helmert7::position_vector(tx, ty, tz, -rx_arcsec, -ry_arcsec, -rz_arcsec, ds_ppm)
     }
 
-    /// Apply the transformation to an ECEF point (source frame → target frame). Small-angle form.
+    /// Apply the transformation to an ECEF point (source frame → target frame). Small-angle form,
+    /// evaluated with FMA so each rotated component carries one rounding instead of several.
     #[inline]
     pub fn apply(&self, p: Ecef) -> Ecef {
         let m = 1.0 + self.scale;
         Ecef::new(
-            self.tx + m * (p.x - self.rz * p.y + self.ry * p.z),
-            self.ty + m * (self.rz * p.x + p.y - self.rx * p.z),
-            self.tz + m * (-self.ry * p.x + self.rx * p.y + p.z),
+            fma(m, fma(self.ry, p.z, fma(self.rz, -p.y, p.x)), self.tx),
+            fma(m, fma(self.rx, -p.z, fma(self.rz, p.x, p.y)), self.ty),
+            fma(m, fma(self.rx, p.y, fma(self.ry, -p.x, p.z)), self.tz),
         )
     }
 

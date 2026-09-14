@@ -4,11 +4,18 @@ All notable changes to `geo3d`. Plain semver; tags `vX.Y.Z` at the published com
 
 ## 0.2.2 — 2026-09-14
 
-Additive: optional ecosystem interop, all default-off so the default build stays dependency-free.
+Additive: optional ecosystem interop and an FMA/benchmark performance pass. No public API removed or changed; the default build stays dependency-free and byte-for-byte identical in its results.
+
+Interop (all default-off features):
 
 - `From`/`Into` between the coordinate types and `mint` (`Vector3`/`Point3`), `glam` (`DVec3`) and `nalgebra` (`Vector3`/`Point3`) — features `mint`, `glam`, `nalgebra`.
 - `Geodetic` ↔ `geo_types::Point`/`Coord` (longitude `x`, latitude `y`; height dropped) — feature `geo-types`.
 - The interop features track their upstream crates' minimum Rust; the zero-dependency core's MSRV is unchanged (1.85).
+
+Performance:
+
+- Dot/cross products, geodetic ↔ ECEF, the Vincenty series and the Helmert transform are written as fused multiply-adds, gated on `target_feature = "fma"`: stock targets keep the plain multiply-add (identical speed and results — `f64::mul_add` is a slow libcall without FMA hardware), while FMA-enabled builds (`-C target-cpu=native`) get one instruction, one rounding, and a few percent on the geodesy operations.
+- A `cargo bench` criterion suite (`benches/geo3d.rs`) over the hot paths.
 
 ## 0.2.1 — 2026-09-13
 
