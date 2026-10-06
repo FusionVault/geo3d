@@ -2,6 +2,15 @@
 
 All notable changes to `geo3d`. Plain semver; tags `vX.Y.Z` at the published commit.
 
+## 0.2.3 — 2026-10-06
+
+Fix: `ground_strike` (`LocalFrame::ground_strike` and the WGS84 shorthand) returns the nearest point of the surface **ahead** of the observer.
+
+- An observer exactly on the surface strikes its own point, whichever way it points. Before, rounding put the near root a hair below zero and the far root was taken: a line 10° down from the ground landed about 2,200 km away, on the far side of the Earth.
+- An observer below the surface gives `None`. Before, a line from inside the ellipsoid hit it from within.
+- A non-finite height or angle gives `None`.
+- Above the surface the result is unchanged. `Ellipsoid::ray_intersect` is unchanged.
+
 ## 0.2.2 — 2026-09-14
 
 Additive: optional ecosystem interop and an FMA/benchmark performance pass. No public API removed or changed; the default build stays dependency-free and byte-for-byte identical in its results.

@@ -124,14 +124,29 @@ impl LocalFrame {
         self.geodetic_of(aer.to_enu())
     }
 
-    /// Where a ray from the origin along `azimuth_deg` (0 = north, clockwise) and `elevation_deg`
-    /// (0 = horizon, positive up) strikes the ellipsoid surface, or `None` if it points into space.
-    /// The line-of-sight ground point of a camera, antenna or bearing.
+    /// Where the line of sight from the origin along `azimuth_deg` (0 = north, clockwise) and
+    /// `elevation_deg` (0 = horizon, positive up) first meets the ellipsoid surface: the nearest
+    /// point ahead. An origin on the surface strikes itself, whichever way it points; one below the
+    /// surface, a line pointing into space, or a non-finite height or angle gives `None`. The
+    /// line-of-sight ground point of a camera, antenna or bearing.
     pub fn ground_strike(&self, azimuth_deg: f64, elevation_deg: f64) -> Option<Geodetic> {
+        let h = self.origin.height_m;
+        if !(h.is_finite() && azimuth_deg.is_finite() && elevation_deg.is_finite()) || h < 0.0 {
+            return None;
+        }
+        // The height decides, not the sign of the near root: at the surface that root is 0 give or
+        // take rounding, and taking the other one would land on the far side of the Earth.
+        if h == 0.0 {
+            return Some(self.origin);
+        }
         let dir = self.dir_to_ecef(Aer::new(azimuth_deg, elevation_deg, 1.0).direction_enu());
-        self.ellipsoid
-            .ray_intersect(self.origin_ecef, dir)
-            .map(|p| self.ellipsoid.to_geodetic(p))
+        let (t1, t2) = self.ellipsoid.ray_roots(self.origin_ecef, dir)?;
+        if t2 < 0.0 {
+            return None; // the surface is behind the line of sight
+        }
+        // Above the surface both roots share a sign; a near root just below zero is rounding at a
+        // height so small that the origin is at the surface, whose nearest point is its own.
+        Some(self.ellipsoid.to_geodetic(self.origin_ecef.offset(dir * t1.max(0.0))))
     }
 }
 
@@ -211,6 +226,33 @@ mod tests {
         assert!(f.ground_strike(0.0, 90.0).is_none());
         let east = f.ground_strike(90.0, -5.0).unwrap();
         assert!(east.lon_deg > 0.0 && east.height_m.abs() < 1.0);
+    }
+
+    #[test]
+    fn ground_strike_takes_the_nearest_root_ahead() {
+        // On the surface the observer is itself the nearest point of the surface ahead (t = 0),
+        // whichever way it points, never the far side of the Earth.
+        let on = Geodetic::new(-33.9, 151.2, 0.0);
+        for (az, el) in [(0.0, -10.0), (200.0, -30.0), (90.0, -90.0), (0.0, 45.0)] {
+            assert_eq!(LocalFrame::new(on).ground_strike(az, el), Some(on), "az {az}, el {el}");
+        }
+        // Below the surface no line of sight reaches it.
+        let below = LocalFrame::new(Geodetic::new(0.0, 0.0, -100.0));
+        for el in [10.0, -10.0, -90.0] {
+            assert!(below.ground_strike(0.0, el).is_none(), "el {el}");
+        }
+        assert!(crate::ground_strike(Geodetic::new(0.0, 0.0, -0.5), 0.0, -90.0).is_none());
+        // Above it, the near root: 45° down from 1 km lands about 1 km north.
+        let g = LocalFrame::new(Geodetic::new(0.0, 0.0, 1_000.0))
+            .ground_strike(0.0, -45.0)
+            .unwrap();
+        assert!(
+            g.lat_deg > 0.0089 && g.lat_deg < 0.0091 && close(g.lon_deg, 0.0, 1e-9),
+            "{g:?}"
+        );
+        // A non-finite height or angle has no line of sight.
+        let f = LocalFrame::new(Geodetic::new(0.0, 0.0, 100.0));
+        assert!(f.ground_strike(f64::NAN, -90.0).is_none() && f.ground_strike(0.0, f64::INFINITY).is_none());
     }
 }
 
