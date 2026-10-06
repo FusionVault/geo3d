@@ -91,9 +91,11 @@ pub fn distance3d_m(a: Geodetic, b: Geodetic) -> f64 {
     WGS84.to_ecef(a).distance_to(WGS84.to_ecef(b))
 }
 
-/// Where a ray from `observer`, pointing along compass `azimuth_deg` (0 = north, clockwise) and
-/// `elevation_deg` (0 = horizon, positive up), strikes the WGS84 surface — or `None` if it points
-/// above the horizon into space. Shorthand for [`LocalFrame::ground_strike`] on a fresh frame.
+/// Where the line of sight from `observer`, pointing along compass `azimuth_deg` (0 = north,
+/// clockwise) and `elevation_deg` (0 = horizon, positive up), first meets the WGS84 surface — the
+/// nearest point ahead. An observer on the surface strikes its own point; one below the surface, or
+/// a line pointing above the horizon into space, gives `None`. Shorthand for
+/// [`LocalFrame::ground_strike`] on a fresh frame.
 #[inline]
 pub fn ground_strike(observer: Geodetic, azimuth_deg: f64, elevation_deg: f64) -> Option<Geodetic> {
     LocalFrame::new(observer).ground_strike(azimuth_deg, elevation_deg)

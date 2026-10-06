@@ -137,16 +137,7 @@ impl Ellipsoid {
     /// `None` if the ray misses (points into space) or the surface is behind it. `dir` need not be
     /// unit length. Scales space to the unit sphere and solves the ray–sphere quadratic.
     pub fn ray_intersect(self, origin: Ecef, dir: Vec3) -> Option<Ecef> {
-        let s = Vec3::new(1.0 / self.a, 1.0 / self.a, 1.0 / self.b());
-        let o = Vec3::new(origin.x * s.x, origin.y * s.y, origin.z * s.z);
-        let d = Vec3::new(dir.x * s.x, dir.y * s.y, dir.z * s.z);
-        let (qa, qb, qc) = (d.dot(d), 2.0 * o.dot(d), o.dot(o) - 1.0);
-        let disc = qb * qb - 4.0 * qa * qc;
-        if disc < 0.0 || qa == 0.0 {
-            return None;
-        }
-        let sq = disc.sqrt();
-        let (t1, t2) = ((-qb - sq) / (2.0 * qa), (-qb + sq) / (2.0 * qa));
+        let (t1, t2) = self.ray_roots(origin, dir)?;
         let t = if t1 >= 0.0 {
             t1
         } else if t2 >= 0.0 {
@@ -155,6 +146,21 @@ impl Ellipsoid {
             return None;
         };
         Some(origin.offset(dir * t))
+    }
+
+    /// The roots `t1 ≤ t2` where the line `origin + t·dir` crosses the ellipsoid surface, or `None`
+    /// when it misses, `dir` is zero, or a coordinate is not finite.
+    pub(crate) fn ray_roots(self, origin: Ecef, dir: Vec3) -> Option<(f64, f64)> {
+        let s = Vec3::new(1.0 / self.a, 1.0 / self.a, 1.0 / self.b());
+        let o = Vec3::new(origin.x * s.x, origin.y * s.y, origin.z * s.z);
+        let d = Vec3::new(dir.x * s.x, dir.y * s.y, dir.z * s.z);
+        let (qa, qb, qc) = (d.dot(d), 2.0 * o.dot(d), o.dot(o) - 1.0);
+        let disc = qb * qb - 4.0 * qa * qc;
+        if disc.is_nan() || disc < 0.0 || qa == 0.0 {
+            return None;
+        }
+        let sq = disc.sqrt();
+        Some(((-qb - sq) / (2.0 * qa), (-qb + sq) / (2.0 * qa)))
     }
 }
 

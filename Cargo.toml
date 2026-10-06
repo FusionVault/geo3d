@@ -9,7 +9,7 @@
 # unchanged from its own repository.
 [package]
 name = "geo3d"
-version = "0.2.2"
+version = "0.2.3"
 edition = "2021"
 # No *required* dependencies; the floor the code itself needs, verified by the CI `msrv` job. The
 # optional interop features (mint/glam/nalgebra/geo-types) pull those crates only when enabled.

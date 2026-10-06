@@ -94,7 +94,8 @@ for directions (rotation only, no translation).
 
 `Aer` is a pointing from an observer: azimuth (degrees clockwise from north), elevation (degrees
 above the horizon) and range. `look_angles` gives it, `destination` inverts it, and `ground_strike`
-finds where a pointing meets the ellipsoid surface.
+finds where a pointing first meets the ellipsoid surface (an observer on the surface strikes its own
+point; one below it, none).
 
 ```rust
 use geo3d::{Aer, Geodetic, LocalFrame};
