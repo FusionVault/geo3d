@@ -5,6 +5,17 @@ release is tagged `vX.Y.Z`.
 
 ## Unreleased
 
+- 🧭 **Route tools** ([#7](https://github.com/FusionVault/geo3d/issues/7)), built on n-vectors so
+  the poles and the antimeridian need no special care:
+  - `cross_track_distance_m` and `along_track_distance_m`: how far off a route, and how far along;
+  - `great_circle_intersection`: where two routes cross;
+  - `mean_position`: the centre of a group of positions;
+  - `great_circle_interpolate`: a point part-way along a route, at constant speed.
+
+  They stay exact on short paths. The textbook n-vector formula can be kilometres out on a path a
+  few micrometres long; geo3d builds the path from the latitude and longitude differences instead.
+- 📚 **The NavLab examples** (`geo3d::navlab`): nine of FFI's ten classic n-vector problems, solved
+  with geo3d and checked against the published answers. (Example 2 needs attitude, issue #13.)
 - 🎯 **Uncertainty between frames** ([#6](https://github.com/FusionVault/geo3d/issues/6)). `Cov3`
   is a 3×3 covariance. It moves between frames with the position:
   - ENU ↔ ECEF (`LocalFrame::enu_cov_to_ecef`, `ecef_cov_to_enu`) and ENU ↔ NED, exactly;

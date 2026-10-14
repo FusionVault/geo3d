@@ -1019,7 +1019,7 @@ fn lat_fix(x: f64) -> f64 {
 }
 
 /// `y − x` reduced to `[-180, 180]`, as an exact sum `(d, e)`.
-fn ang_diff(x: f64, y: f64) -> (f64, f64) {
+pub(crate) fn ang_diff(x: f64, y: f64) -> (f64, f64) {
     let (d, t) = two_sum(ang_normalize(-x), ang_normalize(y));
     let d = ang_normalize(d);
     if d == 180.0 && t > 0.0 {

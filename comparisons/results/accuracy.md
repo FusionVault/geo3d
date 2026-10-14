@@ -93,6 +93,23 @@ Simple polygons of 3 to 32 vertices, counter-clockwise, with longitudes in [-180
 | jord (spherical excess, sphere) | across the antimeridian, 10 km to 100 km | 1000 | 0 | 2.1e7 | 0.73 % |
 | jord (spherical excess, sphere) | around a pole, 60° to 89.9° | 1000 | 0 | 2.5e11 | 0.89 % |
 
+## Cross-track distance, against the exact answer
+
+Paths due north along a meridian at random places, and a point 1 m to 1 km to one side of the middle. On a sphere the exact distance is R·asin(cos φ·sin Δλ); each crate is checked on its own sphere radius. A failure is `None`, NaN or a panic.
+
+### Distance from a point to a path
+
+| Library | Paths | Count | Failures | Max error (m) |
+|---|---|---|---|---|
+| geo3d | short paths, 1 µm to 1 km | 10000 | 0 | 1.6e-9 |
+| jord | short paths, 1 µm to 1 km | 10000 | 0 | 7.3e-5 |
+| geo | short paths, 1 µm to 1 km | 10000 | 0 | 3.4e-9 |
+| textbook n1 × n2 (NavLab) | short paths, 1 µm to 1 km | 10000 | 0 | 2.0e3 |
+| geo3d | long paths, 1 km to 1 000 km | 10000 | 0 | 1.6e-9 |
+| jord | long paths, 1 km to 1 000 km | 10000 | 0 | 5.1e-9 |
+| geo | long paths, 1 km to 1 000 km | 10000 | 0 | 3.8e-9 |
+| textbook n1 × n2 (NavLab) | long paths, 1 km to 1 000 km | 10000 | 0 | 1.8e-6 |
+
 ## Local frames and look angles
 
 Every library is compared with geo3d and with map_3d. For targets built from a known pointing, that pointing is the reference too. Disagreements are in micrometres. For look angles, each answer (azimuth, elevation, range) is turned back into a point and the distance between the two points is reported, so a pointing error counts by how far it moves the target.

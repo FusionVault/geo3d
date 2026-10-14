@@ -80,6 +80,8 @@
 //! | measure distance along the ground | [`Ellipsoid::geodesic_inverse`] (exact), [`Ellipsoid::great_circle_distance_m`] (quick) |
 //! | travel a distance on a bearing | [`Ellipsoid::geodesic_direct`], [`Ellipsoid::great_circle_destination`] |
 //! | measure the area of a field or region | [`Ellipsoid::polygon_area`] |
+//! | follow a route: how far off it, how far along, where routes cross | [`Ellipsoid::cross_track_distance_m`], [`Ellipsoid::along_track_distance_m`], [`Ellipsoid::great_circle_intersection`] |
+//! | find the centre of a group, or a point part-way along a route | [`Ellipsoid::mean_position`], [`Ellipsoid::great_circle_interpolate`] |
 //! | check if something is inside a zone | [`Sphere`], [`Cone`], [`Cylinder`], [`AltitudeBand`] (all are [`Volume`]s) |
 //! | check if two objects will collide | [`Track::conflict`], [`closest_approach`] |
 //! | turn a velocity into heading, speed and climb | [`Course`], [`LocalFrame::course_of_velocity`] |
@@ -88,7 +90,8 @@
 //! | track satellites | the [`eci`] module, and `examples/satellite.rs` with the `sgp4` crate |
 //! | shift between datums | [`Helmert7`] |
 //!
-//! More worked examples, a comparison with other crates and an accuracy table are in the
+//! The [`navlab`] page solves ten classic navigation problems step by step. More worked examples, a
+//! comparison with other crates and an accuracy table are in the
 //! [README](https://github.com/FusionVault/geo3d#readme).
 //!
 //! # 🧩 Optional features
@@ -121,6 +124,7 @@ mod great_circle;
 mod interop;
 mod local;
 mod motion;
+pub mod navlab;
 mod position;
 mod vector;
 mod visibility;
