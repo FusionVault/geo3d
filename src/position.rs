@@ -132,8 +132,8 @@ impl From<Ecef> for [f64; 3] {
 }
 
 /// A position in **Earth-Centred Inertial** coordinates, metres: like [`Ecef`], but the axes do not
-/// turn with the Earth — the frame satellite orbits are worked in. Convert with
-/// [`Ecef::to_eci`] / [`Eci::to_ecef`] (see the [`eci`](crate::eci) module).
+/// turn with the Earth. This is the TEME frame that SGP4 / TLE satellite propagators output, not
+/// J2000 / GCRF. Convert with [`Ecef::to_eci`] / [`Eci::to_ecef`]; see the [`eci`](crate::eci) module.
 #[derive(Clone, Copy, Debug, Default, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Eci {

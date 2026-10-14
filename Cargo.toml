@@ -1,26 +1,21 @@
-# geo3d — 3D geodesy in pure f64, zero dependencies.
-#
-# Geodetic ↔ ECEF ↔ local ENU/NED frames on a reference ellipsoid (WGS84 by default), look angles
-# and destinations, ray–ellipsoid intersection, volumes (altitude band, sphere, cone), closest
-# approach, and Helmert datum shifts. Allocation-free; frames precompute their rotation so
-# many-points-per-reference loops stay cheap.
+# geo3d — 3D positions on Earth, made simple. Pure Rust, zero required dependencies.
 #
 # Package metadata is pinned here rather than inherited from a workspace so the crate publishes
 # unchanged from its own repository.
 [package]
 name = "geo3d"
-version = "0.2.3"
+version = "0.2.4"
 edition = "2021"
 # No *required* dependencies; the floor the code itself needs, verified by the CI `msrv` job. The
 # optional interop features (mint/glam/nalgebra/geo-types) pull those crates only when enabled.
 rust-version = "1.85"
 license = "Apache-2.0"
-description = "3D geodesy in pure f64, zero dependencies: geodetic/ECEF/ENU/NED frames on a reference ellipsoid, look angles, ray–ellipsoid intersection, volumes, closest approach, Helmert."
+description = "3D positions on Earth, made simple: GPS latitude/longitude/height to ECEF and local ENU/NED, look angles, distances, line of sight, volumes and collision checks on WGS84. Pure Rust, no dependencies."
 repository = "https://github.com/FusionVault/geo3d"
 readme = "README.md"
 documentation = "https://docs.rs/geo3d"
-keywords = ["geodesy", "wgs84", "ecef", "enu", "geospatial"]
-categories = ["science::geo", "mathematics", "no-std::no-alloc"]
+keywords = ["geodesy", "gps", "gis", "coordinates", "navigation"]
+categories = ["science::geo", "mathematics", "aerospace", "science::robotics"]
 # Repo tooling that has no place in the published crate.
 exclude = [".github/", ".gitignore", "rustfmt.toml"]
 
@@ -51,6 +46,15 @@ serde_json = "1"
 map_3d = "=0.1.7"
 # Benchmarks only (benches/geo3d.rs); no plotting backend, so the dev-dep tree stays small.
 criterion = { version = "0.5", default-features = false }
+
+# docs.rs: build with every feature so the serde and interop impls show up in the docs.
+[package.metadata.docs.rs]
+all-features = true
+
+[[example]]
+name = "tracking"
+# Lets docs.rs show this example's calls on the items it uses.
+doc-scrape-examples = true
 
 [[bench]]
 name = "geo3d"

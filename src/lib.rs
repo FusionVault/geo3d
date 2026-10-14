@@ -31,7 +31,7 @@
 //! | [`Ecef`] | x, y, z from the Earth's centre, turning with the Earth | metres |
 //! | [`Enu`] / [`Ned`] | east-north-up / north-east-down from an observer | metres |
 //! | [`Aer`] | azimuth, elevation, range — where to point | degrees, metres |
-//! | [`Eci`] | x, y, z from the Earth's centre, not turning — for satellites | metres |
+//! | [`Eci`] | x, y, z from the Earth's centre, not turning — for satellites (TEME) | metres |
 //! | [`Vec3`] | a plain 3D vector — a direction or a velocity | metres, m/s |
 //!
 //! # Find what you need
@@ -57,6 +57,8 @@
 //! - **Degrees and metres** everywhere. The few low-level helpers that use radians say so
 //!   (`lat_rad`, `gmst_rad`, [`Vec3::angle_to`]).
 //! - **Latitude first**: `Geodetic::new(lat, lon, height)`.
+//! - **Azimuths and bearings** run clockwise from north, 0° to 360°. Longitudes come out between
+//!   −180° and 180°.
 //! - **Height is above the ellipsoid** (what GPS reports), not above mean sea level.
 //! - **[`WGS84`] is the default.** Every calculation is also a method on [`Ellipsoid`], so any other
 //!   ellipsoid works the same way: `GRS80.to_ecef(p)`.

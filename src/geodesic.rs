@@ -45,6 +45,7 @@ impl Ellipsoid {
     /// assert!((g.distance_m - WGS84.a() * std::f64::consts::FRAC_PI_2).abs() < 1e-3);
     /// ```
     #[doc(alias = "vincenty")]
+    #[doc(alias = "vdist")]
     #[doc(alias = "distance")]
     pub fn geodesic_inverse(self, from: Geodetic, to: Geodetic) -> Option<Geodesic> {
         let f = self.f();
@@ -103,6 +104,7 @@ impl Ellipsoid {
     /// assert!((back.distance_m - 54_972.0).abs() < 1e-6 && (back.initial_bearing_deg - 306.87).abs() < 1e-9);
     /// ```
     #[doc(alias = "vincenty")]
+    #[doc(alias = "vreckon")]
     #[doc(alias = "destination")]
     pub fn geodesic_direct(self, from: Geodetic, bearing_deg: f64, distance_m: f64) -> (Geodetic, f64) {
         let f = self.f();
