@@ -124,6 +124,7 @@ impl Aer {
 
     /// The pointing that reaches an ENU offset; azimuth in `[0, 360)`. A zero offset has azimuth 0
     /// and elevation 0.
+    #[doc(alias = "enu2aer")]
     #[inline]
     pub fn from_enu(v: Enu) -> Aer {
         let range = v.norm();
@@ -147,6 +148,7 @@ impl Aer {
     }
 
     /// The ENU offset this pointing reaches at its range.
+    #[doc(alias = "aer2enu")]
     #[inline]
     pub fn to_enu(self) -> Enu {
         let d = self.direction_enu();

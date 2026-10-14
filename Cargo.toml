@@ -10,11 +10,11 @@ edition = "2021"
 # optional interop features (mint/glam/nalgebra/geo-types) pull those crates only when enabled.
 rust-version = "1.85"
 license = "Apache-2.0"
-description = "3D positions on Earth, made simple: GPS latitude/longitude/height to ECEF and local ENU/NED, look angles, distances, line of sight, volumes and collision checks on WGS84. Pure Rust, no dependencies."
+description = "3D positions on Earth, made simple: geodetic (GPS) ↔ ECEF ↔ local ENU/NED, look angles, distances, line of sight, volumes, collision checks, Helmert datum shifts. WGS84, pure Rust, no dependencies."
 repository = "https://github.com/FusionVault/geo3d"
 readme = "README.md"
 documentation = "https://docs.rs/geo3d"
-keywords = ["geodesy", "gps", "gis", "coordinates", "navigation"]
+keywords = ["geodesy", "ecef", "wgs84", "gps", "coordinates"]
 categories = ["science::geo", "mathematics", "aerospace", "science::robotics"]
 # Repo tooling that has no place in the published crate.
 exclude = [".github/", ".gitignore", "rustfmt.toml"]

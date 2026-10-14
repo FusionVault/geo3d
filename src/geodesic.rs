@@ -105,6 +105,7 @@ impl Ellipsoid {
     /// ```
     #[doc(alias = "vincenty")]
     #[doc(alias = "vreckon")]
+    #[doc(alias = "reckon")]
     #[doc(alias = "destination")]
     pub fn geodesic_direct(self, from: Geodetic, bearing_deg: f64, distance_m: f64) -> (Geodetic, f64) {
         let f = self.f();

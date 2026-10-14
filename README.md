@@ -240,6 +240,28 @@ assert!(back.distance_to(p) < 1e-6);
 Publishers use one of two rotation-sign conventions. For the other one, use
 `Helmert7::coordinate_frame` with the same arguments.
 
+## Coming from MATLAB, pymap3d or map_3d?
+
+The same operations, by their familiar names. Build the `LocalFrame` once per observer:
+`let frame = LocalFrame::new(observer);`
+
+| MATLAB / pymap3d / map_3d | geo3d |
+|---|---|
+| `geodetic2ecef` / `ecef2geodetic` | `geodetic_to_ecef(g)` / `ecef_to_geodetic(e)` |
+| `geodetic2enu` / `enu2geodetic` | `frame.enu_of(g)` / `frame.geodetic_of(enu)` |
+| `geodetic2ned` / `ned2geodetic` | `frame.ned_of(g)` / `frame.geodetic_of_ned(ned)` |
+| `ecef2enu` / `enu2ecef` | `frame.to_enu(e)` / `frame.to_ecef(enu)` |
+| `geodetic2aer` / `aer2geodetic` | `frame.look_angles(g)` / `frame.destination(aer)` |
+| `ecef2aer` / `aer2ecef` | `frame.look_angles_ecef(e)` / `frame.ecef_of_aer(aer)` |
+| `enu2aer` / `aer2enu` | `enu.to_aer()` / `aer.to_enu()` |
+| `ecef2enuv` / `enu2ecefv` (directions, velocities) | `frame.dir_to_enu(v)` / `frame.dir_to_ecef(enu)` |
+| `lookAtSpheroid` | `frame.ground_strike(azimuth, elevation)` |
+| `vdist` / `distance` | `WGS84.geodesic_inverse(a, b)` |
+| `vreckon` / `reckon` | `WGS84.geodesic_direct(a, bearing, distance)` |
+| `ecef2eci` / `eci2ecef` | `e.to_eci(gmst)` / `i.to_ecef(gmst)` (TEME; see above) |
+
+Angles go in and come out in degrees; there is no `deg` flag to remember.
+
 ## Accuracy
 
 | Calculation | Method | Accuracy |

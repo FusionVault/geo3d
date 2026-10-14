@@ -140,12 +140,14 @@ impl LocalFrame {
     }
 
     /// Rotate an ECEF **direction** (or velocity) into the frame — rotation only, no translation.
+    #[doc(alias = "ecef2enuv")]
     #[inline]
     pub fn dir_to_enu(&self, d: Vec3) -> Enu {
         Enu::new(self.e.dot(d), self.n.dot(d), self.u.dot(d))
     }
 
     /// Rotate a frame **direction** (or velocity) into ECEF — rotation only, no translation.
+    #[doc(alias = "enu2ecefv")]
     #[inline]
     pub fn dir_to_ecef(&self, d: Enu) -> Vec3 {
         self.e * d.east + self.n * d.north + self.u * d.up
@@ -189,6 +191,7 @@ impl LocalFrame {
     ///
     /// Returns `None` if the line points into space, the observer is below the surface, or a
     /// height or angle is not finite. An observer exactly on the surface strikes its own position.
+    #[doc(alias = "lookAtSpheroid")]
     pub fn ground_strike(&self, azimuth_deg: f64, elevation_deg: f64) -> Option<Geodetic> {
         let h = self.origin.height_m;
         if !(h.is_finite() && azimuth_deg.is_finite() && elevation_deg.is_finite()) || h < 0.0 {
