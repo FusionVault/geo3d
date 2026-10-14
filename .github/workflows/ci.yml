@@ -29,7 +29,7 @@ jobs:
       - name: test
         run: cargo test && cargo test --all-features
       - name: example
-        run: cargo run --example tracking
+        run: cargo run --example tracking && cargo run --example satellite
       - name: doc
         run: cargo doc --no-deps --all-features
         env:

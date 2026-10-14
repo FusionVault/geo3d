@@ -81,7 +81,7 @@
 //! | check if two objects will collide | [`Track::conflict`], [`closest_approach`] |
 //! | turn a velocity into heading, speed and climb | [`Course`], [`LocalFrame::course_of_velocity`] |
 //! | check line of sight, or how far I can see | [`Ellipsoid::line_of_sight`], [`Ellipsoid::horizon_distance_m`], and their `_with_refraction` versions for radio |
-//! | track satellites | the [`eci`] module |
+//! | track satellites | the [`eci`] module, and `examples/satellite.rs` with the `sgp4` crate |
 //! | shift between datums | [`Helmert7`] |
 //!
 //! More worked examples, a comparison with other crates and an accuracy table are in the

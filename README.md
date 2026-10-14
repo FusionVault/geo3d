@@ -225,7 +225,11 @@ assert!((back.x - fixed.x).abs() < 1e-6);
 
 💡 This is the TEME frame that SGP4 satellite models use, so their output plugs straight in. It is
 not J2000. Unix time is UTC, which can be up to 0.9 s away from the Earth's true rotation. That's
-up to 400 m at the equator. For better accuracy, pass a UT1 date to `eci::gmst_rad`.
+up to 400 m at the equator. For full accuracy, use `eci::gmst_from_unix_with_dut1(t, dut1)` with
+DUT1 from the IERS Bulletin A.
+
+💡 `cargo run --example satellite` tracks the International Space Station from Brisbane, using the
+[`sgp4`](https://crates.io/crates/sgp4) crate.
 
 ### Shift between datums
 
