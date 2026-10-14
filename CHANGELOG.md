@@ -5,6 +5,17 @@ release is tagged `vX.Y.Z`.
 
 ## Unreleased
 
+- ✈️ **Yaw, pitch and roll** ([#13](https://github.com/FusionVault/geo3d/issues/13)). `Attitude`
+  (aerospace yaw, pitch and roll, from North-East-Down) and `Frd` (forward, right, down in a
+  vehicle's own frame):
+  - `Attitude::body_to_ned`, `ned_to_body`, `to_rotation` and `from_rotation`;
+  - `LocalFrame::geodetic_of_body` and `body_of`: positions around a vehicle;
+  - `LocalFrame::body_to_ecef_rotation` and `attitude_from_ecef_rotation`, the rotation into
+    ECEF and back (Cesium's `headingPitchRollToFixedFrame`);
+  - `LocalFrame::enu_to_ecef_rotation` and `ned_to_ecef_rotation` expose the frame's own rotation.
+
+  Exact pointing straight up or down: the angles always rebuild the same orientation, where
+  sguaba (and jord, after a trip through ECEF) can come back pointing the wrong way.
 - 🔌 **Runs without the standard library** ([#12](https://github.com/FusionVault/geo3d/issues/12)).
   On microcontrollers and flight controllers, `default-features = false, features = ["libm"]` takes
   the maths from `libm`. Everything else is the same, every optional feature works too, and CI
@@ -26,8 +37,8 @@ release is tagged `vX.Y.Z`.
 - 🐛 **`great_circle_destination` near the poles.** It computed the latitude with `asin`, which
   loses precision near ±90°: up to 11 cm out arriving close to a pole. It now uses n-vectors and
   `atan2`, and is exact everywhere.
-- 📚 **The NavLab examples** (`geo3d::navlab`): nine of FFI's ten classic n-vector problems, solved
-  with geo3d and checked against the published answers. (Example 2 needs attitude, issue #13.)
+- 📚 **The NavLab examples** (`geo3d::navlab`): all ten of FFI's classic n-vector problems, solved
+  with geo3d and checked against the published answers.
 - 🎯 **Uncertainty between frames** ([#6](https://github.com/FusionVault/geo3d/issues/6)). `Cov3`
   is a 3×3 covariance. It moves between frames with the position:
   - ENU ↔ ECEF (`LocalFrame::enu_cov_to_ecef`, `ecef_cov_to_enu`) and ENU ↔ NED, exactly;

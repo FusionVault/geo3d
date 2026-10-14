@@ -1033,7 +1033,7 @@ pub(crate) fn ang_diff(x: f64, y: f64) -> (f64, f64) {
 
 /// Sine and cosine of an angle in degrees, exact at multiples of 90°: the angle is reduced to
 /// `|r| ≤ 45°` before converting to radians.
-fn sincosd(x: f64) -> (f64, f64) {
+pub(crate) fn sincosd(x: f64) -> (f64, f64) {
     // `%` is a slow library call, so it is only used for large angles; below 720° every step here
     // is exact (Sterbenz's lemma), so the reduction loses nothing. NaN and ±∞ give NaN.
     let r = if x.abs() < 720.0 { x } else { x % 360.0 };

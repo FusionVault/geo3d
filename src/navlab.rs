@@ -7,9 +7,6 @@
 //! Every example runs as a test. The answers are checked against the ones published by FFI and by
 //! the [nvector](https://github.com/pbrod/nvector) Python package's own tests.
 //!
-//! Example 2 turns a vehicle's yaw, pitch and roll into a position. It needs attitude, which is on
-//! the [roadmap](https://github.com/FusionVault/geo3d/issues/13).
-//!
 //! ## 1. Where is B, seen from A?
 //!
 //! A is at 1° N, 2° E, 3 m below the ellipsoid; B is at 4° N, 5° E, 6 m below. Find B's offset north,
@@ -30,6 +27,24 @@
 //! ```
 //!
 //! B is "down" even though both are near the surface: the Earth curves away over 470 km.
+//!
+//! ## 2. Where is something seen from a vehicle?
+//!
+//! Vehicle B is 400 m up, at the position whose n-vector points along (1, 2, 3). It's heading 10°,
+//! pitched 20° nose up and rolled 30° right. Something C is 3 000 m ahead of it, 2 000 m to its
+//! right and 100 m below, in its own body frame. Where is C? FFI uses the WGS72 ellipsoid here.
+//!
+//! ```
+//! use geo3d::{Attitude, Frd, Geodetic, LocalFrame, WGS72};
+//!
+//! // The n-vector (1, 2, 3) is latitude atan2(3, √5) and longitude atan2(2, 1).
+//! let (lat, lon) = (3f64.atan2(5f64.sqrt()).to_degrees(), 2f64.atan2(1.0).to_degrees());
+//! let b = LocalFrame::on(WGS72, Geodetic::new(lat, lon, 400.0));
+//!
+//! let c = b.geodetic_of_body(Attitude::new(10.0, 20.0, 30.0), Frd::new(3_000.0, 2_000.0, 100.0));
+//! assert!((c.lat_deg - 53.326_378_26).abs() < 1e-8 && (c.lon_deg - 63.468_123_44).abs() < 1e-8);
+//! assert!((c.height_m - 406.007_196_07).abs() < 1e-6);
+//! ```
 //!
 //! ## 3. From x, y, z to latitude and longitude
 //!

@@ -57,6 +57,8 @@ positions into frames where normal 3D maths works.
 | `Eci` | x, y, z that don't spin with the Earth, for satellites | metres |
 | `Vec3` | a plain 3D vector, like a velocity | metres, m/s |
 | `Cov3` | how uncertain a position is (a covariance) | metres², degrees² |
+| `Attitude` | which way a vehicle faces: yaw, pitch and roll | degrees |
+| `Frd` | an offset in a vehicle's own frame: forward, right, down | metres |
 
 A few rules hold everywhere:
 
@@ -113,6 +115,27 @@ let aer = station.look_angles(aircraft);  // 35.6° from north, 7.3° up, 19.3 k
 let again = station.destination(aer);     // and back to the aircraft's position
 assert!(aer.is_above_horizon());
 ```
+
+### Use yaw, pitch and roll
+
+Turn a vehicle's heading, pitch and roll into where things are around it:
+
+```rust
+use geo3d::{Attitude, Frd, Geodetic, LocalFrame};
+
+let drone = LocalFrame::new(Geodetic::new(-33.94, 151.18, 120.0));
+let pose = Attitude::new(90.0, -5.0, 0.0);      // heading east, nose 5° down
+
+// What the camera sees 500 m ahead and 30 m below the nose line:
+let spot = drone.geodetic_of_body(pose, Frd::new(500.0, 0.0, 30.0));   // about 47 m up
+let again = drone.body_of(pose, spot);                                  // and back again
+assert!((again.forward - 500.0).abs() < 1e-6);
+```
+
+💡 Yaw is the heading (clockwise from north), pitch is nose up, and roll is right wing down.
+`drone.body_to_ecef_rotation(pose)` gives the whole rotation into x, y, z, and
+`attitude_from_ecef_rotation` reads one back. Both stay exact pointing straight up or down, where
+yaw and roll are easy to lose track of.
 
 ### Carry uncertainty between frames
 
@@ -339,6 +362,7 @@ and then:
 | `gcxgc` | `WGS84.great_circle_intersection(a1, a2, b1, b2)` |
 | `meanm` | `WGS84.mean_position(&points)` |
 | `ecef2eci` / `eci2ecef` | `e.to_eci(gmst)` / `i.to_ecef(gmst)` |
+| `angle2dcm` / `dcm2angle` | `Attitude::new(yaw, pitch, roll).to_rotation()` / `Attitude::from_rotation(m)` (MATLAB's matrix is the transpose: NED to body) |
 
 Everything is in degrees, so there's no `deg` flag to remember.
 
@@ -390,6 +414,18 @@ geo3d builds each path from the latitude and longitude differences, so it stays 
 any length. The textbook n-vector formula, used in the NavLab examples, loses precision as the path
 gets shorter, and can be kilometres out on a path a few micrometres long.
 
+### ✈️ Yaw, pitch and roll near straight up
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="comparisons/charts/attitude-dark.svg">
+  <img alt="Worst attitude error near ±90° pitch, at 1 000 km: geo3d 0.89 nm, sguaba 1900 km, jord via ECEF 2000 km" src="comparisons/charts/attitude-light.svg">
+</picture>
+
+Pointing straight up, yaw and roll turn about the same axis. geo3d reads them out so they always
+rebuild the same orientation. sguaba loses track there, and so does jord once the attitude has been
+through ECEF, as one from an inertial navigation system has: both can come back pointing the wrong
+way entirely.
+
 ### 📡 Pointing straight up
 
 <picture>
@@ -418,8 +454,7 @@ or the poles, give a wrong answer far out in space, or panic.
 </picture>
 
 Only geo3d has ground strikes, 3D zones, collision checks, uncertainty and datum shifts, and it does
-it with no dependencies. Other crates are ahead on attitude (yaw, pitch and roll), which is on our
-[roadmap](https://github.com/FusionVault/geo3d/issues).
+it with no dependencies.
 
 ### ⚡ Speed
 
@@ -450,6 +485,7 @@ other five, and we know why:
 | Local frames, pointing, ground strikes and zones | exact, even straight up |
 | Distance and travel along the ground | 15 nm, for any two points |
 | Polygon area | within 0.1 m² of GeographicLib, for any polygon |
+| Yaw, pitch and roll | exact, even pointing straight up or down |
 | Uncertainty between frames | exact for ENU, NED and x, y, z; first order for pointing and latitude/longitude |
 | Great-circle tools (distance, route, crossings, centre) and horizon distance | within 0.6 %; exact on a sphere |
 | Closest approach | exact for objects moving in straight lines |
@@ -523,6 +559,10 @@ is 10–20 % faster, and its answers agree with the standard build to within 25 
   n-vectors has no trouble at the poles or the antimeridian.
 - **Datum:** a reference frame for coordinates. Helmert numbers convert between two of them.
 - **no_std:** Rust without its standard library, for chips with no operating system.
+- **Attitude:** which way a vehicle faces: its yaw (heading), pitch (nose up) and roll (right wing
+  down).
+- **Body frame (FRD):** axes fixed to a vehicle: forward out of the nose, right out of the right
+  wing, down out of the belly.
 - **Covariance:** how uncertain a position is in each direction, and how the errors are linked. The
   square roots of its diagonal are the standard deviations.
 
