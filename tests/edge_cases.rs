@@ -239,7 +239,17 @@ fn nan_and_infinity_in_give_nan_infinity_or_none_out() {
             assert!(!finite(ecef_to_geodetic(e)), "{e:?}");
         }
         assert!(LocalFrame::new(ok).ground_strike(x, -10.0).is_none());
+        let q = Attitude::from_quaternion(Quaternion::new(x, 0.1, 0.2, 0.3));
+        assert!(
+            !(q.yaw_deg.is_finite() && q.pitch_deg.is_finite() && q.roll_deg.is_finite()),
+            "{q:?}"
+        );
         let bad = Attitude::new(x, 10.0, 20.0);
+        let bq = bad.to_quaternion();
+        assert!(
+            !(bq.w.is_finite() && bq.x.is_finite() && bq.y.is_finite() && bq.z.is_finite()),
+            "{bq:?}"
+        );
         assert!(!finite3(bad.body_to_ned(Frd::new(1.0, 2.0, 3.0)).into()));
         let a = Attitude::from_rotation([[x, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]]);
         assert!(

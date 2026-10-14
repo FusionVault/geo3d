@@ -59,6 +59,7 @@ positions into frames where normal 3D maths works.
 | `Cov3` | how uncertain a position is (a covariance) | metres², degrees² |
 | `Attitude` | which way a vehicle faces: yaw, pitch and roll | degrees |
 | `Frd` | an offset in a vehicle's own frame: forward, right, down | metres |
+| `Quaternion` | the same turn as yaw, pitch and roll, as four numbers | none |
 
 A few rules hold everywhere:
 
@@ -130,6 +131,9 @@ let pose = Attitude::new(90.0, -5.0, 0.0);      // heading east, nose 5° down
 let spot = drone.geodetic_of_body(pose, Frd::new(500.0, 0.0, 30.0));   // about 47 m up
 let again = drone.body_of(pose, spot);                                  // and back again
 assert!((again.forward - 500.0).abs() < 1e-6);
+
+let q = pose.to_quaternion();                   // w, x, y, z, as PX4 and MAVLink store it
+assert_eq!(geo3d::Attitude::from_quaternion(q).roll_deg, 0.0);
 ```
 
 💡 Yaw is the heading (clockwise from north), pitch is nose up, and roll is right wing down.
@@ -505,8 +509,8 @@ None of them are needed: a plain `cargo add geo3d` pulls in nothing else.
 | `libm` | runs without the standard library, for microcontrollers (see below) |
 | `serde` | saving and loading every type |
 | `mint` | conversions to `mint` types, and through them to `cgmath` and others |
-| `glam` | conversions to `glam::DVec3`, and `Cov3` to `glam::DMat3` |
-| `nalgebra` | conversions to `nalgebra` vectors and points, and `Cov3` to `Matrix3` |
+| `glam` | conversions to `glam::DVec3`, `Cov3` to `glam::DMat3`, and `Quaternion` to `glam::DQuat` |
+| `nalgebra` | conversions to `nalgebra` vectors and points, `Cov3` to `Matrix3`, and `Quaternion` |
 | `geo-types` | `Geodetic` ↔ `geo_types::Point` (x is longitude, y is latitude) |
 
 ```bash
@@ -563,6 +567,8 @@ is 10–20 % faster, and its answers agree with the standard build to within 25 
   down).
 - **Body frame (FRD):** axes fixed to a vehicle: forward out of the nose, right out of the right
   wing, down out of the belly.
+- **Quaternion:** four numbers that describe a turn. Flight controllers use them because, unlike
+  yaw, pitch and roll, they have no trouble pointing straight up.
 - **Covariance:** how uncertain a position is in each direction, and how the errors are linked. The
   square roots of its diagonal are the standard deviations.
 
