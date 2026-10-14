@@ -16,8 +16,8 @@ The crates are [map_3d](https://crates.io/crates/map_3d), [nav-types](https://cr
   that treat the Earth as a ball are 0.7 % to 1.4 % out.
 - 🛡️ **Tricky cases.** geo3d passed all nine. Every other crate that converts positions failed at
   least one.
-- 🧰 **Features.** Only geo3d has ground strikes, 3D zones, collision checks and datum shifts. Others
-  are ahead on n-vectors and attitude, which are on our roadmap.
+- 🧰 **Features.** Only geo3d has ground strikes, 3D zones, collision checks, uncertainty and datum
+  shifts. Others are ahead on n-vectors and attitude, which are on our roadmap.
 - ⚡ **Speed.** geo3d was fastest, or level with the fastest, in six of the eleven tests. It's slower
   in the other five, and we explain why below.
 
@@ -273,11 +273,12 @@ sguaba's panic is an `expect` on its own latitude check, in release builds too.
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="charts/features-dark.svg">
-  <img alt="Feature matrix: geo3d is the only crate with ground strike, 3D volumes, closest approach and datum shifts" src="charts/features-light.svg">
+  <img alt="Feature matrix: geo3d is the only crate with ground strike, 3D volumes, closest approach, covariance and datum shifts" src="charts/features-light.svg">
 </picture>
 
 geo3d covers everything from a GPS fix to a decision: where to point, where a line of sight lands,
-whether something is inside a zone, when two objects come closest, and how to shift datums. It does
+whether something is inside a zone, when two objects come closest, how sure you can be, and how to
+shift datums. It does
 this with no dependencies and no `unsafe` code.
 
 <details>
@@ -301,6 +302,7 @@ features, from `cargo tree -e normal`.
 | Inertial frame | TEME (GMST rotation) | GMST rotation (`ecef2eci`) | no | no | no | — | no |
 | Geodesics | Karney | haversine only | haversine only | haversine only | great circles on a sphere | Karney | Karney (geographiclib-rs) |
 | Polygon area | geodesic | no | no | no | on a sphere | geodesic | geodesic (geographiclib-rs); on a sphere |
+| Covariance through frames | ECEF, ENU, NED, AER, geodetic | no | no | no | no | — | no |
 | n-vector | no | no | yes | no | yes | no | no |
 | Attitude (yaw, pitch, roll) | no | no | no | yes | yes | no | no |
 

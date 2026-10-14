@@ -31,6 +31,10 @@ fn finite3(v: [f64; 3]) -> bool {
     v.iter().all(|x| x.is_finite())
 }
 
+fn finite_cov(c: Cov3) -> bool {
+    c.0.iter().flatten().all(|x| x.is_finite())
+}
+
 /// How far apart two geodetic positions are, through space.
 fn apart(a: Geodetic, b: Geodetic) -> f64 {
     distance3d_m(a, b)
@@ -47,6 +51,14 @@ fn conversions_round_trip_at_every_awkward_place() {
         assert!(
             apart(g, back) < 1e-6 * (1.0 + g.height_m.abs() / 6.4e6),
             "{g:?} -> {back:?}"
+        );
+        // Uncertainty carries through too: 3 m across, 5 m up (in degrees for the geodetic form).
+        let local = Cov3::from_std_devs([3.0, 3.0, 5.0]);
+        assert!(finite_cov(LocalFrame::new(g).enu_cov_to_ecef(local)), "{g:?}");
+        let ecef = WGS84.geodetic_cov_to_ecef(g, Cov3::from_std_devs([3e-5, 3e-5, 5.0]));
+        assert!(
+            finite_cov(ecef) && finite_cov(WGS84.ecef_cov_to_geodetic(g, ecef)),
+            "{g:?}"
         );
     }
     // The Earth's centre: latitude 90°, height −b.
@@ -76,6 +88,16 @@ fn local_frames_and_pointing_between_every_pair() {
             assert!(apart(there, target) < tol, "{obs:?} -> {target:?}: {there:?}");
             assert!(apart(frame.geodetic_of(enu), target) < tol);
             assert!(apart(frame.geodetic_of_ned(ned), target) < tol);
+            // Pointing uncertainty: finite except where azimuth has no meaning (straight up or
+            // down, or the target is the observer).
+            let sigma = Cov3::from_std_devs([0.1, 0.1, 10.0]);
+            assert!(finite_cov(aer.cov_to_enu(sigma)), "{obs:?} -> {target:?}");
+            if enu.east != 0.0 || enu.north != 0.0 {
+                assert!(
+                    finite_cov(enu.cov_to_aer(Cov3::from_std_devs([1.0; 3]))),
+                    "{obs:?} -> {target:?}"
+                );
+            }
         }
         // Pointing at the Earth's centre: straight down.
         let down = frame.look_angles_ecef(Ecef::new(0.0, 0.0, 0.0));
@@ -184,6 +206,8 @@ fn nan_and_infinity_in_give_nan_infinity_or_none_out() {
                 "{g:?}"
             );
             assert!(ground_strike(g, 0.0, -10.0).is_none(), "{g:?}");
+            let cov = WGS84.geodetic_cov_to_ecef(g, Cov3::from_std_devs([1e-5, 1e-5, 1.0]));
+            assert!(!finite_cov(cov), "{g:?}: {cov:?}");
             let aer = LocalFrame::new(ok).look_angles(g);
             assert!(!(aer.azimuth_deg.is_finite() && aer.elevation_deg.is_finite() && aer.range_m.is_finite()));
         }

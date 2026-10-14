@@ -3,7 +3,7 @@
 
     cargo run --release --bin accuracy > results/accuracy.md
     cargo bench                       # writes target/criterion/
-    python3 charts.py                 # → results/speed.csv and charts/*.svg
+    python3 charts.py                 # → results/speed.csv, charts/*.svg and the READMEs' alt texts
 
 Standard library only. The charts use the emphasis form: geo3d in the accent colour, every other
 crate in grey, each bar labelled, so identity never depends on colour alone. Errors that span many
@@ -425,6 +425,7 @@ def main():
         ("No unsafe code (forbidden)", [Y, N, N, N, Y, N, N]),
         ("Ellipsoidal geodesics", [Y, N, N, N, N, Y, Y]),
         ("Geodesic polygon area", [Y, N, N, N, "sphere", Y, Y]),
+        ("Uncertainty (covariance)", [Y, N, N, N, N, N, N]),
         ("Look angles", [Y, Y, N, Y, Y, N, N]),
         ("Ray–ellipsoid ground strike", [Y, N, N, N, N, N, N]),
         ("3D volumes", [Y, N, N, N, N, N, N]),
@@ -440,7 +441,8 @@ def main():
         ["What each crate offers, checked in its source at the versions compared. \"planned\" items are on",
          "geo3d's roadmap (issues #7 and #13)."],
         CRATES, feats, ["— : not offered."],
-        "Feature matrix: geo3d is the only crate with ground strike, 3D volumes, closest approach and datum shifts",
+        "Feature matrix: geo3d is the only crate with ground strike, 3D volumes, closest approach, covariance and "
+        "datum shifts",
         "text")
 
     # 7. Speed: small multiples, one panel per operation, fixed crate order.
@@ -481,5 +483,22 @@ def main():
         f"Time per call for {len(panels)} operations; geo3d is fastest in {outright} and tied in {tied}")
 
 
+def sync_alt_texts():
+    """Copy each chart's alt text into the READMEs that show it, so the two never drift apart."""
+    for path, prefix in ((os.path.join(HERE, "..", "README.md"), "comparisons/charts/"),
+                         (os.path.join(HERE, "README.md"), "charts/")):
+        with open(path) as f:
+            text = f.read()
+
+        def alt(m):
+            with open(os.path.join(CHARTS, m.group(1) + "-light.svg")) as f:
+                label = re.search(r'aria-label="([^"]*)"', f.read()).group(1)
+            return f'<img alt="{label}" src="{prefix}{m.group(1)}-light.svg">'
+
+        with open(path, "w") as f:
+            f.write(re.sub(r'<img alt="[^"]*" src="' + re.escape(prefix) + r'([a-z-]+)-light\.svg">', alt, text))
+
+
 if __name__ == "__main__":
     main()
+    sync_alt_texts()

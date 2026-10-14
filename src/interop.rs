@@ -4,10 +4,12 @@
 //! ask for a bridge:
 //!
 //! - **`mint`** — [`From`]/[`Into`] with `mint::Vector3<f64>` (all vector types) and `mint::Point3<f64>`
-//!   (the position types). `mint` is the Math-Interoperability-Types lingua franca, so this one bridge
-//!   also reaches `glam`, `nalgebra` and `cgmath`, which all speak `mint`.
-//! - **`glam`** — with `glam::DVec3`.
-//! - **`nalgebra`** — with `nalgebra::Vector3<f64>` and `nalgebra::Point3<f64>`.
+//!   (the position types), and [`Cov3`](crate::Cov3) with `mint::RowMatrix3<f64>` and
+//!   `mint::ColumnMatrix3<f64>`. `mint` is the Math-Interoperability-Types lingua franca, so this
+//!   one bridge also reaches `glam`, `nalgebra` and `cgmath`, which all speak `mint`.
+//! - **`glam`** — with `glam::DVec3`, and [`Cov3`](crate::Cov3) with `glam::DMat3`.
+//! - **`nalgebra`** — with `nalgebra::Vector3<f64>` and `nalgebra::Point3<f64>`, and
+//!   [`Cov3`](crate::Cov3) with `nalgebra::Matrix3<f64>`.
 //! - **`geo-types`** — [`Geodetic`](crate::Geodetic) ↔ `geo_types::Point<f64>` / `Coord<f64>` for 2D
 //!   GIS pipelines. **Longitude is `x`, latitude is `y`** (the `geo` convention) and the ellipsoidal
 //!   height is dropped on the way out and taken as `0` on the way in.
@@ -55,6 +57,40 @@ mod mint_impls {
     // The position types also convert to/from `Point3`.
     vec3_bridge!(Ecef  { x, y, z }            <=> mint::Point3<f64>  : |x, y, z| mint::Point3 { x, y, z },  |v| (v.x, v.y, v.z));
     vec3_bridge!(Eci   { x, y, z }            <=> mint::Point3<f64>  : |x, y, z| mint::Point3 { x, y, z },  |v| (v.x, v.y, v.z));
+
+    use crate::Cov3;
+    use mint::{ColumnMatrix3, RowMatrix3, Vector3};
+
+    fn v([x, y, z]: [f64; 3]) -> Vector3<f64> {
+        Vector3 { x, y, z }
+    }
+    impl From<Cov3> for RowMatrix3<f64> {
+        fn from(c: Cov3) -> Self {
+            let [x, y, z] = c.0.map(v);
+            RowMatrix3 { x, y, z }
+        }
+    }
+    impl From<RowMatrix3<f64>> for Cov3 {
+        fn from(m: RowMatrix3<f64>) -> Self {
+            Cov3([m.x, m.y, m.z].map(|r| [r.x, r.y, r.z]))
+        }
+    }
+    impl From<Cov3> for ColumnMatrix3<f64> {
+        fn from(c: Cov3) -> Self {
+            let m = c.0;
+            let col = |j: usize| v([m[0][j], m[1][j], m[2][j]]);
+            ColumnMatrix3 {
+                x: col(0),
+                y: col(1),
+                z: col(2),
+            }
+        }
+    }
+    impl From<ColumnMatrix3<f64>> for Cov3 {
+        fn from(m: ColumnMatrix3<f64>) -> Self {
+            Cov3([[m.x.x, m.y.x, m.z.x], [m.x.y, m.y.y, m.z.y], [m.x.z, m.y.z, m.z.z]])
+        }
+    }
 }
 
 #[cfg(feature = "glam")]
@@ -64,6 +100,21 @@ mod glam_impls {
     vec3_bridge!(Ned   { north, east, down }  <=> glam::DVec3 : |x, y, z| glam::DVec3::new(x, y, z), |v| (v.x, v.y, v.z));
     vec3_bridge!(Ecef  { x, y, z }            <=> glam::DVec3 : |x, y, z| glam::DVec3::new(x, y, z), |v| (v.x, v.y, v.z));
     vec3_bridge!(Eci   { x, y, z }            <=> glam::DVec3 : |x, y, z| glam::DVec3::new(x, y, z), |v| (v.x, v.y, v.z));
+
+    use crate::Cov3;
+    use glam::DMat3;
+
+    // glam stores columns; Cov3 is row by row.
+    impl From<Cov3> for DMat3 {
+        fn from(c: Cov3) -> Self {
+            DMat3::from_cols_array_2d(&c.0).transpose()
+        }
+    }
+    impl From<DMat3> for Cov3 {
+        fn from(m: DMat3) -> Self {
+            Cov3(m.transpose().to_cols_array_2d())
+        }
+    }
 }
 
 #[cfg(feature = "nalgebra")]
@@ -75,6 +126,20 @@ mod nalgebra_impls {
     vec3_bridge!(Eci   { x, y, z }            <=> nalgebra::Vector3<f64> : |x, y, z| nalgebra::Vector3::new(x, y, z), |v| (v.x, v.y, v.z));
     vec3_bridge!(Ecef  { x, y, z }            <=> nalgebra::Point3<f64>  : |x, y, z| nalgebra::Point3::new(x, y, z),  |v| (v.coords.x, v.coords.y, v.coords.z));
     vec3_bridge!(Eci   { x, y, z }            <=> nalgebra::Point3<f64>  : |x, y, z| nalgebra::Point3::new(x, y, z),  |v| (v.coords.x, v.coords.y, v.coords.z));
+
+    use crate::Cov3;
+    use nalgebra::Matrix3;
+
+    impl From<Cov3> for Matrix3<f64> {
+        fn from(c: Cov3) -> Self {
+            Matrix3::from_fn(|r, col| c.0[r][col])
+        }
+    }
+    impl From<Matrix3<f64>> for Cov3 {
+        fn from(m: Matrix3<f64>) -> Self {
+            Cov3(core::array::from_fn(|r| core::array::from_fn(|col| m[(r, col)])))
+        }
+    }
 }
 
 #[cfg(feature = "geo-types")]
@@ -166,6 +231,37 @@ mod tests {
         let e = Ecef::new(10.0, 20.0, 30.0);
         let np: nalgebra::Point3<f64> = e.into();
         assert_eq!(Ecef::from(np), e);
+    }
+
+    /// Not a real covariance (it isn't symmetric), so a row/column mix-up shows.
+    #[allow(dead_code)]
+    const M: crate::Cov3 = crate::Cov3([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0], [7.0, 8.0, 9.0]]);
+
+    #[cfg(feature = "mint")]
+    #[test]
+    fn mint_matrices_keep_rows_and_columns() {
+        let r: mint::RowMatrix3<f64> = M.into();
+        assert_eq!((r.x.y, r.y.x), (2.0, 4.0)); // row 0, column 1 and row 1, column 0
+        assert_eq!(crate::Cov3::from(r), M);
+        let c: mint::ColumnMatrix3<f64> = M.into();
+        assert_eq!((c.y.x, c.x.y), (2.0, 4.0)); // column 1's first entry is row 0, column 1
+        assert_eq!(crate::Cov3::from(c), M);
+    }
+
+    #[cfg(feature = "glam")]
+    #[test]
+    fn glam_matrix_keeps_rows_and_columns() {
+        let g: glam::DMat3 = M.into();
+        assert_eq!(g.row(0), glam::DVec3::new(1.0, 2.0, 3.0));
+        assert_eq!(crate::Cov3::from(g), M);
+    }
+
+    #[cfg(feature = "nalgebra")]
+    #[test]
+    fn nalgebra_matrix_keeps_rows_and_columns() {
+        let n: nalgebra::Matrix3<f64> = M.into();
+        assert_eq!(n[(0, 1)], 2.0);
+        assert_eq!(crate::Cov3::from(n), M);
     }
 
     #[cfg(feature = "geo-types")]

@@ -5,6 +5,14 @@ release is tagged `vX.Y.Z`.
 
 ## Unreleased
 
+- 🎯 **Uncertainty between frames** ([#6](https://github.com/FusionVault/geo3d/issues/6)). `Cov3`
+  is a 3×3 covariance. It moves between frames with the position:
+  - ENU ↔ ECEF (`LocalFrame::enu_cov_to_ecef`, `ecef_cov_to_enu`) and ENU ↔ NED, exactly;
+  - AER ↔ ENU (`Aer::cov_to_enu`, `Enu::cov_to_aer`) and geodetic ↔ ECEF
+    (`Ellipsoid::geodetic_cov_to_ecef`, `ecef_cov_to_geodetic`), to first order.
+
+  The Jacobians are checked against finite differences, and the results against a Monte Carlo
+  run. `Cov3` converts to `nalgebra::Matrix3`, `glam::DMat3` and the `mint` matrices.
 - 🗺️ **Polygon area** ([#4](https://github.com/FusionVault/geo3d/issues/4)).
   `Ellipsoid::polygon_area` gives the area and perimeter of a polygon whose edges are geodesics. It
   is a port of GeographicLib's method, and matches it to within 0.1 m² on any polygon, including

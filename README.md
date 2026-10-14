@@ -56,6 +56,7 @@ positions into frames where normal 3D maths works.
 | `Aer` | azimuth, elevation and range: which way to point | degrees, metres |
 | `Eci` | x, y, z that don't spin with the Earth, for satellites | metres |
 | `Vec3` | a plain 3D vector, like a velocity | metres, m/s |
+| `Cov3` | how uncertain a position is (a covariance) | metres², degrees² |
 
 A few rules hold everywhere:
 
@@ -112,6 +113,26 @@ let aer = station.look_angles(aircraft);  // 35.6° from north, 7.3° up, 19.3 k
 let again = station.destination(aer);     // and back to the aircraft's position
 assert!(aer.is_above_horizon());
 ```
+
+### Carry uncertainty between frames
+
+Measurements come with errors. A `Cov3` (a covariance) describes them, and moves between frames
+with the position:
+
+```rust
+use geo3d::{Aer, Cov3, Geodetic, LocalFrame};
+
+let radar = LocalFrame::new(Geodetic::new(-33.94, 151.18, 21.0));
+let hit = Aer::new(40.0, 10.0, 50_000.0);               // what the radar measured
+let noise = Cov3::from_std_devs([0.2, 0.2, 20.0]);      // ±0.2°, ±0.2°, ±20 m
+
+let enu = hit.cov_to_enu(noise);          // ±134 m east, ±114 m north, ±172 m up
+let ecef = radar.enu_cov_to_ecef(enu);    // ready for a tracker that works in x, y, z
+assert!((enu.std_devs()[2] - 171.9).abs() < 0.1);
+```
+
+💡 Moving between ENU, NED and x, y, z is exact. Pointing and latitude/longitude conversions are
+"first order": accurate while the errors are small next to the distance.
 
 ### Find where a line of sight hits the ground
 
@@ -356,11 +377,11 @@ or the poles, give a wrong answer far out in space, or panic.
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="comparisons/charts/features-dark.svg">
-  <img alt="Feature matrix: geo3d is the only crate with ground strike, 3D volumes, closest approach and datum shifts" src="comparisons/charts/features-light.svg">
+  <img alt="Feature matrix: geo3d is the only crate with ground strike, 3D volumes, closest approach, covariance and datum shifts" src="comparisons/charts/features-light.svg">
 </picture>
 
-Only geo3d has ground strikes, 3D zones, collision checks and datum shifts, and it does it with no
-dependencies. Other crates are ahead on n-vectors and attitude. Both are on our
+Only geo3d has ground strikes, 3D zones, collision checks, uncertainty and datum shifts, and it does
+it with no dependencies. Other crates are ahead on n-vectors and attitude. Both are on our
 [roadmap](https://github.com/FusionVault/geo3d/issues).
 
 ### ⚡ Speed
@@ -392,6 +413,7 @@ other five, and we know why:
 | Local frames, pointing, ground strikes and zones | exact, even straight up |
 | Distance and travel along the ground | 15 nm, for any two points |
 | Polygon area | within 0.1 m² of GeographicLib, for any polygon |
+| Uncertainty between frames | exact for ENU, NED and x, y, z; first order for pointing and latitude/longitude |
 | Great-circle estimates and horizon distance | within 0.6 % |
 | Closest approach | exact for objects moving in straight lines |
 | Datum shifts | exact for the published numbers |
@@ -408,8 +430,8 @@ They're all off by default, so a plain `cargo add geo3d` pulls in nothing else.
 |---|---|
 | `serde` | saving and loading every type |
 | `mint` | conversions to `mint` types, and through them to `cgmath` and others |
-| `glam` | conversions to `glam::DVec3` |
-| `nalgebra` | conversions to `nalgebra` vectors and points |
+| `glam` | conversions to `glam::DVec3`, and `Cov3` to `glam::DMat3` |
+| `nalgebra` | conversions to `nalgebra` vectors and points, and `Cov3` to `Matrix3` |
 | `geo-types` | `Geodetic` ↔ `geo_types::Point` (x is longitude, y is latitude) |
 
 ```bash
@@ -443,6 +465,8 @@ let p: geo_types::Point = geo3d::Geodetic::new(-33.87, 151.21, 20.0).into(); // 
 - **Antimeridian:** the line at 180° longitude, where east meets west.
 - **Great circle:** the shortest path on a perfect sphere. A quick stand-in for a geodesic.
 - **Datum:** a reference frame for coordinates. Helmert numbers convert between two of them.
+- **Covariance:** how uncertain a position is in each direction, and how the errors are linked. The
+  square roots of its diagonal are the standard deviations.
 
 ## 🤝 Contributing
 
