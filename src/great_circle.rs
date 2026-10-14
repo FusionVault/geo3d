@@ -69,15 +69,21 @@ impl Ellipsoid {
 
     /// The position `distance_m` along the great circle from `from` on an initial `bearing_deg`;
     /// height is carried over.
+    ///
+    /// Worked with n-vectors: the start's normal, turned towards the bearing by the distance's
+    /// angle. The latitude comes from `atan2`, so it stays exact right up to the poles (an `asin`
+    /// form loses up to 11 cm there).
     pub fn great_circle_destination(self, from: Geodetic, bearing_deg: f64, distance_m: f64) -> Geodetic {
-        let delta = distance_m / self.mean_radius();
-        let (sd, cd) = delta.sin_cos();
-        let (s1, c1) = from.lat_rad().sin_cos();
+        let (sd, cd) = (distance_m / self.mean_radius()).sin_cos();
         let (sb, cb) = bearing_deg.to_radians().sin_cos();
-        let s2 = (s1 * cd + c1 * sd * cb).clamp(-1.0, 1.0);
-        let lat2 = s2.asin();
-        let lon2 = from.lon_rad() + (sb * sd * c1).atan2(cd - s1 * s2);
-        Geodetic::new(lat2.to_degrees(), lon2.to_degrees(), from.height_m).normalized()
+        let (slat, clat) = from.lat_rad().sin_cos();
+        let (slon, clon) = from.lon_rad().sin_cos();
+        let (up, north, east) = (
+            Vec3::new(clat * clon, clat * slon, slat),
+            Vec3::new(-slat * clon, -slat * slon, clat),
+            Vec3::new(-slon, clon, 0.0),
+        );
+        from_normal(up * cd + (north * cb + east * sb) * sd, from.height_m)
     }
 
     /// The halfway point along the great circle between two positions; height is the mean of the two.
@@ -308,6 +314,30 @@ mod tests {
                         "{len} m path, {off} m off: {along} vs {want}"
                     );
                 }
+            }
+        }
+    }
+
+    /// Due north along a meridian, the latitude grows by exactly the angle travelled, right up to
+    /// the pole. (The old asin form was up to 11 cm out arriving near a pole.)
+    #[test]
+    fn destination_is_exact_near_the_poles() {
+        let r = WGS84.mean_radius();
+        for i in 0..2_000 {
+            let start = 80.0 + 10.0 * (i as f64 / 2_000.0);
+            let end = 90.0 - 10f64.powi(-(i % 13));
+            if end <= start {
+                continue;
+            }
+            for (lat0, sign) in [(start, 1.0), (-start, -1.0)] {
+                let bearing = if sign > 0.0 { 0.0 } else { 180.0 };
+                let got = WGS84.great_circle_destination(
+                    Geodetic::new(lat0, 33.0, 0.0),
+                    bearing,
+                    (end - start).to_radians() * r,
+                );
+                let err = (got.lat_deg - sign * end).abs().to_radians() * r;
+                assert!(err < 1e-8, "from {lat0} to {}: {} ({err} m)", sign * end, got.lat_deg);
             }
         }
     }

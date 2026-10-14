@@ -14,6 +14,9 @@ release is tagged `vX.Y.Z`.
 
   They stay exact on short paths. The textbook n-vector formula can be kilometres out on a path a
   few micrometres long; geo3d builds the path from the latitude and longitude differences instead.
+- 🐛 **`great_circle_destination` near the poles.** It computed the latitude with `asin`, which
+  loses precision near ±90°: up to 11 cm out arriving close to a pole. It now uses n-vectors and
+  `atan2`, and is exact everywhere.
 - 📚 **The NavLab examples** (`geo3d::navlab`): nine of FFI's ten classic n-vector problems, solved
   with geo3d and checked against the published answers. (Example 2 needs attitude, issue #13.)
 - 🎯 **Uncertainty between frames** ([#6](https://github.com/FusionVault/geo3d/issues/6)). `Cov3`
