@@ -1,0 +1,33 @@
+# Speed, accuracy and robustness of geo3d against other Rust geodesy crates. Not published, and a
+# workspace of its own (the empty `[workspace]` table), so none of these crates ever reach geo3d's
+# own dependency tree, lockfile or MSRV check. See README.md.
+[package]
+name = "geo3d-comparisons"
+version = "0.0.0"
+edition = "2021"
+publish = false
+
+[workspace]
+
+# Exact versions, so the published numbers can be reproduced.
+[dependencies]
+geo3d = { path = ".." }
+map_3d = "=0.1.7"
+nav-types = "=0.5.2"
+sguaba = "=0.10.7"
+# sguaba takes `uom` angles and lengths; its users add uom themselves.
+uom = "=0.38.0"
+jord = "=0.20.0"
+geographiclib-rs = "=0.2.7"
+# Only its `Haversine` and `Geodesic` metric spaces are used; the default features add nothing to them.
+geo = { version = "=0.33.1", default-features = false }
+
+[dev-dependencies]
+criterion = { version = "=0.5.1", default-features = false }
+
+[[bench]]
+name = "compare"
+harness = false
+
+[lints.clippy]
+all = { level = "warn", priority = -1 }

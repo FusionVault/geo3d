@@ -265,6 +265,23 @@ The same operations, by their familiar names. Build the `LocalFrame` once per ob
 
 Angles go in and come out in degrees; there is no `deg` flag to remember.
 
+## How it compares
+
+Measured against map_3d, nav-types, sguaba, jord and geographiclib-rs on the same inputs, accuracy
+first:
+
+| | geo3d | The others |
+|---|---|---|
+| Round trip lat/lon/height → x, y, z → back, up to geostationary height | exact to 2e-14° and 0.02 µm | nav-types and jord the same; map_3d off by up to 1.1e-4° |
+| Surface distance (geodesics), 110 000 pairs, 10 000 nearly antipodal | within 4 nm of GeographicLib, no failures | geographiclib-rs the same; the frame crates have no ellipsoidal geodesics |
+| Look angles straight up and on the horizon | exact (agrees with map_3d to 0.03 µm) | jord and sguaba off by up to 5e-7° (0.13 m at geostationary range) |
+| Earth's centre, exact poles, 100 000 km, NaN input | correct answers, NaN in gives NaN out, no panics | NaN at the centre (map_3d, jord) or poles (nav-types); a panic on NaN (sguaba) |
+| Features | the only one with ground strike, 3D volumes, 3D closest approach and datum shifts, with no dependencies | attitude in jord and sguaba, n-vectors in jord and nav-types |
+| Time per call | fastest for lat/lon/height → x, y, z (22 ns), ENU from a reused frame (28 ns) and a geodesic direct (275 ns) | 71–117 ns for x, y, z → lat/lon/height, where geo3d takes 207 ns ([#28](https://github.com/FusionVault/geo3d/issues/28)) |
+
+The full tables, crate versions and how to reproduce them are in
+[comparisons/README.md](comparisons/README.md).
+
 ## Accuracy
 
 | Calculation | Method | Accuracy |
