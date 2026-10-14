@@ -1,80 +1,93 @@
+//! # 🌍 geo3d
+//!
 //! **3D positions on Earth, made simple.**
 //!
-//! Turn GPS coordinates (latitude, longitude, height) into 3D space and answer everyday questions:
-//! where is that plane relative to me, where do I point the antenna, how far apart are they, can
-//! they see each other, will they collide? Pure Rust, no dependencies.
+//! Give geo3d a GPS position, then ask everyday questions:
+//!
+//! - 📍 Where is that plane, seen from here?
+//! - 📡 Which way should the antenna point?
+//! - 📏 How far apart are they?
+//! - 👀 Can they see each other?
+//! - 💥 Are they going to collide?
+//!
+//! It's pure Rust, with no dependencies.
 //!
 //! ```
 //! use geo3d::{Geodetic, LocalFrame};
 //!
-//! let me = Geodetic::new(51.5, -0.12, 30.0);           // latitude°, longitude°, height in metres
+//! let me = Geodetic::new(51.5, -0.12, 30.0);          // latitude, longitude, height in metres
 //! let plane = Geodetic::new(51.6, -0.12, 3_000.0);
 //!
-//! let look = LocalFrame::new(me).look_angles(plane);    // where to point
-//! assert!(look.azimuth_deg < 0.1);                      // due north…
-//! assert!(look.elevation_deg > 14.0);                   // …15° up…
-//! assert!(look.range_m > 11_000.0);                     // …11.5 km away
+//! let look = LocalFrame::new(me).look_angles(plane);   // which way to point
+//! // due north, 14.9° up, 11.5 km away
+//! assert!(look.elevation_deg > 14.0 && look.range_m > 11_000.0);
 //! ```
 //!
-//! # The idea
+//! # ✨ Why geo3d?
 //!
-//! Latitude and longitude are angles, so you cannot subtract two positions and get a distance or a
-//! direction. `geo3d` converts them into frames where ordinary 3D maths works — [`Ecef`] (x, y, z
-//! from the Earth's centre) and [`Enu`] (east, north, up from you) — and does the everyday
-//! calculations there.
+//! - 🎯 **Accurate.** Conversions are exact, and distances along the ground are good to 15
+//!   nanometres. Everything is tested against GeographicLib, the reference library.
+//! - 🛡️ **Reliable.** It handles the tricky places, like the poles and opposite sides of the Earth,
+//!   without NaN or panics.
+//! - 🧩 **Easy to use.** Degrees and metres everywhere, with named fields. Latitude always comes first.
+//! - 🪶 **Light and fast.** No dependencies, no `unsafe` code, and nothing allocates. Works on Rust
+//!   1.85 and newer.
 //!
-//! # Coordinate types
+//! # 🗺️ The basics
 //!
-//! | Type | What it is | Units |
+//! Latitude and longitude are angles, so you can't subtract two of them to get a distance. geo3d
+//! turns positions into frames where normal 3D maths works.
+//!
+//! | Type | What it holds | Units |
 //! |---|---|---|
-//! | [`Geodetic`] | latitude, longitude, height — what GPS gives you | degrees, metres |
-//! | [`Ecef`] | x, y, z from the Earth's centre, turning with the Earth | metres |
-//! | [`Enu`] / [`Ned`] | east-north-up / north-east-down from an observer | metres |
-//! | [`Aer`] | azimuth, elevation, range — where to point | degrees, metres |
-//! | [`Eci`] | x, y, z from the Earth's centre, not turning — for satellites (TEME) | metres |
-//! | [`Vec3`] | a plain 3D vector — a direction or a velocity | metres, m/s |
+//! | [`Geodetic`] | latitude, longitude and height, like GPS gives you | degrees, metres |
+//! | [`Ecef`] | x, y, z from the centre of the Earth | metres |
+//! | [`Enu`] / [`Ned`] | how far east, north and up (or north, east and down) from you | metres |
+//! | [`Aer`] | azimuth, elevation and range: which way to point | degrees, metres |
+//! | [`Eci`] | x, y, z that don't spin with the Earth, for satellites | metres |
+//! | [`Vec3`] | a plain 3D vector, like a velocity | metres, m/s |
 //!
-//! # Find what you need
+//! A few rules hold everywhere:
+//!
+//! - Latitude comes first: `Geodetic::new(lat, lon, height)`.
+//! - Bearings go clockwise from north, from 0° to 360°.
+//! - Heights are above the WGS84 ellipsoid, like GPS. They are not heights above sea level.
+//! - [`WGS84`] is the default, but any [`Ellipsoid`] works: `GRS80.to_ecef(p)`.
+//! - A few low-level helpers use radians, and their names say so (`lat_rad`, `gmst_rad`).
+//!   [`Vec3::angle_to`] also returns radians.
+//!
+//! # 🧭 Find what you need
 //!
 //! | I want to… | Use |
 //! |---|---|
-//! | convert latitude/longitude/height ↔ x, y, z | [`geodetic_to_ecef`], [`ecef_to_geodetic`] |
-//! | know where something is relative to me | [`LocalFrame::enu_of`], [`LocalFrame::ned_of`] |
-//! | know where to point, and back | [`LocalFrame::look_angles`], [`LocalFrame::destination`] |
+//! | convert between latitude/longitude and x, y, z | [`geodetic_to_ecef`], [`ecef_to_geodetic`] |
+//! | find where something is, relative to me | [`LocalFrame::enu_of`], [`LocalFrame::ned_of`] |
+//! | work out which way to point, and back | [`LocalFrame::look_angles`], [`LocalFrame::destination`] |
 //! | find where a line of sight hits the ground | [`ground_strike`], [`Ellipsoid::ray_intersect`] |
-//! | measure a straight-line distance | [`distance3d_m`] |
-//! | measure a distance along the surface | [`Ellipsoid::geodesic_inverse`] (exact), [`Ellipsoid::great_circle_distance_m`] (quick) |
+//! | measure a straight line through space | [`distance3d_m`] |
+//! | measure distance along the ground | [`Ellipsoid::geodesic_inverse`] (exact), [`Ellipsoid::great_circle_distance_m`] (quick) |
 //! | travel a distance on a bearing | [`Ellipsoid::geodesic_direct`], [`Ellipsoid::great_circle_destination`] |
-//! | test whether a point is inside a shape | [`Sphere`], [`Cone`], [`Cylinder`], [`AltitudeBand`] (all [`Volume`]s) |
-//! | check two moving objects for a near miss | [`Track::conflict`], [`closest_approach`] |
-//! | turn a velocity into course, speed and climb | [`Course`], [`LocalFrame::course_of_velocity`] |
-//! | check line of sight or horizon distance | [`Ellipsoid::line_of_sight`], [`Ellipsoid::horizon_distance_m`] |
-//! | work with satellites in an inertial frame | the [`eci`] module |
-//! | shift positions between datums | [`Helmert7`] |
+//! | check if something is inside a zone | [`Sphere`], [`Cone`], [`Cylinder`], [`AltitudeBand`] (all are [`Volume`]s) |
+//! | check if two objects will collide | [`Track::conflict`], [`closest_approach`] |
+//! | turn a velocity into heading, speed and climb | [`Course`], [`LocalFrame::course_of_velocity`] |
+//! | check line of sight, or how far I can see | [`Ellipsoid::line_of_sight`], [`Ellipsoid::horizon_distance_m`] |
+//! | track satellites | the [`eci`] module |
+//! | shift between datums | [`Helmert7`] |
 //!
-//! # Conventions
+//! More worked examples, a comparison with other crates and an accuracy table are in the
+//! [README](https://github.com/FusionVault/geo3d#readme).
 //!
-//! - **Degrees and metres** everywhere. The few low-level helpers that use radians say so
-//!   (`lat_rad`, `gmst_rad`, [`Vec3::angle_to`]).
-//! - **Latitude first**: `Geodetic::new(lat, lon, height)`.
-//! - **Azimuths and bearings** run clockwise from north, 0° to 360°. Longitudes come out between
-//!   −180° and 180°.
-//! - **Height is above the ellipsoid** (what GPS reports), not above mean sea level.
-//! - **[`WGS84`] is the default.** Every calculation is also a method on [`Ellipsoid`], so any other
-//!   ellipsoid works the same way: `GRS80.to_ecef(p)`.
-//! - Every type is `Copy`, nothing allocates, and there is no `unsafe` code.
+//! # 🧩 Optional features
 //!
-//! # Optional features
+//! They're all off by default, so a plain `cargo add geo3d` pulls in nothing else.
 //!
-//! All off by default; the default build has no dependencies.
-//!
-//! | Feature | Adds |
+//! | Feature | What it adds |
 //! |---|---|
-//! | `serde` | `Serialize` / `Deserialize` on every type |
-//! | `mint` | `From` / `Into` for `mint` vectors and points (and through it `cgmath` and others) |
-//! | `glam` | `From` / `Into` for `glam::DVec3` |
-//! | `nalgebra` | `From` / `Into` for `nalgebra::Vector3` and `Point3` |
-//! | `geo-types` | [`Geodetic`] ↔ `geo_types::Point` / `Coord` (x = longitude, y = latitude, height dropped) |
+//! | `serde` | saving and loading every type |
+//! | `mint` | conversions to `mint` types, and through them to `cgmath` and others |
+//! | `glam` | conversions to `glam::DVec3` |
+//! | `nalgebra` | conversions to `nalgebra` vectors and points |
+//! | `geo-types` | [`Geodetic`] ↔ `geo_types::Point` (x is longitude, y is latitude) |
 
 #![forbid(unsafe_code)]
 #![warn(missing_docs)]

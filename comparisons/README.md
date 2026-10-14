@@ -1,110 +1,38 @@
-# geo3d compared
+# 📊 How geo3d compares
 
-How geo3d compares with other Rust crates on accuracy, robustness, features and speed, with the code
-to reproduce every number. This crate is not published and is a workspace of its own, so none of
-these crates ever reach geo3d's dependencies.
+We tested geo3d against five other Rust crates that work with 3D positions on Earth. Every crate got
+exactly the same inputs. This page shows what we found, and how you can check it yourself.
 
-The numbers are for geo3d with Karney geodesics and the precision fixes of pull requests #35 and
-#36. The suite calls geo3d only through its public API.
+The crates are [map_3d](https://crates.io/crates/map_3d), [nav-types](https://crates.io/crates/nav-types),
+[sguaba](https://crates.io/crates/sguaba), [jord](https://crates.io/crates/jord) and
+[geographiclib-rs](https://crates.io/crates/geographiclib-rs). We also used
+[geo](https://crates.io/crates/geo) for its distance functions.
 
-## Summary
+## 🏁 The short version
 
-**Accuracy.**
+- 🎯 **Accuracy.** geo3d was exact everywhere we looked, including far out in space, straight up,
+  and on opposite sides of the Earth.
+- 🛡️ **Tricky cases.** geo3d passed all nine. Every other crate that converts positions failed at
+  least one.
+- 🧰 **Features.** Only geo3d has ground strikes, 3D zones, collision checks and datum shifts. Others
+  are ahead on n-vectors and attitude, which are on our roadmap.
+- ⚡ **Speed.** geo3d was fastest, or level with the fastest, in five of the ten tests. It's slower
+  in the other five, and we explain why below.
 
-- Round trips (geodetic → ECEF → geodetic) are exact to machine precision at every height from
-  11 km underground to geostationary orbit: 2e-14° and 0.02 µm. nav-types and jord match that;
-  sguaba is within 3 µm; map_3d is off by up to 1.1e-4° in latitude at geostationary height.
-- Geodesics agree with geographiclib-rs (GeographicLib's algorithm) to 3.7 nm on 110 000 pairs,
-  10 000 of them nearly antipodal, with no failures.
-- ENU positions agree with every other crate to 0.04 µm, and look angles with map_3d to 0.08 µm.
-  Straight up and on the horizon, geo3d and map_3d are the only crates that stay exact: jord and
-  sguaba are off by up to 5e-7° near straight up (0.13 m at geostationary range), and sguaba snaps
-  targets 1e-7° off due east or west onto it.
-
-**Robustness.** geo3d gives a correct, finite answer in every edge case tested: the Earth's centre,
-the exact poles, 100 000 km altitude and exact antipodes. NaN input gives NaN output or `None`, and
-nothing panics. nav-types returns NaN at the exact poles, sguaba panics on a NaN ECEF input, map_3d
-and jord return NaN at the Earth's centre, and map_3d is wrong at 100 000 km.
-
-**Features.** geo3d is the only one of these crates with a ray–ellipsoid ground strike, 3D volumes,
-3D closest approach and Helmert datum shifts, with no dependencies and `#![forbid(unsafe_code)]`.
-It has no n-vectors yet (nav-types and jord do) and no attitude or body frames (sguaba and jord do);
-both are on the roadmap.
-
-**Speed.** geo3d is the fastest at geodetic → ECEF, at ENU from a reused `LocalFrame` and at the
-geodesic direct problem, and level with the fastest (within 3 %) for look angles, both from a
-reused frame and in a single call. Three places are slower, each for a reason:
-
-- **ECEF → geodetic** takes about 200 ns against 68–111 ns for the others. geo3d iterates Bowring's
-  method to full convergence. A closed form that is both faster and more accurate (nanometres) is
-  planned ([#28](https://github.com/FusionVault/geo3d/issues/28)).
-- **Great-circle distance** takes 60 ns against 38–67 ns. geo3d uses the angle between unit vectors,
-  which is accurate to about a nanometre at every distance; the faster haversine is up to 0.9 m off
-  near the antipode.
-- **Geodesic inverse** is about 4 % slower than geographiclib-rs's. geo is faster again because it
-  returns only the distance, not the azimuths.
-
-## What is compared
-
-| Crate | Version | What it is |
-|---|---|---|
-| geo3d | this repository | 3D geodesy, degrees and metres, no dependencies |
-| [map_3d](https://crates.io/crates/map_3d) | 0.1.7 | free functions in radians, in the style of pymap3d and MATLAB |
-| [nav-types](https://crates.io/crates/nav-types) | 0.5.2 | typed WGS84 / ECEF / ENU / NED positions on nalgebra |
-| [sguaba](https://crates.io/crates/sguaba) | 0.10.7 | typed coordinate frames and rigid-body transforms, with uom units |
-| [jord](https://crates.io/crates/jord) | 0.20.0 | n-vector positions, local frames, spherical navigation |
-| [geographiclib-rs](https://crates.io/crates/geographiclib-rs) | 0.2.7 | Karney's geodesics; the reference for geodesics |
-| [geo](https://crates.io/crates/geo) | 0.33.1 | 2D geometry; only its `Haversine` and `Geodesic` distances are used |
-
-Operations: geodetic → ECEF, ECEF → geodetic, geodetic → ENU, geodetic → look angles (azimuth,
-elevation, range), geodesic inverse and direct, and great-circle distance. "—" means the crate
-does not offer that operation.
-
-All crates get the same inputs, in degrees and metres. Each one is called through a small adapter
-in [`src/lib.rs`](src/lib.rs) that does what its users would write: degrees to radians for
-map_3d, building the typed values for nav-types, sguaba and jord, and reading the results back out.
-That conversion work is part of every timing. Inputs and results go through `std::hint::black_box`.
-
-- **One observer, many targets**: each crate keeps what its API lets you keep, built once outside
-  the timed loop. geo3d keeps a `LocalFrame`, jord an `EnuFrame`, sguaba a `RigidBodyTransform`.
-  nav-types keeps the observer's ECEF position, but every subtraction converts it back to latitude
-  and longitude to build the rotation. map_3d has no frame object, so it keeps the observer in
-  radians.
-- **Single call**: the frame is built on every call.
-- **Checked constructors**: nav-types is called through `try_from_degrees_and_meters` and sguaba
-  through its builder, which both return `None` for a bad latitude. (nav-types'
-  `from_degrees_and_meters` panics instead.)
-- **Release builds** for both speed and accuracy. In debug builds sguaba also checks every
-  conversion with a round trip and panics outside its supported altitude range.
-- **No `target-cpu=native`**. geo3d's fused multiply-add paths are not used.
-
-## Reproduce
-
-```bash
-cd comparisons
-cargo bench                          # speed; each reported time is for 1 000 calls
-cargo run --release --bin accuracy   # accuracy and robustness, as Markdown tables
-cargo test                           # every adapter gives the same answer on a simple case
-cargo run --release --bin accuracy > results/accuracy.md && python3 charts.py   # redraw the charts
-```
-
-The charts in this file and in the main README are drawn by [`charts.py`](charts.py) (Python
-standard library only) from [`results/accuracy.md`](results/accuracy.md) and criterion's output,
-which it also saves as [`results/speed.csv`](results/speed.csv). Each comes in a light and a dark
-version.
-
-The inputs come from a fixed-seed xorshift generator, so every run uses the same points.
-
-## Accuracy
-
-From `cargo run --release --bin accuracy`.
-
-### Round trip: geodetic → ECEF → geodetic
+## 🎯 Converting x, y, z back to latitude and longitude
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="charts/roundtrip-dark.svg">
   <img alt="Worst round-trip position error up to geostationary height: geo3d 15 nm, map_3d 81 m" src="charts/roundtrip-light.svg">
 </picture>
+
+We converted 66 960 positions per height to x, y, z and back, from 11 km underground to
+geostationary orbit. geo3d, nav-types and jord came back exact. map_3d stops after one correction
+step, so it drifts as you go higher: about 30 m at GPS satellite height and 81 m at geostationary
+height.
+
+<details>
+<summary>📋 Show the numbers</summary>
 
 66 960 points per height: a 1° grid plus latitudes ±89.9°, ±89.99° and ±89.999°. Each crate uses
 its own forward and inverse conversion. No crate failed on any of these points.
@@ -137,12 +65,24 @@ map_3d's inverse takes one fixed correction step. It is exact near the surface, 
 height it is off by 7e-5° in latitude (about 30 m along the orbit), and by 1.1e-4° at
 geostationary height.
 
-### Geodesics, against geographiclib-rs
+</details>
+
+## 📏 Distance along the ground
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="charts/surface-distance-dark.svg">
   <img alt="Worst surface-distance error: geo3d 3.7 nm, great-circle crates 38 km to 51 km" src="charts/surface-distance-light.svg">
 </picture>
+
+geo3d works out distances on the Earth's true, slightly squashed shape. It agrees with GeographicLib
+to 4 nanometres on 110 000 pairs of points, and never fails. The other position crates only measure
+on a perfect sphere, which can be up to 51 km out on a long trip.
+
+Before version 0.3, geo3d used an older method called Vincenty's. That method gave no answer for
+7 257 of the 10 000 pairs on opposite sides of the Earth.
+
+<details>
+<summary>📋 Show the numbers</summary>
 
 100 000 random point pairs (uniform over the sphere) and 10 000 nearly antipodal pairs (the second
 point within 0.5° of the first one's antipode). A failure is `None`, NaN or a panic. geo's
@@ -182,12 +122,21 @@ Great-circle (spherical) distance against the ellipsoidal geodesic, all 110 000 
 | jord | 6 371 000.8 m | 0.56 % | 0.13 % | 37.8 |
 | geo | 6 371 008.8 m | 0.56 % | 0.13 % | 37.8 |
 
-### Local frames and look angles
+</details>
+
+## 📡 Look angles
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="charts/look-angles-dark.svg">
   <img alt="Worst look-angle error on hard cases: geo3d 30 nm, jord 13 cm, sguaba 13 cm" src="charts/look-angles-light.svg">
 </picture>
+
+Every crate agrees on ordinary targets, to well under a micrometre. The differences appear when you
+point straight up or exactly along a compass direction. geo3d and map_3d use a formula that stays
+precise there. jord and sguaba lose precision, and end up 13 cm off at geostationary range.
+
+<details>
+<summary>📋 Show the numbers</summary>
 
 Every crate is compared with geo3d and with map_3d. For targets built from a known pointing, that
 pointing is the reference too, and the last column gives the angle between the two pointings.
@@ -237,12 +186,21 @@ are computed:
   east or west (1.7 mm at 1 000 km), and near straight up it is off by up to 5e-7°. Its 8 µm on the
   general targets also comes from its angle formulas: its ENU agrees to 0.04 µm.
 
-## Robustness
+</details>
+
+## 🛡️ Tricky cases
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="charts/robustness-dark.svg">
   <img alt="Edge-case scorecard: geo3d passes 9 of 9 cases" src="charts/robustness-light.svg">
 </picture>
+
+We tried nine places where maths often breaks: the Earth's centre, the exact poles, the date line,
+100 000 km up, opposite sides of the Earth, and inputs that are NaN. geo3d gave a correct answer
+every time, and never panicked.
+
+<details>
+<summary>📋 Show the numbers</summary>
 
 From the same run. "ok" means within 1 mm and 1e-8°. For NaN input, NaN out or a rejection
 (`None`) are both fine; a panic is not.
@@ -261,12 +219,21 @@ From the same run. "ok" means within 1 mm and 1e-8°. For NaN input, NaN out or 
 
 sguaba's panic is an `expect` on its own latitude check, in release builds too.
 
-## Features and footprint
+</details>
+
+## 🧰 Features
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="charts/features-dark.svg">
   <img alt="Feature matrix: geo3d is the only crate with ground strike, 3D volumes, closest approach and datum shifts" src="charts/features-light.svg">
 </picture>
+
+geo3d covers everything from a GPS fix to a decision: where to point, where a line of sight lands,
+whether something is inside a zone, when two objects come closest, and how to shift datums. It does
+this with no dependencies and no `unsafe` code.
+
+<details>
+<summary>📋 Show the numbers</summary>
 
 Checked in each crate's source at the versions above. Dependencies are counted with default
 features, from `cargo tree -e normal`.
@@ -288,12 +255,30 @@ features, from `cargo tree -e normal`.
 | n-vector | no | no | yes | no | yes | no | no |
 | Attitude (yaw, pitch, roll) | no | no | no | yes | yes | no | no |
 
-## Speed
+</details>
+
+## ⚡ Speed
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="charts/speed-dark.svg">
   <img alt="Time per call for 10 operations; geo3d is fastest in 3 and tied in 2" src="charts/speed-light.svg">
 </picture>
+
+geo3d is the fastest, or level with the fastest, in five of the ten tests. It's slower in the other
+five, and we know why:
+
+- **x, y, z back to latitude and longitude** (two tests): geo3d refines its answer until it's exact.
+  A method that is just as exact and faster is next on the list
+  ([#28](https://github.com/FusionVault/geo3d/issues/28)).
+- **One-off ENU conversions:** a `LocalFrame` costs a little to build, and pays off from the second
+  target onwards.
+- **Quick great-circle distance:** geo3d uses a formula that stays exact on the far side of the
+  Earth. The faster formula most crates use can be almost a metre out there.
+- **Distance along the ground:** about 4 % behind geographiclib-rs. geo is faster again because it
+  skips the compass bearings.
+
+<details>
+<summary>📋 Show the numbers</summary>
 
 Measured on:
 
@@ -301,9 +286,7 @@ Measured on:
 - rustc 1.98.0 (88d9e12ae 2026-08-18), default `x86_64-unknown-linux-gnu` target
 - criterion 0.5.1: 300 ms warm-up, 1 s measurement, 50 samples
 
-Median time per call in nanoseconds (criterion's median for 1 000 calls, divided by 1 000), the
-same numbers the chart shows. Runs agree within about 7 %. In bold: the fastest, and anything within
-3 % of it (closer than run-to-run noise).
+Median nanoseconds per call. In bold: the fastest, and anything within 3 % of it.
 
 | Operation | geo3d | map_3d | nav-types | sguaba | jord | geographiclib-rs | geo |
 |---|---|---|---|---|---|---|---|
@@ -323,4 +306,63 @@ the second ECEF → geodetic row); a radar near Sydney with 1 000 aircraft withi
 to 12 km high; 1 000 random point pairs; 1 000 lines on random bearings up to 20 000 km long.
 geo3d and geographiclib-rs return the distance and both azimuths (inverse) or the position and
 final azimuth (direct). geo's `Geodesic` calls geographiclib-rs and returns less. The great-circle
-distances use different sphere radii; see [Accuracy](#accuracy).
+distances use different sphere radii; see [Distance along the ground](#-distance-along-the-ground).
+
+</details>
+
+## 🔬 How we tested
+
+<details>
+<summary>The crates, versions and rules</summary>
+
+| Crate | Version | What it is |
+|---|---|---|
+| geo3d | this repository | 3D geodesy, degrees and metres, no dependencies |
+| [map_3d](https://crates.io/crates/map_3d) | 0.1.7 | free functions in radians, in the style of pymap3d and MATLAB |
+| [nav-types](https://crates.io/crates/nav-types) | 0.5.2 | typed WGS84 / ECEF / ENU / NED positions on nalgebra |
+| [sguaba](https://crates.io/crates/sguaba) | 0.10.7 | typed coordinate frames and rigid-body transforms, with uom units |
+| [jord](https://crates.io/crates/jord) | 0.20.0 | n-vector positions, local frames, spherical navigation |
+| [geographiclib-rs](https://crates.io/crates/geographiclib-rs) | 0.2.7 | Karney's geodesics; the reference for geodesics |
+| [geo](https://crates.io/crates/geo) | 0.33.1 | 2D geometry; only its `Haversine` and `Geodesic` distances are used |
+
+All crates get the same inputs, in degrees and metres. Each one is called through a small adapter
+in [`src/lib.rs`](src/lib.rs) that does what its users would write: degrees to radians for
+map_3d, building the typed values for nav-types, sguaba and jord, and reading the results back out.
+That conversion work is part of every timing. Inputs and results go through `std::hint::black_box`.
+
+- **One observer, many targets**: each crate keeps what its API lets you keep, built once outside
+  the timed loop. geo3d keeps a `LocalFrame`, jord an `EnuFrame`, sguaba a `RigidBodyTransform`.
+  nav-types keeps the observer's ECEF position, but every subtraction converts it back to latitude
+  and longitude to build the rotation. map_3d has no frame object, so it keeps the observer in
+  radians.
+- **Single call**: the frame is built on every call.
+- **Checked constructors**: nav-types is called through `try_from_degrees_and_meters` and sguaba
+  through its builder, which both return `None` for a bad latitude. (nav-types'
+  `from_degrees_and_meters` panics instead.)
+- **Release builds** for both speed and accuracy. In debug builds sguaba also checks every
+  conversion with a round trip and panics outside its supported altitude range.
+- **No `target-cpu=native`**. geo3d's fused multiply-add paths are not used.
+
+</details>
+
+## 🔁 Run it yourself
+
+```bash
+cd comparisons
+cargo run --release --bin accuracy   # accuracy and tricky cases, as tables
+cargo bench                          # speed
+cargo test                           # checks every crate's adapter gives the same simple answer
+```
+
+To redraw the charts after a change:
+
+```bash
+cargo run --release --bin accuracy > results/accuracy.md
+cargo bench
+python3 charts.py
+```
+
+The inputs come from a fixed random seed, so every run tests the same points. The charts are drawn
+by [`charts.py`](charts.py) from [`results/accuracy.md`](results/accuracy.md) and
+[`results/speed.csv`](results/speed.csv). This folder is its own Rust project and isn't published,
+so none of these crates become dependencies of geo3d.

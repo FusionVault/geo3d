@@ -1,56 +1,65 @@
 # Changelog
 
-All notable changes to `geo3d`. Plain semver; tags `vX.Y.Z` at the published commit.
+All notable changes to geo3d. We use [semantic versioning](https://semver.org), and each
+release is tagged `vX.Y.Z`.
 
 ## Unreleased
 
-- **Geodesics now use Karney's algorithm**, as in GeographicLib, instead of Vincenty's ([#3](https://github.com/FusionVault/geo3d/issues/3)).
-  `geodesic_inverse` now works for every pair of points. It used to return `None` for points on
-  nearly opposite sides of the Earth. Both `geodesic_inverse` and `geodesic_direct` are accurate to
-  about 15 nm, up from 0.5 mm. The signatures are unchanged. `geodesic_inverse` returns `None` only
-  for non-finite input or a latitude beyond ±90°. Ported from GeographicLib via geographiclib-rs
-  (both MIT; see NOTICE), and cross-checked against geographiclib-rs on 25 000 pairs on four
-  ellipsoids, where they agree to within 4 nm.
-- **Precision fixes** ([#5](https://github.com/FusionVault/geo3d/issues/5)). Each one was confirmed by a test that failed before:
-  - `Vec3::angle_to` uses `atan2(|a×b|, a·b)`. It returned 0 for a 1e-10 rad angle.
-  - Elevation in `Aer::from_enu`, and so in every look angle, uses `atan2`. It used to round to
-    exactly 90° within about 1e-6° of straight up, an error of up to 0.6 m at geostationary range.
-  - `great_circle_distance_m` takes the angle between unit vectors, accurate to about a nanometre at
-    every distance. The haversine formula was up to 0.9 m short near the antipode.
-  - Ray–ellipsoid roots (`ray_intersect`, `ground_strike`, `line_of_sight`) use the
-    cancellation-free quadratic. The near root used to lose about 7 digits when the origin was
-    close to the surface.
-- Docs corrected against measurements:
-  - great-circle helpers are "within 0.6 %" (measured maximum 0.56 %), not "about 0.5 %"
-  - only ECEF targets cost "a few multiplications" per point
-- A `comparisons/` suite (not published) measures accuracy, robustness, features and speed against
-  map_3d, nav-types, sguaba, jord, geographiclib-rs and geo. The README gains a "How it compares"
-  section with a chart and a plain explanation for each comparison. The light and dark SVG charts
-  are drawn from the suite's own results by `comparisons/charts.py`.
-- Speed: `geodesic_direct` is slightly faster than before (about 0.22 µs per call) and about 10 %
-  faster than geographiclib-rs. `geodesic_inverse` costs about 0.74 µs on a typical pair, roughly
-  twice Vincenty's (it does the extra work that makes it exact everywhere) and within a few
-  percent of geographiclib-rs. WGS84's series coefficients are built at compile time.
+## 0.3.0 — 2026-10-14
 
-## 0.2.4 — unreleased
+An accuracy release. Your code keeps compiling: no public type, method or signature has changed.
+Some results are now more accurate, as listed below.
 
-Documentation and internal structure. No public API change: every type, method and trait impl is
-unchanged, and results are identical.
+### 🎯 More accurate
 
-- Rewritten README and crate docs: a short pitch, a "find what you need" table, task-by-task
-  recipes, an accuracy table, conventions (units, ranges, height reference), a glossary, and a
-  lookup table for people coming from MATLAB, pymap3d or map_3d.
-- Corrected the `eci` docs: `Eci` is the TEME frame that SGP4 / TLE propagators output, not
-  J2000 / GCRF (about 0.4° apart), and `gmst_from_unix` treats UTC as UT1 (up to about 400 m at
-  the equator). The old "tens of metres" claim did not hold against J2000 / GCRF data.
-- docs.rs now builds with all features, so the `serde` and interop impls show up; the `tracking`
-  example is scraped into the docs; search aliases for the MATLAB / pymap3d names
-  (`geodetic2ecef`, `ecef2enu`, `geodetic2aer`, `vdist`, `vreckon`, `haversine`, …).
-- crates.io metadata: a plainer description; `gps` and `coordinates` keywords in place of `enu`
-  and `geospatial`; dropped the `no-std::no-alloc` category (the crate needs `std` for its float
-  maths); added `aerospace` and `science::robotics`.
-- Source split into one module per topic (vectors, positions, local frames, ellipsoid, geodesics,
-  great circles, visibility, motion, volumes, datum, ECI); `Course` moved next to `Track`.
+- **Distance along the ground now works for every pair of points**
+  ([#3](https://github.com/FusionVault/geo3d/issues/3)). `geodesic_inverse` and `geodesic_direct`
+  now use Karney's algorithm, the one GeographicLib uses, instead of Vincenty's.
+  - It is accurate to about 15 nm, up from about 0.5 mm.
+  - `geodesic_inverse` used to return `None` for points on nearly opposite sides of the Earth. Now
+    it only returns `None` for NaN or infinite input, or a latitude beyond ±90°.
+  - It matches geographiclib-rs to within 4 nm on 25 000 test pairs.
+  - The code is ported from GeographicLib and geographiclib-rs, which are both MIT-licensed. See
+    NOTICE.
+- **Four precision fixes** ([#5](https://github.com/FusionVault/geo3d/issues/5)). Each has a test
+  that failed before the fix:
+  - **Elevation near straight up.** It used to round to exactly 90°, up to 0.6 m out at
+    geostationary range. This affects every look angle.
+  - **Great-circle distance.** It was up to 0.9 m short near the far side of the Earth. It is now
+    accurate to about a nanometre everywhere.
+  - **`Vec3::angle_to`.** Tiny angles used to come out as 0.
+  - **Ray–ground intersections.** These lost precision when starting close to the surface. This
+    affects `ray_intersect`, `ground_strike` and `line_of_sight`.
+
+### 📖 Clearer docs
+
+- The README and the docs.rs front page were rewritten in plain language. They now have recipes, a
+  "find what you need" table, an accuracy table, a glossary, and a lookup table for MATLAB, pymap3d
+  and map_3d users.
+- There is a new [comparison](comparisons/README.md) against five other Rust crates, with charts.
+  It covers accuracy, tricky cases, features and speed, including the places where geo3d is
+  slower.
+- There is a new [contributing guide](CONTRIBUTING.md).
+- A correction: the `eci` frame is TEME, the one SGP4 satellite models use. It is not J2000, which
+  differs by about 0.4°. Treating UTC as UT1 can add up to 400 m. The old docs promised "tens of
+  metres", which wasn't true.
+- docs.rs now shows the optional features. Searching for familiar names like `geodetic2aer`,
+  `vdist` or `haversine` now finds the matching geo3d function.
+
+### ⚡ Speed
+
+- `geodesic_direct` is a little faster than before, and about 13 % faster than geographiclib-rs.
+- `geodesic_inverse` takes about twice as long as before (about 0.86 µs per call). That extra work
+  is what makes it exact everywhere. It is within 4 % of geographiclib-rs.
+- Look angles and great-circle distance are 15–20 ns slower per call, because of the precision
+  fixes.
+
+### 🧹 Housekeeping
+
+- The code is split into one module per topic.
+- The crates.io description is simpler. The `no-std::no-alloc` category was removed, because geo3d
+  needs `std` today ([#12](https://github.com/FusionVault/geo3d/issues/12) will change that).
+- CI now checks that every code change comes with a CHANGELOG line.
 
 ## 0.2.3 — 2026-10-06
 
