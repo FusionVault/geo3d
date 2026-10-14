@@ -2,6 +2,16 @@
 
 All notable changes to `geo3d`. Plain semver; tags `vX.Y.Z` at the published commit.
 
+## Unreleased
+
+- **Geodesics now use Karney's algorithm**, as in GeographicLib, instead of Vincenty's ([#3](https://github.com/FusionVault/geo3d/issues/3)).
+  `geodesic_inverse` now works for every pair of points. It used to return `None` for points on
+  nearly opposite sides of the Earth. Both `geodesic_inverse` and `geodesic_direct` are accurate to
+  about 15 nm, up from 0.5 mm. The signatures are unchanged. `geodesic_inverse` returns `None` only
+  for non-finite input or a latitude beyond ±90°. Ported from GeographicLib via geographiclib-rs
+  (both MIT; see NOTICE), and cross-checked against geographiclib-rs on 25 000 pairs on four
+  ellipsoids, where they agree to within 4 nm.
+
 ## 0.2.4 — unreleased
 
 Documentation and internal structure. No public API change: every type, method and trait impl is

@@ -7,7 +7,7 @@ use crate::position::Geodetic;
 impl Ellipsoid {
     /// Great-circle distance between two positions on a sphere of the mean radius, metres, ignoring
     /// height (the haversine formula). Fast and within about 0.5 % of the true surface distance; use
-    /// [`geodesic_inverse`](Self::geodesic_inverse) for millimetres.
+    /// [`geodesic_inverse`](Self::geodesic_inverse) for full accuracy.
     #[doc(alias = "haversine")]
     pub fn great_circle_distance_m(self, a: Geodetic, b: Geodetic) -> f64 {
         let (p1, p2) = (a.lat_rad(), b.lat_rad());
