@@ -56,6 +56,16 @@
 //! - A few low-level helpers use radians, and their names say so (`lat_rad`, `gmst_rad`).
 //!   [`Vec3::angle_to`] also returns radians.
 //!
+//! # 🛡️ Tricky inputs
+//!
+//! - The poles, the antimeridian, the Earth's centre and points far out in space all give finite,
+//!   correct answers.
+//! - Azimuths and bearings are always in `[0, 360)`, and longitudes come out between −180° and 180°.
+//! - NaN or infinite input gives NaN out, or `None` where a function returns an `Option`.
+//! - Nothing panics.
+//!
+//! `tests/edge_cases.rs` checks all of this for every public conversion.
+//!
 //! # 🧭 Find what you need
 //!
 //! | I want to… | Use |

@@ -10,6 +10,7 @@
 use core::f64::consts::PI;
 
 use crate::ellipsoid::{Ellipsoid, WGS84};
+use crate::local::wrap_360;
 use crate::position::Geodetic;
 use crate::vector::fma;
 
@@ -30,7 +31,8 @@ impl Ellipsoid {
     /// are ignored (the path is on the surface). Works for every pair of points, including ones on
     /// opposite sides of the Earth.
     ///
-    /// Returns `None` only if an input is not finite or a latitude is beyond ±90°. Coincident
+    /// Returns `None` only if a latitude or longitude is NaN or infinite, or a latitude is beyond
+    /// ±90°. Heights are ignored, so an unknown (NaN) height still gets a distance. Coincident
     /// points give a zero-length geodesic with bearings 0.
     ///
     /// ```
@@ -55,8 +57,8 @@ impl Ellipsoid {
             Karney::with(self, |k| k.inverse(from.lat_deg, from.lon_deg, to.lat_deg, to.lon_deg));
         s12.is_finite().then(|| Geodesic {
             distance_m: s12,
-            initial_bearing_deg: bearing(atan2d(salp1, calp1)),
-            final_bearing_deg: bearing(atan2d(salp2, calp2)),
+            initial_bearing_deg: wrap_360(atan2d(salp1, calp1)),
+            final_bearing_deg: wrap_360(atan2d(salp2, calp2)),
         })
     }
 
@@ -78,22 +80,7 @@ impl Ellipsoid {
     #[doc(alias = "destination")]
     pub fn geodesic_direct(self, from: Geodetic, bearing_deg: f64, distance_m: f64) -> (Geodetic, f64) {
         let (lat2, lon2, azi2) = Karney::with(self, |k| k.direct(from.lat_deg, from.lon_deg, bearing_deg, distance_m));
-        (Geodetic::new(lat2, lon2, from.height_m), bearing(azi2))
-    }
-}
-
-/// An azimuth from `atan2d`, in `(-180, 180]`, as a bearing in `[0, 360)`: shifting negatives
-/// costs no remainder call, and a tiny negative angle that rounds up to 360 becomes 0.
-fn bearing(azimuth_deg: f64) -> f64 {
-    let b = if azimuth_deg < 0.0 {
-        azimuth_deg + 360.0
-    } else {
-        azimuth_deg
-    };
-    if b >= 360.0 {
-        0.0
-    } else {
-        b
+        (Geodetic::new(lat2, lon2, from.height_m), wrap_360(azi2))
     }
 }
 
@@ -1219,7 +1206,5 @@ mod tests {
         assert_eq!(ang_normalize(-190.0), 170.0);
         let (d, e) = ang_diff(179.0, -179.0);
         assert_eq!(d + e, 2.0);
-        assert_eq!(bearing(-1e-20), 0.0);
-        assert_eq!(bearing(-90.0), 270.0);
     }
 }

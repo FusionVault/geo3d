@@ -190,12 +190,17 @@ impl LocalFrame {
     /// `elevation_deg` (0 = horizon, negative = down) first meets the ground (the ellipsoid
     /// surface) — the ground point of a camera, antenna or bearing.
     ///
-    /// Returns `None` if the line points into space, the observer is below the surface, or a
-    /// height or angle is not finite. An observer exactly on the surface strikes its own position.
+    /// Returns `None` if the line points into space, the observer is below the surface, or any
+    /// input is NaN or infinite. An observer exactly on the surface strikes its own position.
     #[doc(alias = "lookAtSpheroid")]
     pub fn ground_strike(&self, azimuth_deg: f64, elevation_deg: f64) -> Option<Geodetic> {
-        let h = self.origin.height_m;
-        if !(h.is_finite() && azimuth_deg.is_finite() && elevation_deg.is_finite()) || h < 0.0 {
+        let Geodetic {
+            lat_deg,
+            lon_deg,
+            height_m: h,
+        } = self.origin;
+        let inputs = [lat_deg, lon_deg, h, azimuth_deg, elevation_deg];
+        if inputs.iter().any(|x| !x.is_finite()) || h < 0.0 {
             return None;
         }
         // The height decides, not the sign of the near root: at the surface that root is 0 give or

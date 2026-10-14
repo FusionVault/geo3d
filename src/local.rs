@@ -3,6 +3,23 @@
 
 use crate::vector::{vector_ops, Vec3};
 
+/// An angle in degrees, wrapped into `[0, 360)`. `rem_euclid` alone rounds a tiny negative angle
+/// up to exactly 360, so that case becomes 0.
+pub(crate) fn wrap_360(deg: f64) -> f64 {
+    let b = if (-360.0..0.0).contains(&deg) {
+        deg + 360.0 // the common case after atan2, without a remainder call
+    } else if (0.0..360.0).contains(&deg) {
+        deg
+    } else {
+        deg.rem_euclid(360.0)
+    };
+    if b >= 360.0 {
+        0.0
+    } else {
+        b
+    }
+}
+
 /// An offset in a local **East-North-Up** frame, metres: how far east, north and up something is
 /// from an observer. Get one from a [`LocalFrame`](crate::LocalFrame). Supports `+`, `-`, `* f64`
 /// and unary `-`.
@@ -127,7 +144,7 @@ impl Aer {
     #[doc(alias = "enu2aer")]
     #[inline]
     pub fn from_enu(v: Enu) -> Aer {
-        let azimuth_deg = v.east.atan2(v.north).to_degrees().rem_euclid(360.0);
+        let azimuth_deg = wrap_360(v.east.atan2(v.north).to_degrees());
         // atan2 rather than asin(up / range), which loses precision near ±90°. sqrt(e² + n²) is as
         // accurate as hypot at any distance in metres (no overflow below 1e154) and much cheaper.
         let elevation_deg = v.up.atan2((v.east * v.east + v.north * v.north).sqrt()).to_degrees();
@@ -176,7 +193,7 @@ impl Aer {
     #[inline]
     pub fn normalized(self) -> Aer {
         Aer {
-            azimuth_deg: self.azimuth_deg.rem_euclid(360.0),
+            azimuth_deg: wrap_360(self.azimuth_deg),
             ..self
         }
     }
@@ -226,5 +243,11 @@ mod tests {
         assert_eq!(Aer::new(-90.0, 0.0, 1.0).normalized().azimuth_deg, 270.0);
         assert_eq!(Aer::from_enu(Enu::default()), Aer::new(0.0, 0.0, 0.0));
         assert!(close(Aer::new(90.0, 0.0, 1_000.0).to_enu().east, 1_000.0, 1e-9));
+        // A tiny angle west of north is 0°, never 360°.
+        assert_eq!(Aer::from_enu(Enu::new(-1e-30, 1.0, 0.0)).azimuth_deg, 0.0);
+        assert_eq!(wrap_360(-1e-20), 0.0);
+        assert_eq!(wrap_360(-90.0), 270.0);
+        assert_eq!(wrap_360(725.0), 5.0);
+        assert!(wrap_360(f64::NAN).is_nan());
     }
 }
