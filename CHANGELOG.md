@@ -5,6 +5,12 @@ release is tagged `vX.Y.Z`.
 
 ## Unreleased
 
+- 🛰️ **Satellite time** ([#8](https://github.com/FusionVault/geo3d/issues/8)):
+  - `eci::gmst_from_unix_with_dut1` corrects UTC to UT1, which removes up to 400 m of error.
+  - `eci::era_rad` and `eci::era_from_unix_with_dut1` give the Earth Rotation Angle (IAU 2000).
+  - Sidereal time from Unix time now resolves 0.2 µs instead of 40 µs.
+  - Both formulas match SOFA's reference values to 1e-12 rad.
+  - A new example, `examples/satellite.rs`, tracks the ISS with the `sgp4` crate.
 - 📡 **Refraction for radar and radio** ([#9](https://github.com/FusionVault/geo3d/issues/9)).
   `horizon_distance_with_refraction_m` and `line_of_sight_with_refraction` take an
   effective-Earth-radius factor `k`. `STANDARD_REFRACTION_K` is 4/3, the ITU-R standard for radio,
