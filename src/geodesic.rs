@@ -9,7 +9,7 @@
 
 use core::f64::consts::PI;
 
-use crate::ellipsoid::Ellipsoid;
+use crate::ellipsoid::{Ellipsoid, WGS84};
 use crate::position::Geodetic;
 use crate::vector::fma;
 
@@ -52,7 +52,7 @@ impl Ellipsoid {
             return Some(Geodesic::default());
         }
         let (s12, salp1, calp1, salp2, calp2) =
-            Karney::new(self).inverse(from.lat_deg, from.lon_deg, to.lat_deg, to.lon_deg);
+            Karney::with(self, |k| k.inverse(from.lat_deg, from.lon_deg, to.lat_deg, to.lon_deg));
         s12.is_finite().then(|| Geodesic {
             distance_m: s12,
             initial_bearing_deg: bearing(atan2d(salp1, calp1)),
@@ -77,14 +77,19 @@ impl Ellipsoid {
     #[doc(alias = "reckon")]
     #[doc(alias = "destination")]
     pub fn geodesic_direct(self, from: Geodetic, bearing_deg: f64, distance_m: f64) -> (Geodetic, f64) {
-        let (lat2, lon2, azi2) = Karney::new(self).direct(from.lat_deg, from.lon_deg, bearing_deg, distance_m);
+        let (lat2, lon2, azi2) = Karney::with(self, |k| k.direct(from.lat_deg, from.lon_deg, bearing_deg, distance_m));
         (Geodetic::new(lat2, lon2, from.height_m), bearing(azi2))
     }
 }
 
-/// An azimuth in degrees as a bearing in `[0, 360)` (a tiny negative angle would round to 360).
+/// An azimuth from `atan2d`, in `(-180, 180]`, as a bearing in `[0, 360)`: shifting negatives
+/// costs no remainder call, and a tiny negative angle that rounds up to 360 becomes 0.
 fn bearing(azimuth_deg: f64) -> f64 {
-    let b = azimuth_deg.rem_euclid(360.0);
+    let b = if azimuth_deg < 0.0 {
+        azimuth_deg + 360.0
+    } else {
+        azimuth_deg
+    };
     if b >= 360.0 {
         0.0
     } else {
@@ -126,6 +131,7 @@ const COEFF_C3: [f64; 45] = [
 ];
 
 /// The ellipsoid's derived constants and series coefficients.
+#[derive(Debug, PartialEq)]
 struct Karney {
     a: f64,
     f: f64,
@@ -133,7 +139,6 @@ struct Karney {
     ep2: f64,
     n: f64,
     b: f64,
-    etol2: f64,
     a3x: [f64; ORDER],
     c3x: [f64; N_C3],
 }
@@ -152,43 +157,81 @@ struct Lambda {
     dlam12: f64,
 }
 
+/// The A3 and C3 series coefficients for third flattening `n`. A `const fn` (plain multiply-add,
+/// so compile-time and run-time results are identical), so WGS84's are built into the binary.
+const fn series_coefficients(n: f64) -> ([f64; ORDER], [f64; N_C3]) {
+    const fn polyval_at(m: usize, p: &[f64], o: usize, x: f64) -> f64 {
+        let (mut y, mut i) = (p[o], 1);
+        while i <= m {
+            y = y * x + p[o + i];
+            i += 1;
+        }
+        y
+    }
+    const fn min(a: usize, b: usize) -> usize {
+        if a < b {
+            a
+        } else {
+            b
+        }
+    }
+    let mut a3x = [0.0; ORDER];
+    let (mut o, mut k) = (0, 0);
+    while k < ORDER {
+        let j = ORDER - 1 - k;
+        let m = min(j, ORDER - j - 1);
+        a3x[k] = polyval_at(m, &COEFF_A3, o, n) / COEFF_A3[o + m + 1];
+        o += m + 2;
+        k += 1;
+    }
+    let mut c3x = [0.0; N_C3];
+    let (mut o, mut k, mut l) = (0, 0, 1);
+    while l < ORDER {
+        let mut j = ORDER - 1;
+        while j >= l {
+            let m = min(j, ORDER - j - 1);
+            c3x[k] = polyval_at(m, &COEFF_C3, o, n) / COEFF_C3[o + m + 1];
+            k += 1;
+            o += m + 2;
+            j -= 1;
+        }
+        l += 1;
+    }
+    (a3x, c3x)
+}
+
+static WGS84_KARNEY: Karney = Karney::new(WGS84.a(), WGS84.f());
+
 impl Karney {
-    fn new(ell: Ellipsoid) -> Self {
-        let (a, f) = (ell.a(), ell.f());
+    /// The solver for `ell`, handed to `run`. WGS84's is built at compile time.
+    fn with<R>(ell: Ellipsoid, run: impl FnOnce(&Karney) -> R) -> R {
+        if ell == WGS84 {
+            run(&WGS84_KARNEY)
+        } else {
+            run(&Karney::new(ell.a(), ell.f()))
+        }
+    }
+
+    const fn new(a: f64, f: f64) -> Self {
         let f1 = 1.0 - f;
         let e2 = f * (2.0 - f);
-        let ep2 = e2 / sq(f1);
         let n = f / (2.0 - f);
-        let etol2 = 0.1 * TOL2 / (f.abs().max(0.001) * (1.0 - f / 2.0).min(1.0) / 2.0).sqrt();
-
-        let mut a3x = [0.0; ORDER];
-        let mut o = 0;
-        for (k, j) in (0..ORDER).rev().enumerate() {
-            let m = j.min(ORDER - j - 1);
-            a3x[k] = polyval(m, &COEFF_A3[o..], n) / COEFF_A3[o + m + 1];
-            o += m + 2;
-        }
-        let mut c3x = [0.0; N_C3];
-        let (mut o, mut k) = (0, 0);
-        for l in 1..ORDER {
-            for j in (l..ORDER).rev() {
-                let m = j.min(ORDER - j - 1);
-                c3x[k] = polyval(m, &COEFF_C3[o..], n) / COEFF_C3[o + m + 1];
-                k += 1;
-                o += m + 2;
-            }
-        }
+        let (a3x, c3x) = series_coefficients(n);
         Karney {
             a,
             f,
             f1,
-            ep2,
+            ep2: e2 / (f1 * f1),
             n,
             b: a * f1,
-            etol2,
             a3x,
             c3x,
         }
+    }
+
+    /// The threshold below which a short line is solved directly on the auxiliary sphere.
+    fn etol2(&self) -> f64 {
+        0.1 * TOL2 / (self.f.abs().max(0.001) * (1.0 - self.f / 2.0).min(1.0) / 2.0).sqrt()
     }
 
     fn a3f(&self, eps: f64) -> f64 {
@@ -445,9 +488,7 @@ impl Karney {
         c1a: &mut [f64; ORDER + 1],
         c2a: &mut [f64; ORDER + 1],
     ) -> (f64, f64, f64, f64, f64, f64) {
-        let Karney {
-            f, f1, ep2, n, etol2, ..
-        } = *self;
+        let Karney { f, f1, ep2, n, .. } = *self;
         let mut sig12 = -1.0;
         let (mut salp2, mut calp2, mut dnm) = (f64::NAN, f64::NAN, f64::NAN);
         let sbet12 = sbet2 * cbet1 - cbet2 * sbet1;
@@ -471,7 +512,7 @@ impl Karney {
         let ssig12 = salp1.hypot(calp1);
         let csig12 = sbet1 * sbet2 + cbet1 * cbet2 * comg12;
 
-        if shortline && ssig12 < etol2 {
+        if shortline && ssig12 < self.etol2() {
             // Really short: the great-circle solution on the auxiliary sphere is the answer.
             let c = if comg12 >= 0.0 {
                 sq(somg12) / (1.0 + comg12)
@@ -739,6 +780,9 @@ fn ang_round(x: f64) -> f64 {
 
 /// An angle in degrees reduced to `(-180, 180]`.
 fn ang_normalize(x: f64) -> f64 {
+    if x > -180.0 && x <= 180.0 {
+        return x; // the common case, without the cost of a remainder
+    }
     let z = if x.is_finite() { x % 360.0 } else { f64::NAN };
     let z = if x == 0.0 { x } else { z };
     let y = if z < -180.0 {
@@ -778,9 +822,19 @@ fn ang_diff(x: f64, y: f64) -> (f64, f64) {
 /// Sine and cosine of an angle in degrees, exact at multiples of 90°: the angle is reduced to
 /// `|r| ≤ 45°` before converting to radians.
 fn sincosd(x: f64) -> (f64, f64) {
-    let r = x % 360.0; // NaN for ±∞
-    let q = if r.is_nan() { 0 } else { (r / 90.0).round() as i64 };
-    let (s, c) = (r - 90.0 * q as f64).to_radians().sin_cos();
+    // `%` is a slow library call, so it is only used for large angles; below 720° every step here
+    // is exact (Sterbenz's lemma), so the reduction loses nothing. NaN and ±∞ give NaN.
+    let r = if x.abs() < 720.0 { x } else { x % 360.0 };
+    let mut q = (r / 90.0) as i64;
+    let mut r = r - 90.0 * q as f64;
+    if r > 45.0 {
+        q += 1;
+        r -= 90.0;
+    } else if r < -45.0 {
+        q -= 1;
+        r += 90.0;
+    }
+    let (s, c) = r.to_radians().sin_cos();
     let (s, c) = match q & 3 {
         0 => (s, c),
         1 => (c, -s),
@@ -813,8 +867,8 @@ fn atan2d(mut y: f64, mut x: f64) -> f64 {
 }
 
 /// Clenshaw summation of `Σ c[l]·sin(2l·x)` (`sinp`) or `Σ c[l]·cos((2l+1)·x)`.
-fn sin_cos_series(sinp: bool, sinx: f64, cosx: f64, c: &[f64]) -> f64 {
-    let mut k = c.len();
+fn sin_cos_series<const N: usize>(sinp: bool, sinx: f64, cosx: f64, c: &[f64; N]) -> f64 {
+    let mut k = N;
     let mut n = k - usize::from(sinp);
     let ar = 2.0 * (cosx - sinx) * (cosx + sinx);
     let mut y1 = 0.0;
@@ -927,7 +981,6 @@ fn c2f(eps: f64, c: &mut [f64; ORDER + 1]) {
 mod tests {
     use super::*;
     use crate::test_util::{angle_close, close};
-    use crate::WGS84;
 
     /// The classic Flinders Peak → Buninyong line, with GeographicLib (Karney) as the reference on
     /// both WGS84 and Vincenty's own Australian National Spheroid: s = 54 972.271139 m /
@@ -1145,10 +1198,19 @@ mod tests {
     }
 
     #[test]
+    fn the_compile_time_wgs84_solver_matches_one_built_at_run_time() {
+        let (a, f) = std::hint::black_box((WGS84.a(), WGS84.f()));
+        assert_eq!(WGS84_KARNEY, Karney::new(a, f));
+    }
+
+    #[test]
     fn helpers_are_exact_where_they_should_be() {
         assert_eq!(sincosd(90.0), (1.0, 0.0));
         assert_eq!(sincosd(-180.0), (-0.0, -1.0));
         assert_eq!(sincosd(-0.0), (-0.0, 1.0));
+        assert_eq!(sincosd(810.0), (1.0, 0.0)); // through the large-angle path
+        assert_eq!(sincosd(-45.0).0, -sincosd(45.0).0);
+        assert!(sincosd(f64::INFINITY).0.is_nan() && sincosd(f64::NAN).1.is_nan());
         assert_eq!(atan2d(1.0, 0.0), 90.0);
         assert_eq!(atan2d(0.0, -1.0), 180.0);
         assert_eq!(atan2d(-1.0, -1.0), -135.0);
