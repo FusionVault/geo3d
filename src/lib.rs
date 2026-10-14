@@ -80,7 +80,7 @@
 //! | check if something is inside a zone | [`Sphere`], [`Cone`], [`Cylinder`], [`AltitudeBand`] (all are [`Volume`]s) |
 //! | check if two objects will collide | [`Track::conflict`], [`closest_approach`] |
 //! | turn a velocity into heading, speed and climb | [`Course`], [`LocalFrame::course_of_velocity`] |
-//! | check line of sight, or how far I can see | [`Ellipsoid::line_of_sight`], [`Ellipsoid::horizon_distance_m`] |
+//! | check line of sight, or how far I can see | [`Ellipsoid::line_of_sight`], [`Ellipsoid::horizon_distance_m`], and their `_with_refraction` versions for radio |
 //! | track satellites | the [`eci`] module |
 //! | shift between datums | [`Helmert7`] |
 //!
@@ -129,6 +129,7 @@ pub use local::{Aer, Enu, Ned};
 pub use motion::{closest_approach, Course, Cpa, Track};
 pub use position::{Ecef, Eci, Geodetic};
 pub use vector::Vec3;
+pub use visibility::STANDARD_REFRACTION_K;
 pub use volume::{AltitudeBand, Cone, Cylinder, Sphere, Volume};
 
 /// Latitude/longitude/height → x, y, z on [`WGS84`]. Shorthand for [`WGS84.to_ecef`](Ellipsoid::to_ecef).

@@ -206,7 +206,9 @@ assert!(!WGS84.line_of_sight(plane, far));        // the Earth is in the way
 let horizon = WGS84.horizon_distance_m(10_000.0); // you can see about 357 km
 ```
 
-💡 geo3d treats the Earth as smooth. Hills and the way air bends light aren't included.
+💡 For radar and radio, use `line_of_sight_with_refraction` and `horizon_distance_with_refraction_m`
+with `STANDARD_REFRACTION_K`. The air bends radio waves around the Earth, so they reach about 15 %
+further. geo3d treats the Earth as smooth, so hills aren't included.
 
 ### Track satellites
 
@@ -383,7 +385,7 @@ let p: geo_types::Point = geo3d::Geodetic::new(-33.87, 151.21, 20.0).into(); // 
 - **2D shapes** like polygons: use [`geo`](https://crates.io/crates/geo).
 - **Map grids** like UTM and MGRS: use [`utm`](https://crates.io/crates/utm) or
   [`proj`](https://crates.io/crates/proj) for now. UTM is on our roadmap.
-- **Height above sea level**, terrain, and the way air bends light.
+- **Height above sea level** and terrain.
 - **High-precision Earth rotation** (precession and nutation).
 
 ## 📖 Glossary
