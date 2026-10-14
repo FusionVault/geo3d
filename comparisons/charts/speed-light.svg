@@ -24,19 +24,19 @@
 <text x="444.0" y="112.0" font-size="13" font-weight="600" fill="#0b0b0b" text-anchor="start">x, y, z → latitude/longitude/height</text>
 <text x="444.0" y="143.0" font-size="11.5" font-weight="600" fill="#0b0b0b" text-anchor="start">geo3d</text>
 <path d="M540.0,132.5 H780.0 A4.0,4.0 0 0 1 784.0,136.5 V141.5 A4.0,4.0 0 0 1 780.0,145.5 H540.0 Z" fill="#2a78d6"/>
-<text x="790.0" y="143.0" font-size="11.5" font-weight="600" fill="#0b0b0b" text-anchor="start">200 ns</text>
+<text x="790.0" y="143.0" font-size="11.5" font-weight="600" fill="#0b0b0b" text-anchor="start">119 ns</text>
 <text x="444.0" y="165.0" font-size="11.5" font-weight="400" fill="#52514e" text-anchor="start">map_3d</text>
-<path d="M540.0,154.5 H671.0 A4.0,4.0 0 0 1 675.0,158.5 V163.5 A4.0,4.0 0 0 1 671.0,167.5 H540.0 Z" fill="#898781"/>
-<text x="681.0" y="165.0" font-size="11.5" font-weight="400" fill="#0b0b0b" text-anchor="start">111 ns</text>
+<path d="M540.0,154.5 H758.7 A4.0,4.0 0 0 1 762.7,158.5 V163.5 A4.0,4.0 0 0 1 758.7,167.5 H540.0 Z" fill="#898781"/>
+<text x="768.7" y="165.0" font-size="11.5" font-weight="400" fill="#0b0b0b" text-anchor="start">109 ns</text>
 <text x="444.0" y="187.0" font-size="11.5" font-weight="400" fill="#52514e" text-anchor="start">nav-types</text>
-<path d="M540.0,176.5 H641.0 A4.0,4.0 0 0 1 645.0,180.5 V185.5 A4.0,4.0 0 0 1 641.0,189.5 H540.0 Z" fill="#898781"/>
-<text x="651.0" y="187.0" font-size="11.5" font-weight="400" fill="#0b0b0b" text-anchor="start">86 ns</text>
+<path d="M540.0,176.5 H714.0 A4.0,4.0 0 0 1 718.0,180.5 V185.5 A4.0,4.0 0 0 1 714.0,189.5 H540.0 Z" fill="#898781"/>
+<text x="724.0" y="187.0" font-size="11.5" font-weight="400" fill="#0b0b0b" text-anchor="start">87 ns</text>
 <text x="444.0" y="209.0" font-size="11.5" font-weight="400" fill="#52514e" text-anchor="start">sguaba</text>
-<path d="M540.0,198.5 H619.2 A4.0,4.0 0 0 1 623.2,202.5 V207.5 A4.0,4.0 0 0 1 619.2,211.5 H540.0 Z" fill="#898781"/>
-<text x="629.2" y="209.0" font-size="11.5" font-weight="400" fill="#0b0b0b" text-anchor="start">68 ns</text>
+<path d="M540.0,198.5 H678.0 A4.0,4.0 0 0 1 682.0,202.5 V207.5 A4.0,4.0 0 0 1 678.0,211.5 H540.0 Z" fill="#898781"/>
+<text x="688.0" y="209.0" font-size="11.5" font-weight="400" fill="#0b0b0b" text-anchor="start">69 ns</text>
 <text x="444.0" y="231.0" font-size="11.5" font-weight="400" fill="#52514e" text-anchor="start">jord</text>
-<path d="M540.0,220.5 H663.1 A4.0,4.0 0 0 1 667.1,224.5 V229.5 A4.0,4.0 0 0 1 663.1,233.5 H540.0 Z" fill="#898781"/>
-<text x="673.1" y="231.0" font-size="11.5" font-weight="400" fill="#0b0b0b" text-anchor="start">104 ns</text>
+<path d="M540.0,220.5 H749.5 A4.0,4.0 0 0 1 753.5,224.5 V229.5 A4.0,4.0 0 0 1 749.5,233.5 H540.0 Z" fill="#898781"/>
+<text x="759.5" y="231.0" font-size="11.5" font-weight="400" fill="#0b0b0b" text-anchor="start">104 ns</text>
 <line x1="540.0" y1="128" x2="540.0" y2="238" stroke="#c3c2b7"/>
 <text x="24.0" y="274.0" font-size="13" font-weight="600" fill="#0b0b0b" text-anchor="start">ENU, frame reused</text>
 <text x="24.0" y="305.0" font-size="11.5" font-weight="600" fill="#0b0b0b" text-anchor="start">geo3d</text>
@@ -145,19 +145,19 @@
 <text x="444.0" y="694.0" font-size="13" font-weight="600" fill="#0b0b0b" text-anchor="start">x, y, z → lat/lon/height, orbit heights</text>
 <text x="444.0" y="725.0" font-size="11.5" font-weight="600" fill="#0b0b0b" text-anchor="start">geo3d</text>
 <path d="M540.0,714.5 H780.0 A4.0,4.0 0 0 1 784.0,718.5 V723.5 A4.0,4.0 0 0 1 780.0,727.5 H540.0 Z" fill="#2a78d6"/>
-<text x="790.0" y="725.0" font-size="11.5" font-weight="600" fill="#0b0b0b" text-anchor="start">208 ns</text>
+<text x="790.0" y="725.0" font-size="11.5" font-weight="600" fill="#0b0b0b" text-anchor="start">121 ns</text>
 <text x="444.0" y="747.0" font-size="11.5" font-weight="400" fill="#52514e" text-anchor="start">map_3d</text>
-<path d="M540.0,736.5 H666.7 A4.0,4.0 0 0 1 670.7,740.5 V745.5 A4.0,4.0 0 0 1 666.7,749.5 H540.0 Z" fill="#898781"/>
-<text x="676.7" y="747.0" font-size="11.5" font-weight="400" fill="#0b0b0b" text-anchor="start">111 ns</text>
+<path d="M540.0,736.5 H754.7 A4.0,4.0 0 0 1 758.7,740.5 V745.5 A4.0,4.0 0 0 1 754.7,749.5 H540.0 Z" fill="#898781"/>
+<text x="764.7" y="747.0" font-size="11.5" font-weight="400" fill="#0b0b0b" text-anchor="start">108 ns</text>
 <text x="444.0" y="769.0" font-size="11.5" font-weight="400" fill="#52514e" text-anchor="start">nav-types</text>
-<path d="M540.0,758.5 H640.7 A4.0,4.0 0 0 1 644.7,762.5 V767.5 A4.0,4.0 0 0 1 640.7,771.5 H540.0 Z" fill="#898781"/>
-<text x="650.7" y="769.0" font-size="11.5" font-weight="400" fill="#0b0b0b" text-anchor="start">89 ns</text>
+<path d="M540.0,758.5 H708.0 A4.0,4.0 0 0 1 712.0,762.5 V767.5 A4.0,4.0 0 0 1 708.0,771.5 H540.0 Z" fill="#898781"/>
+<text x="718.0" y="769.0" font-size="11.5" font-weight="400" fill="#0b0b0b" text-anchor="start">85 ns</text>
 <text x="444.0" y="791.0" font-size="11.5" font-weight="400" fill="#52514e" text-anchor="start">sguaba</text>
-<path d="M540.0,780.5 H653.8 A4.0,4.0 0 0 1 657.8,784.5 V789.5 A4.0,4.0 0 0 1 653.8,793.5 H540.0 Z" fill="#898781"/>
-<text x="663.8" y="791.0" font-size="11.5" font-weight="400" fill="#0b0b0b" text-anchor="start">100 ns</text>
+<path d="M540.0,780.5 H734.3 A4.0,4.0 0 0 1 738.3,784.5 V789.5 A4.0,4.0 0 0 1 734.3,793.5 H540.0 Z" fill="#898781"/>
+<text x="744.3" y="791.0" font-size="11.5" font-weight="400" fill="#0b0b0b" text-anchor="start">98 ns</text>
 <text x="444.0" y="813.0" font-size="11.5" font-weight="400" fill="#52514e" text-anchor="start">jord</text>
-<path d="M540.0,802.5 H662.0 A4.0,4.0 0 0 1 666.0,806.5 V811.5 A4.0,4.0 0 0 1 662.0,815.5 H540.0 Z" fill="#898781"/>
-<text x="672.0" y="813.0" font-size="11.5" font-weight="400" fill="#0b0b0b" text-anchor="start">107 ns</text>
+<path d="M540.0,802.5 H742.6 A4.0,4.0 0 0 1 746.6,806.5 V811.5 A4.0,4.0 0 0 1 742.6,815.5 H540.0 Z" fill="#898781"/>
+<text x="752.6" y="813.0" font-size="11.5" font-weight="400" fill="#0b0b0b" text-anchor="start">102 ns</text>
 <line x1="540.0" y1="710" x2="540.0" y2="820" stroke="#c3c2b7"/>
 <text x="24.0" y="872.0" font-size="11.5" font-weight="400" fill="#6f6d68" text-anchor="start">* geo's Geodesic returns only the distance (inverse) or the position (direct); geo3d and geographiclib-rs</text>
 <text x="24.0" y="888.0" font-size="11.5" font-weight="400" fill="#6f6d68" text-anchor="start">also return the azimuths.</text>

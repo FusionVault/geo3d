@@ -276,8 +276,9 @@ We tested geo3d against five other Rust crates, giving them all the same inputs.
   <img alt="Worst round-trip position error up to geostationary height: geo3d 15 nm, map_3d 81 m" src="comparisons/charts/roundtrip-light.svg">
 </picture>
 
-geo3d keeps refining its answer until it stops changing, so it stays exact all the way out to
-satellite heights. map_3d stops after one step, and drifts 81 m that far out.
+geo3d solves this with an exact formula, then checks the last nanometre. It stays exact from deep
+inside the Earth out to satellite heights. map_3d takes a single approximate step, and drifts 81 m
+that far out.
 
 ### 📏 Distance along the ground
 
@@ -330,9 +331,9 @@ dependencies. Other crates are ahead on n-vectors and attitude. Both are on our
 geo3d is the fastest, or level with the fastest, in five of the ten tests. It's slower in the other
 five, and we know why:
 
-- **x, y, z back to latitude and longitude** (two of the tests). geo3d refines its answer until it's
-  exact. A faster method that is just as exact is next on the list
-  ([#28](https://github.com/FusionVault/geo3d/issues/28)).
+- **x, y, z back to latitude and longitude** (two of the tests). geo3d is about 10 % behind map_3d
+  and jord here, and further behind nav-types and sguaba. It spends that time on a final check
+  that makes it the most accurate of the five.
 - **One-off ENU conversions.** A `LocalFrame` costs a little to build, and pays off from the second
   target onwards.
 - **Quick great-circle distance.** geo3d uses a formula that stays exact on the far side of the Earth.
@@ -345,7 +346,7 @@ five, and we know why:
 | What | How accurate |
 |---|---|
 | Latitude/longitude/height → x, y, z | exact |
-| x, y, z → latitude/longitude/height | 0.01 mm or better, from 11 km underground to satellite heights |
+| x, y, z → latitude/longitude/height | 3 nm near the Earth, 20 nm at satellite heights |
 | Local frames, pointing, ground strikes and zones | exact, even straight up |
 | Distance and travel along the ground | 15 nm, for any two points |
 | Great-circle estimates and horizon distance | within 0.6 % |

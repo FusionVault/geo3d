@@ -1,6 +1,7 @@
 //! The Earth's shape — a reference [`Ellipsoid`] — and the conversions between latitude/longitude/height
 //! and x/y/z on it.
 
+use crate::geodesic::atan2d;
 use crate::position::{Ecef, Geodetic};
 use crate::vector::{fma, Vec3};
 
@@ -97,49 +98,108 @@ impl Ellipsoid {
         Ecef::new(nh * clat * clon, nh * clat * slon, fma(n, 1.0 - e2, g.height_m) * slat)
     }
 
-    /// x, y, z → latitude, longitude and height. The exact inverse of
-    /// [`to_ecef`](Self::to_ecef) to 1e-11° and 0.01 mm, from 11 km below the surface to
-    /// geostationary orbit.
+    /// x, y, z → latitude, longitude and height. The exact inverse of [`to_ecef`](Self::to_ecef).
     ///
-    /// Bowring's method, iterated to convergence (two or three passes; one pass alone is
-    /// sub-millimetre only near the surface).
+    /// The answer is within 3 nm of the true position from deep inside the Earth up to 1 000 km,
+    /// and within 20 nm out to geostationary height. That is the limit of 64-bit floating point.
+    /// It handles the polar axis, the equatorial plane and the Earth's centre exactly. The centre
+    /// gives latitude 90° and height −b.
+    ///
+    /// It uses a closed form with no iteration (Vermeille 2002, refined by Karney for
+    /// GeographicLib), followed by one correction step. The step takes out the last nanometre of
+    /// rounding.
+    ///
+    /// ```
+    /// use geo3d::{Ecef, Geodetic, WGS84};
+    /// let g = WGS84.to_geodetic(WGS84.to_ecef(Geodetic::new(-33.87, 151.21, 20.0)));
+    /// assert!((g.lat_deg + 33.87).abs() < 1e-12 && (g.height_m - 20.0).abs() < 1e-8);
+    ///
+    /// let centre = WGS84.to_geodetic(Ecef::new(0.0, 0.0, 0.0));
+    /// assert_eq!((centre.lat_deg, centre.height_m), (90.0, -WGS84.b()));
+    /// ```
     #[doc(alias = "ecef2geodetic")]
     #[doc(alias = "ecef2lla")]
     pub fn to_geodetic(self, e: Ecef) -> Geodetic {
-        let (a, b, e2, ep2) = (self.a, self.b(), self.e2(), self.ep2());
-        let p = fma(e.x, e.x, e.y * e.y).sqrt();
-        let lon = e.y.atan2(e.x);
-        if p < 1e-9 {
-            // On the polar axis: latitude is ±90°, height is the distance from the pole.
-            let lat = core::f64::consts::FRAC_PI_2.copysign(e.z);
-            return Geodetic::new(lat.to_degrees(), lon.to_degrees(), e.z.abs() - b);
-        }
-        // Bowring: a reduced latitude θ gives a geodetic latitude φ; re-deriving θ from φ and
-        // repeating converges quadratically. Five passes is a hard cap never reached in practice.
-        let mut theta = (e.z * a).atan2(p * b);
-        let mut lat = 0.0;
-        for _ in 0..5 {
-            let (st, ct) = theta.sin_cos();
-            // Fuse the `z + (e′²b)·sin³θ` and `p − (e²a)·cos³θ` terms (one rounding each on FMA targets).
-            let num = fma(ep2 * b, st * st * st, e.z);
-            let den = fma(e2 * a, -(ct * ct * ct), p);
-            let next = num.atan2(den);
-            let converged = (next - lat).abs() < 1e-15;
-            lat = next;
-            if converged {
-                break;
-            }
-            theta = (b * lat.tan()).atan2(a);
-        }
-        let (slat, clat) = lat.sin_cos();
-        let n = a / fma(e2, -(slat * slat), 1.0).sqrt();
-        // Height from whichever of cos/sin is better conditioned (near the poles cos φ → 0).
-        let height = if clat.abs() > 0.1 {
-            p / clat - n
+        let (a, f) = (self.a, self.f);
+        let e2 = self.e2();
+        let e2m = (1.0 - f) * (1.0 - f);
+        let (e2a, e4a) = (e2.abs(), e2 * e2);
+        let (x, y, z) = (e.x, e.y, e.z);
+        // √(x² + y²) rather than hypot: as accurate for any distance in metres and much cheaper.
+        // Only coordinates beyond 1e154 m overflow, and those take the far-away branch below.
+        let r = fma(x, x, y * y).sqrt();
+        let (slam, clam) = if r != 0.0 { (y / r, x / r) } else { (0.0, 1.0) };
+        let mut h = fma(r, r, z * z).sqrt(); // distance from the centre
+        let (sphi, cphi);
+        if h.is_nan() || h > 2.0 * a / f64::EPSILON {
+            // Absurdly far away: the Earth is a point and `h` is already the height.
+            let rr = (x / 2.0).hypot(y / 2.0);
+            let hh = (z / 2.0).hypot(rr);
+            (sphi, cphi) = (z / 2.0 / hh, rr / hh);
+        } else if e4a == 0.0 {
+            // A sphere. The centre maps to the north pole, as for an ellipsoid.
+            let zz = if h == 0.0 { 1.0 } else { z };
+            let hh = zz.hypot(r);
+            (sphi, cphi) = (zz / hh, r / hh);
+            h -= a;
         } else {
-            fma(n, -(1.0 - e2), e.z / slat)
-        };
-        Geodetic::new(lat.to_degrees(), lon.to_degrees(), height)
+            // Solve Vermeille's quartic for k; a prolate ellipsoid swaps the roles of R and Z.
+            let (mut p, mut q) = ((r / a) * (r / a), e2m * (z / a) * (z / a));
+            let rr = (p + q - e4a) / 6.0;
+            if f < 0.0 {
+                core::mem::swap(&mut p, &mut q);
+            }
+            if !(e4a * q == 0.0 && rr <= 0.0) {
+                let s = e4a * p * q / 4.0;
+                let r2 = rr * rr;
+                let r3 = rr * r2;
+                let disc = s * (2.0 * r3 + s);
+                let mut u = rr;
+                if disc >= 0.0 {
+                    // Pick the sign of the square root that avoids cancellation.
+                    let t3 = s + r3 + disc.sqrt().copysign(s + r3);
+                    let t = t3.cbrt();
+                    u += t + if t != 0.0 { r2 / t } else { 0.0 };
+                } else {
+                    let ang = (-disc).sqrt().atan2(-(s + r3));
+                    u += 2.0 * rr * (ang / 3.0).cos();
+                }
+                let v = (u * u + e4a * q).sqrt();
+                let uv = if u < 0.0 { e4a * q / (v - u) } else { u + v };
+                let w = (e2a * (uv - q) / (2.0 * v)).max(0.0);
+                let k = uv / ((uv + w * w).sqrt() + w);
+                let (k1, k2) = if f >= 0.0 { (k, k + e2) } else { (k - e2, k) };
+                let d = k1 * r / k2;
+                // atan2 needs no normalising, and skipping it saves two roundings.
+                (sphi, cphi) = (z / k1, r / k2);
+                h = (1.0 - e2m / k1) * fma(d, d, z * z).sqrt();
+            } else {
+                // In the equatorial plane, inside the evolute (near the centre): the general
+                // formulas give 0/0 here, so take their limits.
+                let zz = ((if f >= 0.0 { e4a - p } else { p }) / e2m).sqrt();
+                let xx = (if f < 0.0 { e4a - p } else { p }).sqrt();
+                let hh = zz.hypot(xx);
+                (sphi, cphi) = ((zz / hh).copysign(if z < 0.0 { -1.0 } else { 1.0 }), xx / hh);
+                h = -a * (if f >= 0.0 { e2m } else { 1.0 }) * hh / e2a;
+            }
+        }
+        // Longitude straight from x and y: normalising them first would add two roundings.
+        let lon = if r != 0.0 { atan2d(y, x) } else { atan2d(slam, clam) };
+        let mut lat = atan2d(sphi, cphi);
+        if h > -1.0e6 && h <= 2.0 * a / f64::EPSILON {
+            // One correction step takes the last nanometre of rounding out. Go back to the
+            // meridian plane, measure the leftover (dp, dz), and correct the latitude and height
+            // along the local north and up. Skipped deep inside the Earth, where the closed form
+            // is already exact and the step could divide by nearly zero.
+            let (s, c) = lat.to_radians().sin_cos();
+            let w2 = 1.0 - e2 * s * s;
+            let n = a / w2.sqrt();
+            let (dp, dz) = (r - (n + h) * c, z - (n * (1.0 - e2) + h) * s);
+            let m = n * (1.0 - e2) / w2; // meridional radius of curvature
+            lat += ((c * dz - s * dp) / (m + h)).to_degrees();
+            h += c * dp + s * dz;
+        }
+        Geodetic::new(lat, lon, h)
     }
 
     /// Straight-line interpolation between two positions through space, `t = 0` at `a` and `1` at
@@ -277,6 +337,67 @@ mod tests {
         assert!(close(n.lat_deg, 90.0, 1e-12) && close(n.height_m, 10.0, 1e-6));
         let s = WGS84.to_geodetic(Ecef::new(0.0, 0.0, -WGS84.b()));
         assert!(close(s.lat_deg, -90.0, 1e-12) && close(s.height_m, 0.0, 1e-6));
+    }
+
+    #[test]
+    fn deep_inside_and_far_out_round_trip() {
+        // The iterated Bowring method used before 0.3.1 was up to 53 m out deep inside the Earth.
+        for lat in [-89.0, -60.0, -30.0, -1.0, 0.0, 1.0, 30.0, 60.0, 89.0] {
+            for h in [-6.0e6, -3.0e6, -1.0e6, 1.0e8, 1.0e9] {
+                let g = Geodetic::new(lat, 40.0, h);
+                let r = WGS84.to_geodetic(WGS84.to_ecef(g));
+                // Tolerances scale with the distance from the centre: the rounding of x, y, z.
+                let tol_m = 4.0 * f64::EPSILON * (WGS84.a() + h.abs());
+                let tol_deg = (tol_m / (WGS84.a() + h).abs().max(1.0e5)).to_degrees();
+                assert!(
+                    close(r.lat_deg, lat, tol_deg) && close(r.height_m, h, tol_m),
+                    "{g:?} -> {r:?}"
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn inside_the_evolute_matches_the_exact_answer() {
+        // Near the centre, in the equatorial plane, the nearest surface point is not on the
+        // equator. A point at R = a·e²·cos φ / W (W = √(1 − e² sin² φ)) has latitude φ and height
+        // −a(1 − e²)/W, exactly.
+        for lat in [10.0f64, 30.0, 60.0, 85.0] {
+            let (s, c) = lat.to_radians().sin_cos();
+            let w = (1.0 - WGS84.e2() * s * s).sqrt();
+            let r = WGS84.a() * WGS84.e2() * c / w;
+            let g = WGS84.to_geodetic(Ecef::new(r, 0.0, 0.0));
+            assert!(close(g.lat_deg, lat, 1e-10), "{lat}: {g:?}");
+            assert!(
+                close(g.height_m, -WGS84.a() * (1.0 - WGS84.e2()) / w, 1e-6),
+                "{lat}: {g:?}"
+            );
+        }
+        // The centre itself: latitude 90°, height −b.
+        let c = WGS84.to_geodetic(Ecef::new(0.0, 0.0, 0.0));
+        assert_eq!((c.lat_deg, c.lon_deg, c.height_m), (90.0, 0.0, -WGS84.b()));
+    }
+
+    #[test]
+    fn spheres_prolate_ellipsoids_and_extremes() {
+        let sphere = Ellipsoid::new(6_371_000.0, 0.0);
+        let prolate = Ellipsoid::new(6_378_137.0, -1.0 / 150.0);
+        for ell in [sphere, prolate] {
+            for (lat, h) in [(0.0, 0.0), (45.0, 1_000.0), (-89.5, 20_000.0), (60.0, -500_000.0)] {
+                let g = Geodetic::new(lat, -120.0, h);
+                let r = ell.to_geodetic(ell.to_ecef(g));
+                assert!(
+                    close(r.lat_deg, lat, 1e-11) && close(r.height_m, h, 1e-6),
+                    "{ell:?} {g:?} -> {r:?}"
+                );
+            }
+        }
+        // Absurdly far away, the Earth is a point: the direction is kept, and the height is the
+        // distance from the centre.
+        let far = WGS84.to_geodetic(Ecef::new(3.0e30, 0.0, 4.0e30));
+        assert!(close(far.lat_deg, 53.130_102_354_155_98, 1e-12) && close(far.height_m, 5.0e30, 1e15));
+        // NaN in gives NaN out.
+        assert!(WGS84.to_geodetic(Ecef::new(f64::NAN, 0.0, 0.0)).lat_deg.is_nan());
     }
 
     #[test]
