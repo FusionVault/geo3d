@@ -31,17 +31,18 @@ and jord return NaN at the Earth's centre, and map_3d is wrong at 100 000 km.
 It has no n-vectors yet (nav-types and jord do) and no attitude or body frames (sguaba and jord do);
 both are on the roadmap.
 
-**Speed.** geo3d is the fastest at geodetic → ECEF, at ENU from a reused `LocalFrame`, at a
-single look-angle call and at the geodesic direct problem, and ties jord for look angles from a
-reused frame. Its geodesic inverse is about 5 % slower than geographiclib-rs's. Two places are
-slower by choice or for now:
+**Speed.** geo3d is the fastest at geodetic → ECEF, at ENU from a reused `LocalFrame` and at the
+geodesic direct problem, and level with the fastest (within 3 %) for look angles, both from a
+reused frame and in a single call. Three places are slower, each for a reason:
 
-- **ECEF → geodetic** takes about 207 ns against 71–117 ns for the others. geo3d iterates Bowring's
+- **ECEF → geodetic** takes about 200 ns against 68–111 ns for the others. geo3d iterates Bowring's
   method to full convergence. A closed form that is both faster and more accurate (nanometres) is
   planned ([#28](https://github.com/FusionVault/geo3d/issues/28)).
-- **Great-circle distance** takes 60 ns against 38–68 ns. geo3d uses the angle between unit vectors,
+- **Great-circle distance** takes 60 ns against 38–67 ns. geo3d uses the angle between unit vectors,
   which is accurate to about a nanometre at every distance; the faster haversine is up to 0.9 m off
   near the antipode.
+- **Geodesic inverse** is about 4 % slower than geographiclib-rs's. geo is faster again because it
+  returns only the distance, not the azimuths.
 
 ## What is compared
 
@@ -84,7 +85,13 @@ cd comparisons
 cargo bench                          # speed; each reported time is for 1 000 calls
 cargo run --release --bin accuracy   # accuracy and robustness, as Markdown tables
 cargo test                           # every adapter gives the same answer on a simple case
+cargo run --release --bin accuracy > results/accuracy.md && python3 charts.py   # redraw the charts
 ```
+
+The charts in this file and in the main README are drawn by [`charts.py`](charts.py) (Python
+standard library only) from [`results/accuracy.md`](results/accuracy.md) and criterion's output,
+which it also saves as [`results/speed.csv`](results/speed.csv). Each comes in a light and a dark
+version.
 
 The inputs come from a fixed-seed xorshift generator, so every run uses the same points.
 
@@ -93,6 +100,11 @@ The inputs come from a fixed-seed xorshift generator, so every run uses the same
 From `cargo run --release --bin accuracy`.
 
 ### Round trip: geodetic → ECEF → geodetic
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="charts/roundtrip-dark.svg">
+  <img alt="Worst round-trip position error up to geostationary height: geo3d 15 nm, map_3d 81 m" src="charts/roundtrip-light.svg">
+</picture>
 
 66 960 points per height: a 1° grid plus latitudes ±89.9°, ±89.99° and ±89.999°. Each crate uses
 its own forward and inverse conversion. No crate failed on any of these points.
@@ -127,6 +139,11 @@ geostationary height.
 
 ### Geodesics, against geographiclib-rs
 
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="charts/surface-distance-dark.svg">
+  <img alt="Worst surface-distance error: geo3d 3.7 nm, great-circle crates 38 km to 51 km" src="charts/surface-distance-light.svg">
+</picture>
+
 100 000 random point pairs (uniform over the sphere) and 10 000 nearly antipodal pairs (the second
 point within 0.5° of the first one's antipode). A failure is `None`, NaN or a panic. geo's
 `Geodesic` calls geographiclib-rs, so it matches it exactly.
@@ -156,16 +173,21 @@ succeeded, but it returned `None` for 7 257 of the 10 000 nearly antipodal pairs
 
 Great-circle (spherical) distance against the ellipsoidal geodesic, all 110 000 pairs:
 
-| Crate | Sphere radius | Max error | Mean error |
-|---|---|---|---|
-| geo3d | 6 371 008.771 m (mean radius) | 0.56 % | 0.13 % |
-| map_3d | 6 371 000 m | 0.56 % | 0.13 % |
-| nav-types | 6 378 137 m (equatorial) | 0.67 % | 0.16 % |
-| sguaba | 6 378 137 m (equatorial) | 0.67 % | 0.16 % |
-| jord | 6 371 000.8 m | 0.56 % | 0.13 % |
-| geo | 6 371 008.8 m | 0.56 % | 0.13 % |
+| Crate | Sphere radius | Max error | Mean error | Max error (km) |
+|---|---|---|---|---|
+| geo3d | 6 371 008.771 m (mean radius) | 0.56 % | 0.13 % | 37.8 |
+| map_3d | 6 371 000 m | 0.56 % | 0.13 % | 37.8 |
+| nav-types | 6 378 137 m (equatorial) | 0.67 % | 0.16 % | 50.7 |
+| sguaba | 6 378 137 m (equatorial) | 0.67 % | 0.16 % | 50.7 |
+| jord | 6 371 000.8 m | 0.56 % | 0.13 % | 37.8 |
+| geo | 6 371 008.8 m | 0.56 % | 0.13 % | 37.8 |
 
 ### Local frames and look angles
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="charts/look-angles-dark.svg">
+  <img alt="Worst look-angle error on hard cases: geo3d 30 nm, jord 13 cm, sguaba 13 cm" src="charts/look-angles-light.svg">
+</picture>
 
 Every crate is compared with geo3d and with map_3d. For targets built from a known pointing, that
 pointing is the reference too, and the last column gives the angle between the two pointings.
@@ -217,6 +239,11 @@ are computed:
 
 ## Robustness
 
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="charts/robustness-dark.svg">
+  <img alt="Edge-case scorecard: geo3d passes 9 of 9 cases" src="charts/robustness-light.svg">
+</picture>
+
 From the same run. "ok" means within 1 mm and 1e-8°. For NaN input, NaN out or a rejection
 (`None`) are both fine; a panic is not.
 
@@ -235,6 +262,11 @@ From the same run. "ok" means within 1 mm and 1e-8°. For NaN input, NaN out or 
 sguaba's panic is an `expect` on its own latitude check, in release builds too.
 
 ## Features and footprint
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="charts/features-dark.svg">
+  <img alt="Feature matrix: geo3d is the only crate with ground strike, 3D volumes, closest approach and datum shifts" src="charts/features-light.svg">
+</picture>
 
 Checked in each crate's source at the versions above. Dependencies are counted with default
 features, from `cargo tree -e normal`.
@@ -258,27 +290,33 @@ features, from `cargo tree -e normal`.
 
 ## Speed
 
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="charts/speed-dark.svg">
+  <img alt="Time per call for 10 operations; geo3d is fastest in 3 and tied in 2" src="charts/speed-light.svg">
+</picture>
+
 Measured on:
 
 - AMD Ryzen 9 5950X (16 cores, 32 threads), Ubuntu 24.04.5 LTS, Linux 7.0.0
 - rustc 1.98.0 (88d9e12ae 2026-08-18), default `x86_64-unknown-linux-gnu` target
 - criterion 0.5.1: 300 ms warm-up, 1 s measurement, 50 samples
 
-Median time per call in nanoseconds (criterion's median for 1 000 calls, divided by 1 000). Runs
-agree within about 7 %. Fastest in bold.
+Median time per call in nanoseconds (criterion's median for 1 000 calls, divided by 1 000), the
+same numbers the chart shows. Runs agree within about 7 %. In bold: the fastest, and anything within
+3 % of it (closer than run-to-run noise).
 
 | Operation | geo3d | map_3d | nav-types | sguaba | jord | geographiclib-rs | geo |
 |---|---|---|---|---|---|---|---|
-| Geodetic → ECEF | **22** | 29 | 37 | 53 | 29 | — | — |
-| ECEF → geodetic, −500 m to 12 km | 206 | 117 | 87 | **71** | 105 | — | — |
-| ECEF → geodetic, 400 km to 35 786 km | 208 | 111 | **89** | 101 | 107 | — | — |
-| ENU, one observer (frame reused) | **28** | 49 | 147 | 59 | 34 | — | — |
-| ENU, single call (frame built each time) | 53 | **49** | 187 | 132 | 90 | — | — |
+| Geodetic → ECEF | **21** | 30 | 36 | 53 | 28 | — | — |
+| ECEF → geodetic, −500 m to 12 km | 200 | 111 | 86 | **68** | 104 | — | — |
+| ECEF → geodetic, 400 km to 35 786 km | 208 | 111 | **89** | 100 | 107 | — | — |
+| ENU, one observer (frame reused) | **28** | 49 | 146 | 59 | 34 | — | — |
+| ENU, single call (frame built each time) | 53 | **49** | 185 | 132 | 90 | — | — |
 | Look angles, one observer (frame reused) | **67** | 94 | — | 98 | **67** | — | — |
-| Look angles, single call | **92** | 93 | — | 171 | 127 | — | — |
-| Geodesic inverse | 873 | — | — | — | — | 830 | **767** (distance only) |
-| Geodesic direct | **275** | — | — | — | — | 316 | 287 (position only) |
-| Great-circle distance | 60 | 47 | 38 | 53 | 68 | — | **38** |
+| Look angles, single call | **91** | **93** | — | 170 | 125 | — | — |
+| Geodesic inverse | 861 | — | — | — | — | 830 | **768 (distance only)** |
+| Geodesic direct | **275** | — | — | — | — | 316 | 286 (position only) |
+| Great-circle distance | 60 | 46 | **38** | 53 | 67 | — | **38** |
 
 Inputs: 1 000 points anywhere on Earth from −500 m to 12 km high (and from 400 km to 35 786 km for
 the second ECEF → geodetic row); a radar near Sydney with 1 000 aircraft within a degree of it, up

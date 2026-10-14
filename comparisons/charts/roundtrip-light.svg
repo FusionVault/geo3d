@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="760" height="368" viewBox="0 0 760 368" font-family="system-ui, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" role="img" aria-label="Worst round-trip position error up to geostationary height: geo3d 15 nm, map_3d 81 m">
+<title>Worst round-trip position error up to geostationary height: geo3d 15 nm, map_3d 81 m</title>
+<rect x="0.5" y="0.5" width="759" height="367" rx="10" fill="#fcfcfb" stroke="#e1e0d9"/>
+<text x="24.0" y="34.0" font-size="16" font-weight="600" fill="#0b0b0b" text-anchor="start">Round trip: latitude/longitude/height → x, y, z → back</text>
+<text x="24.0" y="56.0" font-size="12.5" font-weight="400" fill="#52514e" text-anchor="start">Worst position error over 66 960 points per height, from 11 km underground to geostationary</text>
+<text x="24.0" y="74.0" font-size="12.5" font-weight="400" fill="#52514e" text-anchor="start">orbit. Each crate uses its own conversions. Log scale; shorter is better.</text>
+<line x1="242.1" y1="106" x2="242.1" y2="306" stroke="#e9e8e2"/>
+<text x="242.1" y="322.0" font-size="11" font-weight="400" fill="#6f6d68" text-anchor="middle">1 nm</text>
+<line x1="347.6" y1="106" x2="347.6" y2="306" stroke="#e9e8e2"/>
+<text x="347.6" y="322.0" font-size="11" font-weight="400" fill="#6f6d68" text-anchor="middle">1 µm</text>
+<line x1="453.0" y1="106" x2="453.0" y2="306" stroke="#e9e8e2"/>
+<text x="453.0" y="322.0" font-size="11" font-weight="400" fill="#6f6d68" text-anchor="middle">1 mm</text>
+<line x1="558.5" y1="106" x2="558.5" y2="306" stroke="#e9e8e2"/>
+<text x="558.5" y="322.0" font-size="11" font-weight="400" fill="#6f6d68" text-anchor="middle">1 m</text>
+<line x1="664.0" y1="106" x2="664.0" y2="306" stroke="#e9e8e2"/>
+<text x="664.0" y="322.0" font-size="11" font-weight="400" fill="#6f6d68" text-anchor="middle">1 km</text>
+<line x1="242.08" y1="106" x2="242.08" y2="306" stroke="#c3c2b7"/>
+<text x="24.0" y="125.0" font-size="13" font-weight="600" fill="#0b0b0b" text-anchor="start">geo3d</text>
+<text x="24.0" y="139.0" font-size="11.5" font-weight="400" fill="#6f6d68" text-anchor="start">Bowring, iterated to convergence</text>
+<path d="M242.1,117.0 H279.4 A4.0,4.0 0 0 1 283.4,121.0 V131.0 A4.0,4.0 0 0 1 279.4,135.0 H242.1 Z" fill="#2a78d6"/>
+<text x="290.4" y="130.5" font-size="12.5" font-weight="600" fill="#0b0b0b" text-anchor="start">15 nm</text>
+<text x="24.0" y="165.0" font-size="13" font-weight="400" fill="#0b0b0b" text-anchor="start">nav-types</text>
+<text x="24.0" y="179.0" font-size="11.5" font-weight="400" fill="#6f6d68" text-anchor="start">closed form</text>
+<path d="M242.1,157.0 H279.4 A4.0,4.0 0 0 1 283.4,161.0 V171.0 A4.0,4.0 0 0 1 279.4,175.0 H242.1 Z" fill="#898781"/>
+<text x="290.4" y="170.5" font-size="12.5" font-weight="400" fill="#0b0b0b" text-anchor="start">15 nm</text>
+<text x="24.0" y="205.0" font-size="13" font-weight="400" fill="#0b0b0b" text-anchor="start">jord</text>
+<text x="24.0" y="219.0" font-size="11.5" font-weight="400" fill="#6f6d68" text-anchor="start">closed form</text>
+<path d="M242.1,197.0 H284.3 A4.0,4.0 0 0 1 288.3,201.0 V211.0 A4.0,4.0 0 0 1 284.3,215.0 H242.1 Z" fill="#898781"/>
+<text x="295.3" y="210.5" font-size="12.5" font-weight="400" fill="#0b0b0b" text-anchor="start">21 nm</text>
+<text x="24.0" y="245.0" font-size="13" font-weight="400" fill="#0b0b0b" text-anchor="start">sguaba</text>
+<text x="24.0" y="259.0" font-size="11.5" font-weight="400" fill="#6f6d68" text-anchor="start">closed form</text>
+<path d="M242.1,237.0 H355.6 A4.0,4.0 0 0 1 359.6,241.0 V251.0 A4.0,4.0 0 0 1 355.6,255.0 H242.1 Z" fill="#898781"/>
+<text x="366.6" y="250.5" font-size="12.5" font-weight="400" fill="#0b0b0b" text-anchor="start">2.2 µm</text>
+<text x="24.0" y="285.0" font-size="13" font-weight="400" fill="#0b0b0b" text-anchor="start">map_3d</text>
+<text x="24.0" y="299.0" font-size="11.5" font-weight="400" fill="#6f6d68" text-anchor="start">one fixed correction step</text>
+<path d="M242.1,277.0 H621.6 A4.0,4.0 0 0 1 625.6,281.0 V291.0 A4.0,4.0 0 0 1 621.6,295.0 H242.1 Z" fill="#898781"/>
+<text x="632.6" y="290.5" font-size="12.5" font-weight="400" fill="#0b0b0b" text-anchor="start">81 m</text>
+<text x="24.0" y="346.0" font-size="11.5" font-weight="400" fill="#6f6d68" text-anchor="start">map_3d's error grows with height: about 30 m at GPS altitude and 80 m at geostationary orbit.</text>
+</svg>

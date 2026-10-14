@@ -239,7 +239,8 @@ fn geodesics() {
 
             for ((_, _, st), f) in gc.iter_mut().zip(gc_fns) {
                 match finite(guarded(|| f(a, b).map(|d| [d]))) {
-                    Some([d]) => st.add((d - s).abs() / s, 0.0),
+                    // The second slot (`max_az`) carries the absolute error here, in metres.
+                    Some([d]) => st.add((d - s).abs() / s, (d - s).abs()),
                     None => st.failed += 1,
                 }
             }
@@ -289,13 +290,21 @@ fn geodesics() {
                 format!("{r} m"),
                 format!("{:.2} %", st.max * 100.0),
                 format!("{:.2} %", st.sum / st.n.max(1) as f64 * 100.0),
+                format!("{:.1} km", st.max_az / 1000.0),
                 st.failed.to_string(),
             ]
         })
         .collect();
     table(
         "Great-circle (spherical) distance against the ellipsoidal geodesic, all pairs",
-        &["Library", "Sphere radius", "Max error", "Mean error", "Failures"],
+        &[
+            "Library",
+            "Sphere radius",
+            "Max error",
+            "Mean error",
+            "Max error (km)",
+            "Failures",
+        ],
         &rows,
     );
 }
