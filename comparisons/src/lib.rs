@@ -43,6 +43,27 @@ impl Rng {
     }
 }
 
+/// A star-shaped (so never self-crossing) polygon of `n` vertices around `centre`, about
+/// `size_deg` across, counter-clockwise, with longitudes in `[-180, 180)` as GeoJSON has them.
+pub fn star(rng: &mut Rng, centre: LatLon, size_deg: f64, n: usize) -> Vec<LatLon> {
+    // Bearings spread round the circle with gaps under 180°, so the centre is inside; taken in
+    // decreasing order, which is counter-clockwise.
+    let start = rng.range(0.0, 360.0);
+    let bearings: Vec<f64> = (0..n)
+        .rev()
+        .map(|i| start + 360.0 * (i as f64 + rng.range(0.25, 0.75)) / n as f64)
+        .collect();
+    bearings
+        .iter()
+        .map(|&b| {
+            let r = size_deg / 2.0 * rng.range(0.3, 1.0);
+            let lat = centre[0] + r * b.to_radians().cos();
+            let lon = centre[1] + r * b.to_radians().sin() / centre[0].to_radians().cos();
+            [lat, (lon + 180.0).rem_euclid(360.0) - 180.0]
+        })
+        .collect()
+}
+
 pub mod with_geo3d {
     use super::*;
     use geo3d::{Aer, Ecef, Geodetic, LocalFrame, WGS84};
@@ -104,6 +125,13 @@ pub mod with_geo3d {
     #[inline]
     pub fn great_circle_m(a: LatLon, b: LatLon) -> Option<f64> {
         Some(WGS84.great_circle_distance_m(Geodetic::new(a[0], a[1], 0.0), Geodetic::new(b[0], b[1], 0.0)))
+    }
+
+    /// Signed area in m², counter-clockwise positive.
+    #[inline]
+    pub fn polygon_area_m2(vertices: &[LatLon]) -> Option<f64> {
+        let v: Vec<Geodetic> = vertices.iter().map(|p| Geodetic::new(p[0], p[1], 0.0)).collect();
+        WGS84.polygon_area(&v).map(|p| p.area_m2)
     }
 }
 
@@ -291,7 +319,7 @@ pub mod with_jord {
     use super::*;
     use jord::ellipsoidal::Ellipsoid;
     use jord::local::EnuFrame;
-    use jord::spherical::Sphere;
+    use jord::spherical::{Loop, Sphere};
     use jord::{GeocentricPosition, GeodeticPosition, LatLong, Length, NVector, PositionVector, Surface};
 
     #[inline]
@@ -355,11 +383,22 @@ pub mod with_jord {
         );
         Some(Sphere::EARTH.distance(p, q).as_metres())
     }
+
+    /// Area in m² on the sphere of radius 6 371 000.8 m, from the spherical excess (unsigned).
+    #[inline]
+    pub fn polygon_area_m2(vertices: &[LatLon]) -> Option<f64> {
+        let vs: Vec<NVector> = vertices
+            .iter()
+            .map(|p| NVector::from_lat_long_degrees(p[0], p[1]))
+            .collect();
+        let r = Sphere::EARTH.radius().as_metres();
+        Some(Loop::new(&vs).spherical_excess().as_radians() * r * r)
+    }
 }
 
 pub mod with_geographiclib {
     use super::*;
-    use geographiclib_rs::{DirectGeodesic, Geodesic, InverseGeodesic};
+    use geographiclib_rs::{DirectGeodesic, Geodesic, InverseGeodesic, PolygonArea, Winding};
 
     /// Distance, initial and final azimuth (degrees, wrapped into `[0, 360)` like geo3d's).
     #[inline]
@@ -374,12 +413,26 @@ pub mod with_geographiclib {
         let (lat, lon, azi2): (f64, f64, f64) = Geodesic::wgs84().direct(a[0], a[1], azimuth_deg, distance_m);
         Some([lat, lon, azi2])
     }
+
+    /// Signed area in m², counter-clockwise positive.
+    #[inline]
+    pub fn polygon_area_m2(vertices: &[LatLon]) -> Option<f64> {
+        let g = Geodesic::wgs84();
+        let mut pa = PolygonArea::new(&g, Winding::CounterClockwise);
+        for p in vertices {
+            pa.add_point(p[0], p[1]);
+        }
+        Some(pa.compute(true).1)
+    }
 }
 
 /// geo's `Geodesic` metric space calls geographiclib-rs (distance only, or position only).
 pub mod with_geo {
     use super::*;
-    use geo::{Destination, Distance, Geodesic, Haversine, Point};
+    use geo::{
+        ChamberlainDuquetteArea, Coord, Destination, Distance, Geodesic, GeodesicArea, Haversine, LineString, Point,
+        Polygon,
+    };
 
     #[inline]
     fn point(p: LatLon) -> Point {
@@ -402,6 +455,24 @@ pub mod with_geo {
     pub fn great_circle_m(a: LatLon, b: LatLon) -> Option<f64> {
         Some(Haversine.distance(point(a), point(b)))
     }
+
+    #[inline]
+    fn polygon(vertices: &[LatLon]) -> Polygon {
+        let ring: Vec<Coord> = vertices.iter().map(|p| Coord { x: p[1], y: p[0] }).collect();
+        Polygon::new(LineString::from(ring), vec![])
+    }
+
+    /// `GeodesicArea`, which calls geographiclib-rs: signed m², counter-clockwise positive.
+    #[inline]
+    pub fn geodesic_area_m2(vertices: &[LatLon]) -> Option<f64> {
+        Some(polygon(vertices).geodesic_area_signed())
+    }
+
+    /// `ChamberlainDuquetteArea`, on a sphere of radius 6 378 137 m: signed m².
+    #[inline]
+    pub fn spherical_area_m2(vertices: &[LatLon]) -> Option<f64> {
+        Some(polygon(vertices).chamberlain_duquette_signed_area())
+    }
 }
 
 #[cfg(test)]
@@ -410,6 +481,26 @@ mod tests {
 
     /// Every adapter answers the same simple question the same way, so a unit or argument-order
     /// slip in one of them shows up here rather than as a fake accuracy result.
+    /// A 1° square: the geodesic adapters agree exactly; the spherical ones within 1 %.
+    #[test]
+    fn area_adapters_agree_on_a_square() {
+        let square = [[0.0, 0.0], [0.0, 1.0], [1.0, 1.0], [1.0, 0.0]];
+        let a = with_geo3d::polygon_area_m2(&square).unwrap();
+        assert!((a - 12_308_778_361.469).abs() < 0.01, "{a}");
+        for (name, x) in [
+            ("geographiclib-rs", with_geographiclib::polygon_area_m2(&square)),
+            ("geo geodesic", with_geo::geodesic_area_m2(&square)),
+        ] {
+            assert!((x.unwrap() - a).abs() < 0.01, "{name}: {x:?}");
+        }
+        for (name, x) in [
+            ("geo spherical", with_geo::spherical_area_m2(&square)),
+            ("jord", with_jord::polygon_area_m2(&square)),
+        ] {
+            assert!((x.unwrap() / a - 1.0).abs() < 0.01, "{name}: {x:?}");
+        }
+    }
+
     #[test]
     fn adapters_agree_on_a_simple_case() {
         let obs = [-33.94, 151.18, 21.0];

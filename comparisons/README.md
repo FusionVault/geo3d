@@ -6,24 +6,26 @@ exactly the same inputs. This page shows what we found, and how you can check it
 The crates are [map_3d](https://crates.io/crates/map_3d), [nav-types](https://crates.io/crates/nav-types),
 [sguaba](https://crates.io/crates/sguaba), [jord](https://crates.io/crates/jord) and
 [geographiclib-rs](https://crates.io/crates/geographiclib-rs). We also used
-[geo](https://crates.io/crates/geo) for its distance functions.
+[geo](https://crates.io/crates/geo) for its distance and area functions.
 
 ## 🏁 The short version
 
 - 🎯 **Accuracy.** geo3d was exact everywhere we looked, including far out in space, straight up,
   and on opposite sides of the Earth.
+- 🗺️ **Area.** geo3d's polygon areas match GeographicLib everywhere, even around the poles. Methods
+  that treat the Earth as a ball are 0.7 % to 1.4 % out.
 - 🛡️ **Tricky cases.** geo3d passed all nine. Every other crate that converts positions failed at
   least one.
 - 🧰 **Features.** Only geo3d has ground strikes, 3D zones, collision checks and datum shifts. Others
   are ahead on n-vectors and attitude, which are on our roadmap.
-- ⚡ **Speed.** geo3d was fastest, or level with the fastest, in five of the ten tests. It's slower
+- ⚡ **Speed.** geo3d was fastest, or level with the fastest, in six of the eleven tests. It's slower
   in the other five, and we explain why below.
 
 ## 🎯 Converting x, y, z back to latitude and longitude
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="charts/roundtrip-dark.svg">
-  <img alt="Worst round-trip position error up to geostationary height: geo3d 15 nm, map_3d 81 m" src="charts/roundtrip-light.svg">
+  <img alt="Worst round-trip position error up to geostationary height: geo3d 21 nm, map_3d 81 m" src="charts/roundtrip-light.svg">
 </picture>
 
 We converted 66 960 positions per height to x, y, z and back, from 11 km underground to
@@ -41,12 +43,12 @@ Max latitude error (degrees):
 
 | Height | geo3d | map_3d | nav-types | sguaba | jord |
 |---|---|---|---|---|---|
-| −11 km | 2.1e-14 | 2.1e-14 | 2.1e-14 | 3.6e-14 | 2.1e-14 |
-| 0 km | 2.1e-14 | 2.1e-14 | 2.1e-14 | 4.3e-14 | 2.1e-14 |
+| −11 km | 1.4e-14 | 2.1e-14 | 2.1e-14 | 3.6e-14 | 2.1e-14 |
+| 0 km | 1.4e-14 | 2.1e-14 | 2.1e-14 | 4.3e-14 | 2.1e-14 |
 | 10 km | 2.1e-14 | 2.1e-14 | 2.1e-14 | 4.3e-14 | 2.1e-14 |
-| 400 km | 2.1e-14 | 2.5e-9 | 1.4e-14 | 4.3e-14 | 2.1e-14 |
+| 400 km | 1.4e-14 | 2.5e-9 | 1.4e-14 | 4.3e-14 | 2.1e-14 |
 | 20 200 km | 1.4e-14 | 7.0e-5 | 2.1e-14 | 5.0e-14 | 2.1e-14 |
-| 35 786 km | 1.8e-14 | 1.1e-4 | 1.4e-14 | 4.3e-14 | 2.1e-14 |
+| 35 786 km | 2.1e-14 | 1.1e-4 | 1.4e-14 | 4.3e-14 | 2.1e-14 |
 
 Max longitude error (degrees): 1.4e-14 to 5.7e-14 for every crate at every height.
 
@@ -54,11 +56,11 @@ Max height error (metres):
 
 | Height | geo3d | map_3d | nav-types | sguaba | jord |
 |---|---|---|---|---|---|
-| −11 km | 1.9e-9 | 2.0e-9 | 3.0e-9 | 1.9e-7 | 2.7e-9 |
-| 0 km | 1.9e-9 | 2.1e-9 | 1.4e-9 | 1.2e-9 | 2.1e-9 |
-| 10 km | 1.9e-9 | 2.2e-9 | 2.5e-9 | 2.6e-9 | 3.6e-9 |
-| 400 km | 2.8e-9 | 2.2e-9 | 2.7e-9 | 3.2e-7 | 3.2e-9 |
-| 20 200 km | 1.1e-8 | 6.3e-6 | 1.1e-8 | 1.2e-6 | 1.1e-8 |
+| −11 km | 2.1e-9 | 2.0e-9 | 3.0e-9 | 1.9e-7 | 2.7e-9 |
+| 0 km | 2.1e-9 | 2.1e-9 | 1.4e-9 | 1.2e-9 | 2.1e-9 |
+| 10 km | 2.1e-9 | 2.2e-9 | 2.5e-9 | 2.6e-9 | 3.6e-9 |
+| 400 km | 2.0e-9 | 2.2e-9 | 2.7e-9 | 3.2e-7 | 3.2e-9 |
+| 20 200 km | 7.5e-9 | 6.3e-6 | 1.1e-8 | 1.2e-6 | 1.1e-8 |
 | 35 786 km | 1.5e-8 | 1.4e-5 | 1.5e-8 | 2.2e-6 | 1.5e-8 |
 
 map_3d's inverse takes one fixed correction step. It is exact near the surface, but at GPS-orbit
@@ -124,11 +126,57 @@ Great-circle (spherical) distance against the ellipsoidal geodesic, all 110 000 
 
 </details>
 
+## 🗺️ Polygon area
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="charts/polygon-area-dark.svg">
+  <img alt="Polygon area scorecard: geo3d matches GeographicLib on all four kinds of polygon; spherical methods are 0.7 % to 1.4 % off, and geo's fails across the antimeridian and around the poles" src="charts/polygon-area-light.svg">
+</picture>
+
+We measured 4 000 polygons: small fields, regions up to 100 km across, shapes that cross the
+antimeridian, and rings around both poles. geo3d matched GeographicLib on all of them, to 0.03 m²
+at worst. geo's geodesic area calls geographiclib-rs, so it matches too.
+
+The spherical methods in geo and jord treat the Earth as a ball, so they are about 0.7 % out, and
+jord up to 1.4 % on small fields. geo's spherical method also treats longitude as a plain number
+line. Across ±180° that makes some answers thousands of times too big, and around a pole it
+returns zero.
+
+<details>
+<summary>📋 Show the numbers</summary>
+
+1 000 polygons of each kind, with 3 to 32 vertices, going counter-clockwise. Longitudes are in
+[−180°, 180°), as GeoJSON has them. The rings around a pole have their vertices on one parallel. Up
+to 100 km across, the path of an edge barely matters, so a geodesic, a great circle and geo's
+straight line on an equal-area map all enclose almost the same area. The errors are in the size of
+the area, whatever its sign.
+
+| Crate | Polygons | Failures | Max error (m²) | Max error (share of the area) |
+|---|---|---|---|---|
+| geo3d | fields, 10 m to 1 km across | 0 | 0 | 0 % |
+| geo3d | regions, 1 km to 100 km across | 0 | 0 | 0 % |
+| geo3d | across the antimeridian, 10 km to 100 km | 0 | 0 | 0 % |
+| geo3d | around a pole, 60° to 89.9° | 0 | 3.1e-2 | 6.2e-9 % |
+| geo (`GeodesicArea`) | fields, 10 m to 1 km across | 0 | 0 | 0 % |
+| geo (`GeodesicArea`) | regions, 1 km to 100 km across | 0 | 0 | 0 % |
+| geo (`GeodesicArea`) | across the antimeridian, 10 km to 100 km | 0 | 0 | 0 % |
+| geo (`GeodesicArea`) | around a pole, 60° to 89.9° | 0 | 0 | 0 % |
+| geo (`ChamberlainDuquetteArea`, sphere) | fields, 10 m to 1 km across | 0 | 3.0e3 | 0.67 % |
+| geo (`ChamberlainDuquetteArea`, sphere) | regions, 1 km to 100 km across | 0 | 1.8e7 | 0.71 % |
+| geo (`ChamberlainDuquetteArea`, sphere) | across the antimeridian, 10 km to 100 km | 0 | 3.0e12 | 9.4e5 % |
+| geo (`ChamberlainDuquetteArea`, sphere) | around a pole, 60° to 89.9° | 0 | 3.4e13 | 100.00 % |
+| jord (spherical excess, sphere) | fields, 10 m to 1 km across | 0 | 2.7e3 | 1.35 % |
+| jord (spherical excess, sphere) | regions, 1 km to 100 km across | 0 | 2.1e7 | 0.74 % |
+| jord (spherical excess, sphere) | across the antimeridian, 10 km to 100 km | 0 | 2.1e7 | 0.73 % |
+| jord (spherical excess, sphere) | around a pole, 60° to 89.9° | 0 | 2.5e11 | 0.89 % |
+
+</details>
+
 ## 📡 Look angles
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="charts/look-angles-dark.svg">
-  <img alt="Worst look-angle error on hard cases: geo3d 30 nm, jord 13 cm, sguaba 13 cm" src="charts/look-angles-light.svg">
+  <img alt="Worst look-angle error on hard cases: geo3d 25 nm, jord 13 cm, sguaba 13 cm" src="charts/look-angles-light.svg">
 </picture>
 
 Every crate agrees on ordinary targets, to well under a micrometre. The differences appear when you
@@ -159,20 +207,20 @@ and 1 000 km.
 
 | Crate | ENU vs geo3d (µm) | ENU vs map_3d (µm) | Look angles vs the built pointing (µm) | Pointing error (°) |
 |---|---|---|---|---|
-| geo3d | 0 | 0.002 | 0.006 | 3.3e-11 |
-| map_3d | 0.002 | 0 | 0.006 | 3.7e-11 |
+| geo3d | 0 | 0.002 | 0.004 | 1.7e-11 |
+| map_3d | 0.002 | 0 | 0.004 | 1.7e-11 |
 | nav-types | 0.001 | 0.002 | — | — |
 | sguaba | 0.001 | 0.002 | 1 745 | 1.0e-7 |
-| jord | 0.004 | 0.004 | 0.006 | 3.4e-11 |
+| jord | 0.004 | 0.004 | 0.004 | 2.6e-11 |
 
 2 000 pairs straight up and 1e-7° to 1e-3° off it, from 1 km to geostationary range.
 
 | Crate | ENU vs geo3d (µm) | ENU vs map_3d (µm) | Look angles vs the built pointing (µm) | Pointing error (°) |
 |---|---|---|---|---|
-| geo3d | 0 | 0.015 | 0.030 | 2.1e-10 |
-| map_3d | 0.015 | 0 | 0.030 | 2.1e-10 |
-| nav-types | 0.015 | 0.017 | — | — |
-| sguaba | 0.027 | 0.030 | 129 550 | 4.8e-7 |
+| geo3d | 0 | 0.015 | 0.025 | 1.6e-10 |
+| map_3d | 0.015 | 0 | 0.025 | 1.6e-10 |
+| nav-types | 0.015 | 0.019 | — | — |
+| sguaba | 0.026 | 0.028 | 129 550 | 4.8e-7 |
 | jord | 0.023 | 0.023 | 129 550 | 4.8e-7 |
 
 ENU agrees everywhere to a few hundredths of a micrometre. The look angles differ in how the angles
@@ -252,6 +300,7 @@ features, from `cargo tree -e normal`.
 | Datum shift (Helmert) | yes | no | no | no | no | — | no |
 | Inertial frame | TEME (GMST rotation) | GMST rotation (`ecef2eci`) | no | no | no | — | no |
 | Geodesics | Karney | haversine only | haversine only | haversine only | great circles on a sphere | Karney | Karney (geographiclib-rs) |
+| Polygon area | geodesic | no | no | no | on a sphere | geodesic | geodesic (geographiclib-rs); on a sphere |
 | n-vector | no | no | yes | no | yes | no | no |
 | Attitude (yaw, pitch, roll) | no | no | no | yes | yes | no | no |
 
@@ -261,11 +310,11 @@ features, from `cargo tree -e normal`.
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="charts/speed-dark.svg">
-  <img alt="Time per call for 10 operations; geo3d is fastest in 3 and tied in 2" src="charts/speed-light.svg">
+  <img alt="Time per call for 11 operations; geo3d is fastest in 3 and tied in 3" src="charts/speed-light.svg">
 </picture>
 
-geo3d is the fastest, or level with the fastest, in five of the ten tests. It's slower in the other
-five, and we know why:
+geo3d is the fastest, or level with the fastest, in six of the eleven tests. It's slower in the
+other five, and we know why:
 
 - **x, y, z back to latitude and longitude** (two tests): about 10 % behind map_3d and jord, and
   further behind nav-types and sguaba. geo3d spends that time on a final check that makes it the
@@ -300,10 +349,12 @@ Median nanoseconds per call. In bold: the fastest, and anything within 3 % of it
 | Geodesic inverse | 861 | — | — | — | — | 830 | **768 (distance only)** |
 | Geodesic direct | **275** | — | — | — | — | 316 | 286 (position only) |
 | Great-circle distance | 60 | 46 | **38** | 53 | 67 | — | **38** |
+| Polygon area, 10 vertices | **4 985** | — | — | — | — | **4 960** | 5 174 |
 
 Inputs: 1 000 points anywhere on Earth from −500 m to 12 km high (and from 400 km to 35 786 km for
 the second ECEF → geodetic row); a radar near Sydney with 1 000 aircraft within a degree of it, up
-to 12 km high; 1 000 random point pairs; 1 000 lines on random bearings up to 20 000 km long.
+to 12 km high; 1 000 random point pairs; 1 000 lines on random bearings up to 20 000 km long; 1 000
+polygons of 10 vertices, 1 km to 100 km across.
 geo3d and geographiclib-rs return the distance and both azimuths (inverse) or the position and
 final azimuth (direct). geo's `Geodesic` calls geographiclib-rs and returns less. The great-circle
 distances use different sphere radii; see [Distance along the ground](#-distance-along-the-ground).
@@ -323,7 +374,7 @@ distances use different sphere radii; see [Distance along the ground](#-distance
 | [sguaba](https://crates.io/crates/sguaba) | 0.10.7 | typed coordinate frames and rigid-body transforms, with uom units |
 | [jord](https://crates.io/crates/jord) | 0.20.0 | n-vector positions, local frames, spherical navigation |
 | [geographiclib-rs](https://crates.io/crates/geographiclib-rs) | 0.2.7 | Karney's geodesics; the reference for geodesics |
-| [geo](https://crates.io/crates/geo) | 0.33.1 | 2D geometry; only its `Haversine` and `Geodesic` distances are used |
+| [geo](https://crates.io/crates/geo) | 0.33.1 | 2D geometry; only its `Haversine` and `Geodesic` distances and its `GeodesicArea` and `ChamberlainDuquetteArea` areas are used |
 
 All crates get the same inputs, in degrees and metres. Each one is called through a small adapter
 in [`src/lib.rs`](src/lib.rs) that does what its users would write: degrees to radians for

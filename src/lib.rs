@@ -7,6 +7,7 @@
 //! - 📍 Where is that plane, seen from here?
 //! - 📡 Which way should the antenna point?
 //! - 📏 How far apart are they?
+//! - 🗺️ How big is that field?
 //! - 👀 Can they see each other?
 //! - 💥 Are they going to collide?
 //!
@@ -77,6 +78,7 @@
 //! | measure a straight line through space | [`distance3d_m`] |
 //! | measure distance along the ground | [`Ellipsoid::geodesic_inverse`] (exact), [`Ellipsoid::great_circle_distance_m`] (quick) |
 //! | travel a distance on a bearing | [`Ellipsoid::geodesic_direct`], [`Ellipsoid::great_circle_destination`] |
+//! | measure the area of a field or region | [`Ellipsoid::polygon_area`] |
 //! | check if something is inside a zone | [`Sphere`], [`Cone`], [`Cylinder`], [`AltitudeBand`] (all are [`Volume`]s) |
 //! | check if two objects will collide | [`Track::conflict`], [`closest_approach`] |
 //! | turn a velocity into heading, speed and climb | [`Course`], [`LocalFrame::course_of_velocity`] |
@@ -124,7 +126,7 @@ mod volume;
 pub use datum::Helmert7;
 pub use ellipsoid::{Ellipsoid, AIRY_1830, BESSEL_1841, CLARKE_1866, GRS80, INTERNATIONAL_1924, PZ90, WGS72, WGS84};
 pub use frame::LocalFrame;
-pub use geodesic::Geodesic;
+pub use geodesic::{Geodesic, PolygonArea};
 pub use local::{Aer, Enu, Ned};
 pub use motion::{closest_approach, Course, Cpa, Track};
 pub use position::{Ecef, Eci, Geodetic};

@@ -172,6 +172,28 @@ fn bench(c: &mut Criterion) {
     run(&mut g, "jord", &pairs, |(a, b)| with_jord::great_circle_m(a, b));
     run(&mut g, "geo", &pairs, |(a, b)| with_geo::great_circle_m(a, b));
     g.finish();
+
+    // Polygons of 10 vertices, 1 km to 100 km across, anywhere. Only the geodesic (ellipsoidal)
+    // areas: the spherical ones are faster but off by about 0.7 % (see the accuracy run).
+    let mut rng = Rng::new(11);
+    let polygons: Vec<Vec<LatLon>> = (0..N)
+        .map(|_| {
+            let centre = [rng.range(-70.0, 70.0), rng.range(-175.0, 175.0)];
+            let size = 10f64.powf(rng.range(-2.0, 0.0));
+            star(&mut rng, centre, size, 10)
+        })
+        .collect();
+    let polygons: Vec<&[LatLon]> = polygons.iter().map(Vec::as_slice).collect();
+    let mut g = group(c, "polygon_area");
+    run(&mut g, "geo3d", &polygons, with_geo3d::polygon_area_m2);
+    run(
+        &mut g,
+        "geographiclib-rs",
+        &polygons,
+        with_geographiclib::polygon_area_m2,
+    );
+    run(&mut g, "geo", &polygons, with_geo::geodesic_area_m2);
+    g.finish();
 }
 
 criterion_group! {

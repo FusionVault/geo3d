@@ -4,36 +4,36 @@
 <text x="24.0" y="34.0" font-size="16" font-weight="600" fill="#ffffff" text-anchor="start">Round trip: latitude/longitude/height → x, y, z → back</text>
 <text x="24.0" y="56.0" font-size="12.5" font-weight="400" fill="#c3c2b7" text-anchor="start">Worst position error over 66 960 points per height, from 11 km underground to geostationary</text>
 <text x="24.0" y="74.0" font-size="12.5" font-weight="400" fill="#c3c2b7" text-anchor="start">orbit. Each crate uses its own conversions. Log scale; shorter is better.</text>
-<line x1="242.1" y1="106" x2="242.1" y2="306" stroke="#2c2c2a"/>
-<text x="242.1" y="322.0" font-size="11" font-weight="400" fill="#9b9a93" text-anchor="middle">1 nm</text>
-<line x1="347.6" y1="106" x2="347.6" y2="306" stroke="#2c2c2a"/>
-<text x="347.6" y="322.0" font-size="11" font-weight="400" fill="#9b9a93" text-anchor="middle">1 µm</text>
-<line x1="453.0" y1="106" x2="453.0" y2="306" stroke="#2c2c2a"/>
-<text x="453.0" y="322.0" font-size="11" font-weight="400" fill="#9b9a93" text-anchor="middle">1 mm</text>
-<line x1="558.5" y1="106" x2="558.5" y2="306" stroke="#2c2c2a"/>
-<text x="558.5" y="322.0" font-size="11" font-weight="400" fill="#9b9a93" text-anchor="middle">1 m</text>
+<line x1="274.3" y1="106" x2="274.3" y2="306" stroke="#2c2c2a"/>
+<text x="274.3" y="322.0" font-size="11" font-weight="400" fill="#9b9a93" text-anchor="middle">1 nm</text>
+<line x1="371.7" y1="106" x2="371.7" y2="306" stroke="#2c2c2a"/>
+<text x="371.7" y="322.0" font-size="11" font-weight="400" fill="#9b9a93" text-anchor="middle">1 µm</text>
+<line x1="469.1" y1="106" x2="469.1" y2="306" stroke="#2c2c2a"/>
+<text x="469.1" y="322.0" font-size="11" font-weight="400" fill="#9b9a93" text-anchor="middle">1 mm</text>
+<line x1="566.6" y1="106" x2="566.6" y2="306" stroke="#2c2c2a"/>
+<text x="566.6" y="322.0" font-size="11" font-weight="400" fill="#9b9a93" text-anchor="middle">1 m</text>
 <line x1="664.0" y1="106" x2="664.0" y2="306" stroke="#2c2c2a"/>
 <text x="664.0" y="322.0" font-size="11" font-weight="400" fill="#9b9a93" text-anchor="middle">1 km</text>
-<line x1="242.08" y1="106" x2="242.08" y2="306" stroke="#383835"/>
+<line x1="274.28000000000003" y1="106" x2="274.28000000000003" y2="306" stroke="#383835"/>
 <text x="24.0" y="125.0" font-size="13" font-weight="600" fill="#ffffff" text-anchor="start">geo3d</text>
-<text x="24.0" y="139.0" font-size="11.5" font-weight="400" fill="#9b9a93" text-anchor="start">Bowring, iterated to convergence</text>
-<path d="M242.1,117.0 H284.3 A4.0,4.0 0 0 1 288.3,121.0 V131.0 A4.0,4.0 0 0 1 284.3,135.0 H242.1 Z" fill="#3987e5"/>
-<text x="295.3" y="130.5" font-size="12.5" font-weight="600" fill="#ffffff" text-anchor="start">21 nm</text>
+<text x="24.0" y="139.0" font-size="11.5" font-weight="400" fill="#9b9a93" text-anchor="start">closed form, then one correction step</text>
+<path d="M274.3,117.0 H313.0 A4.0,4.0 0 0 1 317.0,121.0 V131.0 A4.0,4.0 0 0 1 313.0,135.0 H274.3 Z" fill="#3987e5"/>
+<text x="324.0" y="130.5" font-size="12.5" font-weight="600" fill="#ffffff" text-anchor="start">21 nm</text>
 <text x="24.0" y="165.0" font-size="13" font-weight="400" fill="#ffffff" text-anchor="start">nav-types</text>
 <text x="24.0" y="179.0" font-size="11.5" font-weight="400" fill="#9b9a93" text-anchor="start">closed form</text>
-<path d="M242.1,157.0 H279.4 A4.0,4.0 0 0 1 283.4,161.0 V171.0 A4.0,4.0 0 0 1 279.4,175.0 H242.1 Z" fill="#75746d"/>
-<text x="290.4" y="170.5" font-size="12.5" font-weight="400" fill="#ffffff" text-anchor="start">15 nm</text>
+<path d="M274.3,157.0 H308.5 A4.0,4.0 0 0 1 312.5,161.0 V171.0 A4.0,4.0 0 0 1 308.5,175.0 H274.3 Z" fill="#75746d"/>
+<text x="319.5" y="170.5" font-size="12.5" font-weight="400" fill="#ffffff" text-anchor="start">15 nm</text>
 <text x="24.0" y="205.0" font-size="13" font-weight="400" fill="#ffffff" text-anchor="start">jord</text>
 <text x="24.0" y="219.0" font-size="11.5" font-weight="400" fill="#9b9a93" text-anchor="start">closed form</text>
-<path d="M242.1,197.0 H284.3 A4.0,4.0 0 0 1 288.3,201.0 V211.0 A4.0,4.0 0 0 1 284.3,215.0 H242.1 Z" fill="#75746d"/>
-<text x="295.3" y="210.5" font-size="12.5" font-weight="400" fill="#ffffff" text-anchor="start">21 nm</text>
+<path d="M274.3,197.0 H313.0 A4.0,4.0 0 0 1 317.0,201.0 V211.0 A4.0,4.0 0 0 1 313.0,215.0 H274.3 Z" fill="#75746d"/>
+<text x="324.0" y="210.5" font-size="12.5" font-weight="400" fill="#ffffff" text-anchor="start">21 nm</text>
 <text x="24.0" y="245.0" font-size="13" font-weight="400" fill="#ffffff" text-anchor="start">sguaba</text>
 <text x="24.0" y="259.0" font-size="11.5" font-weight="400" fill="#9b9a93" text-anchor="start">closed form</text>
-<path d="M242.1,237.0 H355.6 A4.0,4.0 0 0 1 359.6,241.0 V251.0 A4.0,4.0 0 0 1 355.6,255.0 H242.1 Z" fill="#75746d"/>
-<text x="366.6" y="250.5" font-size="12.5" font-weight="400" fill="#ffffff" text-anchor="start">2.2 µm</text>
+<path d="M274.3,237.0 H378.8 A4.0,4.0 0 0 1 382.8,241.0 V251.0 A4.0,4.0 0 0 1 378.8,255.0 H274.3 Z" fill="#75746d"/>
+<text x="389.8" y="250.5" font-size="12.5" font-weight="400" fill="#ffffff" text-anchor="start">2.2 µm</text>
 <text x="24.0" y="285.0" font-size="13" font-weight="400" fill="#ffffff" text-anchor="start">map_3d</text>
 <text x="24.0" y="299.0" font-size="11.5" font-weight="400" fill="#9b9a93" text-anchor="start">one fixed correction step</text>
-<path d="M242.1,277.0 H621.6 A4.0,4.0 0 0 1 625.6,281.0 V291.0 A4.0,4.0 0 0 1 621.6,295.0 H242.1 Z" fill="#75746d"/>
-<text x="632.6" y="290.5" font-size="12.5" font-weight="400" fill="#ffffff" text-anchor="start">81 m</text>
+<path d="M274.3,277.0 H624.5 A4.0,4.0 0 0 1 628.5,281.0 V291.0 A4.0,4.0 0 0 1 624.5,295.0 H274.3 Z" fill="#75746d"/>
+<text x="635.5" y="290.5" font-size="12.5" font-weight="400" fill="#ffffff" text-anchor="start">81 m</text>
 <text x="24.0" y="346.0" font-size="11.5" font-weight="400" fill="#9b9a93" text-anchor="start">map_3d's error grows with height: about 30 m at GPS altitude and 80 m at geostationary orbit.</text>
 </svg>

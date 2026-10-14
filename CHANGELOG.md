@@ -5,6 +5,10 @@ release is tagged `vX.Y.Z`.
 
 ## Unreleased
 
+- 🗺️ **Polygon area** ([#4](https://github.com/FusionVault/geo3d/issues/4)).
+  `Ellipsoid::polygon_area` gives the area and perimeter of a polygon whose edges are geodesics. It
+  is a port of GeographicLib's method, and matches it to within 0.1 m² on any polygon, including
+  ones around a pole or across the antimeridian. Counter-clockwise polygons have a positive area.
 - 🛰️ **Satellite time** ([#8](https://github.com/FusionVault/geo3d/issues/8)):
   - `eci::gmst_from_unix_with_dut1` corrects UTC to UT1, which removes up to 400 m of error.
   - `eci::era_rad` and `eci::era_from_unix_with_dut1` give the Earth Rotation Angle (IAU 2000).

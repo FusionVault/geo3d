@@ -265,7 +265,8 @@ def speed_panels(name, title, subtitle, panels, footnote, alt, width=860):
                 s.text(px, cy + 4, crate, 11.5, "ink" if ours else "ink2", 600 if ours else 400)
                 x = bx0 + v / vmax * (bx1 - bx0)
                 s.bar(bx0, cy - bar_h / 2, x, bar_h, "accent" if ours else "other")
-                s.text(x + 6, cy + 4, f"{v:.0f} ns", 11.5, "ink", 600 if ours else 400)
+                s.text(x + 6, cy + 4, f"{v / 1000:.2f} µs" if v >= 1000 else f"{v:.0f} ns", 11.5, "ink",
+                       600 if ours else 400)
             s.add(f'<line x1="{bx0}" y1="{py + 30}" x2="{bx0}" y2="{py + 30 + row_h * len(rows)}" '
                   f'stroke="{s.t["axis"]}"/>')
         rows_n = math.ceil(len(panels) / cols)
@@ -297,7 +298,7 @@ def main():
         "roundtrip", "Round trip: latitude/longitude/height → x, y, z → back",
         ["Worst position error over 66 960 points per height, from 11 km underground to geostationary",
          "orbit. Each crate uses its own conversions. Log scale; shorter is better."],
-        [("geo3d", "Bowring, iterated to convergence", worst["geo3d"], True),
+        [("geo3d", "closed form, then one correction step", worst["geo3d"], True),
          ("nav-types", "closed form", worst["nav-types"], False),
          ("jord", "closed form", worst["jord"], False),
          ("sguaba", "closed form", worst["sguaba"], False),
@@ -385,12 +386,45 @@ def main():
         "Edge-case scorecard: geo3d passes " + str(sum(1 for _, c in rows if c[0] and c[0][0])) + " of "
         + str(len(rows)) + " cases", "status")
 
-    # 5. Features (from comparisons/README.md, "Features and footprint").
+    # 5. Polygon areas: a scorecard, since geo3d and geo's GeodesicArea match the reference exactly.
+    area = find(tabs, "Area of a polygon")
+    area_cols = [("geo3d", "geo3d"), ("geo (`GeodesicArea`)", "geo, geodesic"),
+                 ("geo (`ChamberlainDuquetteArea`, sphere)", "geo, sphere"), ("jord (spherical excess, sphere)", "jord, sphere")]
+    area_rows = {"fields": "Fields, 10 m to 1 km", "regions": "Regions, 1 km to 100 km",
+                 "across": "Across the antimeridian", "around": "Around a pole"}
+
+    def area_cell(r):
+        m2, share = num(r["Max error (m²)"]), r["Max error (share of the area)"]
+        if int(r["Failures"]) > 0:
+            return (False, "fails")
+        if m2 <= 0.1:
+            return (True, "matches")
+        pc = num(share.replace("%", "").strip())
+        return (False, "wrong" if pc > 10 else f"{pc:.1f} % off")
+
+    rows = []
+    for key, label in area_rows.items():
+        cells = [area_cell(next(r for r in area if r["Library"] == lib and r["Polygons"].startswith(key)))
+                 for lib, _ in area_cols]
+        rows.append((label, cells))
+    worst_g3 = max(num(r["Max error (m²)"]) for r in area if r["Library"] == "geo3d")
+    scorecard(
+        "polygon-area", "Polygon area: does it match GeographicLib?",
+        ["1 000 polygons of each kind, 3 to 32 vertices. A pass is within 0.1 m² of GeographicLib, the",
+         "reference. Spherical methods treat the Earth as a ball, so they are 0.7 % to 1.4 % off."],
+        [c for _, c in area_cols], rows,
+        [f"geo3d's largest difference from GeographicLib is {worst_g3:g} m², around a pole. geo's geodesic area calls",
+         "geographiclib-rs. \"wrong\": more than 10 % off; geo's sphere method can't cross ±180° or circle a pole."],
+        "Polygon area scorecard: geo3d matches GeographicLib on all four kinds of polygon; spherical methods are "
+        "0.7 % to 1.4 % off, and geo's fails across the antimeridian and around the poles", "status", width=820)
+
+    # 6. Features (from comparisons/README.md, "Features and footprint").
     Y, N = "✓", None
     feats = [
         ("No dependencies", [Y, Y, N, N, Y, N, N]),
         ("No unsafe code (forbidden)", [Y, N, N, N, Y, N, N]),
         ("Ellipsoidal geodesics", [Y, N, N, N, N, Y, Y]),
+        ("Geodesic polygon area", [Y, N, N, N, "sphere", Y, Y]),
         ("Look angles", [Y, Y, N, Y, Y, N, N]),
         ("Ray–ellipsoid ground strike", [Y, N, N, N, N, N, N]),
         ("3D volumes", [Y, N, N, N, N, N, N]),
@@ -409,7 +443,7 @@ def main():
         "Feature matrix: geo3d is the only crate with ground strike, 3D volumes, closest approach and datum shifts",
         "text")
 
-    # 6. Speed: small multiples, one panel per operation, fixed crate order.
+    # 7. Speed: small multiples, one panel per operation, fixed crate order.
     sp = speed_rows()
     ops = [
         ("geodetic_to_ecef", "Latitude/longitude/height → x, y, z"),
@@ -422,6 +456,7 @@ def main():
         ("geodesic_inverse", "Geodesic inverse"),
         ("great_circle_distance", "Great-circle distance"),
         ("ecef_to_geodetic_orbit", "x, y, z → lat/lon/height, orbit heights"),
+        ("polygon_area", "Polygon area, 10 vertices"),
     ]
     panels = []
     for op, ptitle in ops:
@@ -433,7 +468,7 @@ def main():
     best = [(min(v for _, v, _ in rows), next(v for _, v, ours in rows if ours)) for _, rows in panels]
     def runner_up(rows):
         return sorted(v for _, v, _ in rows)[1] if len(rows) > 1 else float("inf")
-    fastest = sum(1 for (lo, ours), (_, rows) in zip(best, panels) if ours == lo)
+    outright = sum(1 for (lo, ours), (_, rows) in zip(best, panels) if ours == lo and runner_up(rows) > ours * 1.03)
     tied = sum(1 for (lo, ours), (_, rows) in zip(best, panels)
                if (ours == lo and runner_up(rows) <= ours * 1.03) or lo < ours <= lo * 1.03)
     speed_panels(
@@ -443,7 +478,7 @@ def main():
         panels,
         ["* geo's Geodesic returns only the distance (inverse) or the position (direct); geo3d and geographiclib-rs",
          "also return the azimuths."],
-        f"Time per call for {len(panels)} operations; geo3d is fastest in {fastest - tied} and tied in {tied}")
+        f"Time per call for {len(panels)} operations; geo3d is fastest in {outright} and tied in {tied}")
 
 
 if __name__ == "__main__":
