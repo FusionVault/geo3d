@@ -1,13 +1,18 @@
-//! Topocentric (local tangent-plane) frames.
+//! [`LocalFrame`]: east, north and up from an observer.
 
 use crate::ellipsoid::{Ellipsoid, WGS84};
-use crate::types::{Aer, Ecef, Enu, Geodetic, Ned, Vec3};
+use crate::local::{Aer, Enu, Ned};
+use crate::motion::Course;
+use crate::position::{Ecef, Geodetic};
+use crate::vector::Vec3;
 
-/// An **East-North-Up** frame anchored at a reference point on an ellipsoid.
+/// A local **East-North-Up** frame anchored at an observer — a flat "map" tangent to the Earth at
+/// that point, with up along the ellipsoid normal.
 ///
-/// Building a frame computes the origin's ECEF position and the rotation once; every conversion
-/// through it is then a subtraction and three dot products, which is what makes "many targets
-/// against one observer" loops cheap. Up is the ellipsoid normal at the origin.
+/// Use it to find where things are relative to the observer ([`enu_of`](Self::enu_of),
+/// [`ned_of`](Self::ned_of)), where to point ([`look_angles`](Self::look_angles)), and back again.
+/// Building a frame does the trigonometry once; each conversion after that is a few multiplies, so
+/// keep one per observer when converting many targets.
 ///
 /// ```
 /// use geo3d::{Geodetic, LocalFrame};
@@ -52,13 +57,13 @@ impl LocalFrame {
         }
     }
 
-    /// The reference point.
+    /// The observer's position.
     #[inline]
     pub const fn origin(&self) -> Geodetic {
         self.origin
     }
 
-    /// The reference point in ECEF.
+    /// The observer's position in ECEF.
     #[inline]
     pub const fn origin_ecef(&self) -> Ecef {
         self.origin_ecef
@@ -76,59 +81,114 @@ impl LocalFrame {
         (self.e, self.n, self.u)
     }
 
-    /// Rotate an ECEF **direction** into the frame (no translation).
-    #[inline]
-    pub fn dir_to_enu(&self, d: Vec3) -> Enu {
-        Enu::new(self.e.dot(d), self.n.dot(d), self.u.dot(d))
-    }
+    // ── Positions in, local offsets out (and back) ──────────────────────────────────────────────
 
-    /// Rotate a frame **direction** into ECEF (no translation).
-    #[inline]
-    pub fn dir_to_ecef(&self, d: Enu) -> Vec3 {
-        self.e * d.east + self.n * d.north + self.u * d.up
-    }
-
-    /// An ECEF position as an ENU offset from the origin.
-    #[inline]
-    pub fn to_enu(&self, p: Ecef) -> Enu {
-        self.dir_to_enu(p.vec() - self.origin_ecef.vec())
-    }
-
-    /// An ENU offset from the origin as an ECEF position.
-    #[inline]
-    pub fn to_ecef(&self, v: Enu) -> Ecef {
-        self.origin_ecef.offset(self.dir_to_ecef(v))
-    }
-
-    /// A geodetic position as an ENU offset from the origin.
+    /// Where a position is relative to the observer, as an ENU offset.
+    #[doc(alias = "geodetic2enu")]
     #[inline]
     pub fn enu_of(&self, g: Geodetic) -> Enu {
         self.to_enu(self.ellipsoid.to_ecef(g))
     }
 
-    /// An ENU offset from the origin as a geodetic position.
+    /// Where a position is relative to the observer, as a NED offset.
+    #[doc(alias = "geodetic2ned")]
+    #[inline]
+    pub fn ned_of(&self, g: Geodetic) -> Ned {
+        self.enu_of(g).to_ned()
+    }
+
+    /// The position at an ENU offset from the observer.
+    #[doc(alias = "enu2geodetic")]
     #[inline]
     pub fn geodetic_of(&self, v: Enu) -> Geodetic {
         self.ellipsoid.to_geodetic(self.to_ecef(v))
     }
 
-    /// Azimuth, elevation and range from the origin to `target` — the look angles to point at it.
+    /// The position at a NED offset from the observer.
+    #[doc(alias = "ned2geodetic")]
+    #[inline]
+    pub fn geodetic_of_ned(&self, v: Ned) -> Geodetic {
+        self.geodetic_of(v.to_enu())
+    }
+
+    /// An ECEF position as an ENU offset from the observer.
+    #[doc(alias = "ecef2enu")]
+    #[inline]
+    pub fn to_enu(&self, p: Ecef) -> Enu {
+        self.dir_to_enu(p.vec() - self.origin_ecef.vec())
+    }
+
+    /// An ECEF position as a NED offset from the observer.
+    #[doc(alias = "ecef2ned")]
+    #[inline]
+    pub fn to_ned(&self, p: Ecef) -> Ned {
+        self.to_enu(p).to_ned()
+    }
+
+    /// The ECEF position at an ENU offset from the observer.
+    #[doc(alias = "enu2ecef")]
+    #[inline]
+    pub fn to_ecef(&self, v: Enu) -> Ecef {
+        self.origin_ecef.offset(self.dir_to_ecef(v))
+    }
+
+    /// The ECEF position at a NED offset from the observer.
+    #[doc(alias = "ned2ecef")]
+    #[inline]
+    pub fn ecef_of_ned(&self, v: Ned) -> Ecef {
+        self.to_ecef(v.to_enu())
+    }
+
+    /// Rotate an ECEF **direction** (or velocity) into the frame — rotation only, no translation.
+    #[inline]
+    pub fn dir_to_enu(&self, d: Vec3) -> Enu {
+        Enu::new(self.e.dot(d), self.n.dot(d), self.u.dot(d))
+    }
+
+    /// Rotate a frame **direction** (or velocity) into ECEF — rotation only, no translation.
+    #[inline]
+    pub fn dir_to_ecef(&self, d: Enu) -> Vec3 {
+        self.e * d.east + self.n * d.north + self.u * d.up
+    }
+
+    // ── Pointing ────────────────────────────────────────────────────────────────────────────────
+
+    /// Where to point to see `target`: azimuth, elevation and range from the observer.
+    #[doc(alias = "geodetic2aer")]
+    #[doc(alias = "azimuth")]
+    #[doc(alias = "elevation")]
     #[inline]
     pub fn look_angles(&self, target: Geodetic) -> Aer {
         self.enu_of(target).to_aer()
     }
 
-    /// The position reached by pointing `aer` from the origin — the inverse of [`look_angles`](Self::look_angles).
+    /// Where to point to see an ECEF `target`.
+    #[doc(alias = "ecef2aer")]
+    #[inline]
+    pub fn look_angles_ecef(&self, target: Ecef) -> Aer {
+        self.to_enu(target).to_aer()
+    }
+
+    /// The position a pointing reaches — the inverse of [`look_angles`](Self::look_angles).
+    #[doc(alias = "aer2geodetic")]
     #[inline]
     pub fn destination(&self, aer: Aer) -> Geodetic {
         self.geodetic_of(aer.to_enu())
     }
 
-    /// Where the line of sight from the origin along `azimuth_deg` (0 = north, clockwise) and
-    /// `elevation_deg` (0 = horizon, positive up) first meets the ellipsoid surface: the nearest
-    /// point ahead. An origin on the surface strikes itself, whichever way it points; one below the
-    /// surface, a line pointing into space, or a non-finite height or angle gives `None`. The
-    /// line-of-sight ground point of a camera, antenna or bearing.
+    /// The ECEF position a pointing reaches.
+    #[doc(alias = "aer2ecef")]
+    #[inline]
+    pub fn ecef_of_aer(&self, aer: Aer) -> Ecef {
+        self.to_ecef(aer.to_enu())
+    }
+
+    /// Where the line of sight from the observer along `azimuth_deg` (0 = north, clockwise) and
+    /// `elevation_deg` (0 = horizon, negative = down) first meets the ground (the ellipsoid
+    /// surface) — the ground point of a camera, antenna or bearing.
+    ///
+    /// Returns `None` if the line points into space, the observer is below the surface, or a
+    /// height or angle is not finite. An observer exactly on the surface strikes its own position.
     pub fn ground_strike(&self, azimuth_deg: f64, elevation_deg: f64) -> Option<Geodetic> {
         let h = self.origin.height_m;
         if !(h.is_finite() && azimuth_deg.is_finite() && elevation_deg.is_finite()) || h < 0.0 {
@@ -148,15 +208,26 @@ impl LocalFrame {
         // height so small that the origin is at the surface, whose nearest point is its own.
         Some(self.ellipsoid.to_geodetic(self.origin_ecef.offset(dir * t1.max(0.0))))
     }
+
+    // ── Velocities ──────────────────────────────────────────────────────────────────────────────
+
+    /// An ECEF velocity (m/s) at the observer as course over ground, ground speed and climb rate.
+    #[inline]
+    pub fn course_of_velocity(&self, velocity: Vec3) -> Course {
+        Course::from_enu_velocity(self.dir_to_enu(velocity))
+    }
+
+    /// A course over ground at the observer as an ECEF velocity (m/s).
+    #[inline]
+    pub fn velocity_of_course(&self, course: Course) -> Vec3 {
+        self.dir_to_ecef(course.to_enu_velocity())
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    fn close(a: f64, b: f64, tol: f64) -> bool {
-        (a - b).abs() <= tol
-    }
+    use crate::test_util::close;
 
     #[test]
     fn axes_are_orthonormal_and_right_handed() {
@@ -197,13 +268,22 @@ mod tests {
     }
 
     #[test]
+    fn ned_side_mirrors_enu() {
+        let f = LocalFrame::new(Geodetic::new(10.0, 20.0, 0.0));
+        let g = Geodetic::new(10.01, 20.0, 500.0);
+        let ned = f.ned_of(g);
+        assert!(ned.north > 0.0 && close(ned.east, 0.0, 1.0) && close(ned.down, -500.0, 1.0));
+        assert_eq!(f.to_ned(WGS84.to_ecef(g)), ned);
+        let back = f.geodetic_of_ned(ned);
+        assert!(close(back.lat_deg, g.lat_deg, 1e-9) && close(back.height_m, g.height_m, 1e-4));
+        assert!(close(f.ecef_of_ned(ned).distance_to(WGS84.to_ecef(g)), 0.0, 1e-6));
+    }
+
+    #[test]
     fn look_angles_and_destination_invert() {
         let f = LocalFrame::new(Geodetic::new(0.0, 0.0, 0.0));
-        let (az, ..) = {
-            let a = f.look_angles(Geodetic::new(0.1, 0.0, 0.0));
-            (a.azimuth_deg, a.elevation_deg, a.range_m)
-        };
-        assert!(az < 1.0 || az > 359.0);
+        let az = f.look_angles(Geodetic::new(0.1, 0.0, 0.0)).azimuth_deg;
+        assert!(!(1.0..=359.0).contains(&az));
         let a = f.look_angles(Geodetic::new(0.0, 0.1, 0.0));
         assert!(close(a.azimuth_deg, 90.0, 1.0));
         let a = f.look_angles(Geodetic::new(0.0, 0.0, 5000.0));
@@ -216,6 +296,16 @@ mod tests {
                     && close(back.height_m, g.height_m, 1e-4)
             );
         }
+    }
+
+    #[test]
+    fn ecef_targets_and_pointings() {
+        let f = LocalFrame::new(Geodetic::new(0.0, 0.0, 0.0));
+        let target = Geodetic::new(0.0, 0.0, 5000.0);
+        let aer = f.look_angles_ecef(WGS84.to_ecef(target));
+        assert!(close(aer.elevation_deg, 90.0, 1e-9) && close(aer.range_m, 5000.0, 1e-6));
+        let p = f.ecef_of_aer(aer);
+        assert!(close(p.distance_to(WGS84.to_ecef(target)), 0.0, 1e-6));
     }
 
     #[test]
@@ -254,143 +344,6 @@ mod tests {
         let f = LocalFrame::new(Geodetic::new(0.0, 0.0, 100.0));
         assert!(f.ground_strike(f64::NAN, -90.0).is_none() && f.ground_strike(0.0, f64::INFINITY).is_none());
     }
-}
-
-// ── 0.2 additions: NED side, ECEF targets, courses ───────────────────────────────────────────────────
-
-impl LocalFrame {
-    /// A geodetic position as a NED offset from the origin.
-    #[inline]
-    pub fn ned_of(&self, g: Geodetic) -> Ned {
-        self.enu_of(g).to_ned()
-    }
-
-    /// An ECEF position as a NED offset from the origin.
-    #[inline]
-    pub fn to_ned(&self, p: Ecef) -> Ned {
-        self.to_enu(p).to_ned()
-    }
-
-    /// A NED offset from the origin as an ECEF position.
-    #[inline]
-    pub fn ecef_of_ned(&self, v: Ned) -> Ecef {
-        self.to_ecef(v.to_enu())
-    }
-
-    /// A NED offset from the origin as a geodetic position.
-    #[inline]
-    pub fn geodetic_of_ned(&self, v: Ned) -> Geodetic {
-        self.geodetic_of(v.to_enu())
-    }
-
-    /// Look angles from the origin to an ECEF target.
-    #[inline]
-    pub fn look_angles_ecef(&self, target: Ecef) -> Aer {
-        self.to_enu(target).to_aer()
-    }
-
-    /// The ECEF position reached by pointing `aer` from the origin.
-    #[inline]
-    pub fn ecef_of_aer(&self, aer: Aer) -> Ecef {
-        self.to_ecef(aer.to_enu())
-    }
-
-    /// An ECEF velocity (m/s) at the origin as course over ground, ground speed and climb rate.
-    #[inline]
-    pub fn course_of_velocity(&self, velocity: Vec3) -> Course {
-        Course::from_enu_velocity(self.dir_to_enu(velocity))
-    }
-
-    /// A course (over ground) at the origin as an ECEF velocity vector (m/s).
-    #[inline]
-    pub fn velocity_of_course(&self, course: Course) -> Vec3 {
-        self.dir_to_ecef(course.to_enu_velocity())
-    }
-}
-
-/// Motion over the ground at a position: course (true track) in degrees from north clockwise,
-/// ground speed and climb rate in m/s — the shape ADS-B, AIS and GNSS receivers report.
-#[derive(Clone, Copy, Debug, Default, PartialEq)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-pub struct Course {
-    /// Track over ground, degrees clockwise from north in `[0, 360)`.
-    pub course_deg: f64,
-    /// Horizontal speed, m/s.
-    pub ground_speed_mps: f64,
-    /// Vertical rate, m/s, positive up.
-    pub climb_mps: f64,
-}
-
-impl Course {
-    /// Build from a course in degrees and speeds in m/s.
-    #[inline]
-    pub const fn new(course_deg: f64, ground_speed_mps: f64, climb_mps: f64) -> Self {
-        Course {
-            course_deg,
-            ground_speed_mps,
-            climb_mps,
-        }
-    }
-
-    /// From a velocity expressed in a local ENU frame (m/s). Zero horizontal speed gives course 0.
-    pub fn from_enu_velocity(v: Enu) -> Course {
-        let ground = (v.east * v.east + v.north * v.north).sqrt();
-        let course_deg = if ground == 0.0 {
-            0.0
-        } else {
-            v.east.atan2(v.north).to_degrees().rem_euclid(360.0)
-        };
-        Course {
-            course_deg,
-            ground_speed_mps: ground,
-            climb_mps: v.up,
-        }
-    }
-
-    /// As a velocity in a local ENU frame (m/s).
-    #[inline]
-    pub fn to_enu_velocity(self) -> Enu {
-        let (s, c) = self.course_deg.to_radians().sin_cos();
-        Enu::new(s * self.ground_speed_mps, c * self.ground_speed_mps, self.climb_mps)
-    }
-
-    /// Total speed through the air/water/space, m/s.
-    #[inline]
-    pub fn speed_mps(self) -> f64 {
-        (self.ground_speed_mps * self.ground_speed_mps + self.climb_mps * self.climb_mps).sqrt()
-    }
-}
-
-#[cfg(test)]
-mod tests_0_2 {
-    use super::*;
-    use crate::WGS84;
-
-    fn close(a: f64, b: f64, tol: f64) -> bool {
-        (a - b).abs() <= tol
-    }
-
-    #[test]
-    fn ned_side_mirrors_enu() {
-        let f = LocalFrame::new(Geodetic::new(10.0, 20.0, 0.0));
-        let g = Geodetic::new(10.01, 20.0, 500.0);
-        let ned = f.ned_of(g);
-        assert!(ned.north > 0.0 && close(ned.east, 0.0, 1.0) && close(ned.down, -500.0, 1.0));
-        assert_eq!(f.to_ned(WGS84.to_ecef(g)), ned);
-        let back = f.geodetic_of_ned(ned);
-        assert!(close(back.lat_deg, g.lat_deg, 1e-9) && close(back.height_m, g.height_m, 1e-4));
-        assert!(close(f.ecef_of_ned(ned).distance_to(WGS84.to_ecef(g)), 0.0, 1e-6));
-    }
-
-    #[test]
-    fn ecef_targets_and_pointings() {
-        let f = LocalFrame::new(Geodetic::new(0.0, 0.0, 0.0));
-        let target = Geodetic::new(0.0, 0.0, 5000.0);
-        let aer = f.look_angles_ecef(WGS84.to_ecef(target));
-        assert!(close(aer.elevation_deg, 90.0, 1e-9) && close(aer.range_m, 5000.0, 1e-6));
-        let p = f.ecef_of_aer(aer);
-        assert!(close(p.distance_to(WGS84.to_ecef(target)), 0.0, 1e-6));
-    }
 
     #[test]
     fn course_and_velocity_round_trip() {
@@ -408,13 +361,5 @@ mod tests_0_2 {
         let n = f.velocity_of_course(Course::new(0.0, 10.0, 0.0));
         let (_, north, _) = f.axes();
         assert!(close(n.angle_to(north), 0.0, 1e-12));
-        // Hovering: course 0 by convention.
-        assert_eq!(
-            Course::from_enu_velocity(Enu::new(0.0, 0.0, 2.0)),
-            Course::new(0.0, 0.0, 2.0)
-        );
-        assert!(close(Course::new(270.0, 3.0, 4.0).speed_mps(), 5.0, 1e-12));
-        let w = Course::new(270.0, 10.0, 0.0).to_enu_velocity();
-        assert!(close(w.east, -10.0, 1e-9) && close(w.north, 0.0, 1e-9));
     }
 }

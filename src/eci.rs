@@ -1,9 +1,9 @@
-//! Earth-Centred Inertial ↔ Earth-Fixed, via Greenwich mean sidereal time.
+//! Earth-fixed ([`Ecef`]) ↔ inertial ([`Eci`]): undo the Earth's spin for satellite work.
 //!
-//! ECI here is the frame that shares Earth's axis with ECEF but does not rotate with it: ECEF rotated
-//! about Z by the sidereal angle. This is the simple model (IAU 1982 GMST, no precession, nutation
-//! or polar motion) — the one satellite-tracking and ground-station code commonly uses for
-//! ephemeris-to-ground work at the tens-of-metres level.
+//! ECI shares the Earth's axis with ECEF but does not turn with it, so it is ECEF rotated about
+//! `z` by the sidereal angle (how far the Earth has turned). The angle comes from Greenwich mean
+//! sidereal time (IAU 1982). This is the simple model ground-station code commonly uses, good to
+//! tens of metres; it ignores precession, nutation and polar motion.
 //!
 //! ```
 //! use geo3d::{eci, Ecef};
@@ -16,7 +16,7 @@
 //! assert!((back.x - p.x).abs() < 1e-6);
 //! ```
 
-use crate::types::{Ecef, Eci};
+use crate::position::{Ecef, Eci};
 
 /// Julian date (UT1 ≈ UTC) from Unix seconds since 1970-01-01T00:00:00Z.
 #[inline]
@@ -37,14 +37,14 @@ pub fn gmst_from_unix(unix_seconds: f64) -> f64 {
     gmst_rad(julian_date(unix_seconds))
 }
 
-/// Earth-fixed → inertial: rotate about Z by `gmst_rad`.
+/// Earth-fixed → inertial at a sidereal angle (radians): rotate about `z` by `gmst_rad`.
 #[inline]
 pub fn ecef_to_eci(p: Ecef, gmst_rad: f64) -> Eci {
     let (s, c) = gmst_rad.sin_cos();
     Eci::new(p.x * c - p.y * s, p.x * s + p.y * c, p.z)
 }
 
-/// Inertial → Earth-fixed: rotate about Z by `-gmst_rad`.
+/// Inertial → Earth-fixed at a sidereal angle (radians): rotate about `z` by `-gmst_rad`.
 #[inline]
 pub fn eci_to_ecef(p: Eci, gmst_rad: f64) -> Ecef {
     let (s, c) = gmst_rad.sin_cos();
@@ -70,10 +70,7 @@ impl Ecef {
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    fn close(a: f64, b: f64, tol: f64) -> bool {
-        (a - b).abs() <= tol
-    }
+    use crate::test_util::close;
 
     #[test]
     fn julian_dates() {
