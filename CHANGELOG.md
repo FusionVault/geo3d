@@ -5,6 +5,14 @@ release is tagged `vX.Y.Z`.
 
 ## Unreleased
 
+- 📡 **Refraction for radar and radio** ([#9](https://github.com/FusionVault/geo3d/issues/9)).
+  `horizon_distance_with_refraction_m` and `line_of_sight_with_refraction` take an
+  effective-Earth-radius factor `k`. `STANDARD_REFRACTION_K` is 4/3, the ITU-R standard for radio,
+  which reaches about 15 % further than a straight line.
+- 🐛 **`line_of_sight` between points exactly on the surface.** It used to say two points on the
+  ground could see each other at any distance, even when the line between them went hundreds of
+  metres underground. Now it checks the deepest point of the line, so they only see each other if
+  the line stays above the surface.
 - 🛡️ **An edge-case test suite** ([#10](https://github.com/FusionVault/geo3d/issues/10)). It runs
   every public conversion at the exact poles, the antimeridian, the Earth's centre, 100 000 km up,
   deep underground, exact antipodes, and NaN or infinite input. It found and fixed two bugs:
