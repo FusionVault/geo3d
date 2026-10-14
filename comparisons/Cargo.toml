@@ -19,8 +19,8 @@ sguaba = "=0.10.7"
 uom = "=0.38.0"
 jord = "=0.20.0"
 geographiclib-rs = "=0.2.7"
-# Only its `Haversine` and `Geodesic` distances and `GeodesicArea` and `ChamberlainDuquetteArea` areas
-# are used; the default features add nothing to them.
+# Only its `Haversine` and `Geodesic` distances, `GeodesicArea` and `ChamberlainDuquetteArea` areas and
+# `CrossTrackDistance` are used; the default features add nothing to them.
 geo = { version = "=0.33.1", default-features = false }
 
 [dev-dependencies]

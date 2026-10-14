@@ -418,7 +418,24 @@ def main():
         "Polygon area scorecard: geo3d matches GeographicLib on all four kinds of polygon; spherical methods are "
         "0.7 % to 1.4 % off, and geo's fails across the antimeridian and around the poles", "status", width=820)
 
-    # 6. Features (from comparisons/README.md, "Features and footprint").
+    # 6. Cross-track distance on short paths, against the exact answer.
+    xt = {r["Library"]: num(r["Max error (m)"]) for r in find(tabs, "Distance from a point to a path")
+          if r["Paths"].startswith("short")}
+    textbook = next(k for k in xt if k.startswith("textbook"))
+    bars_log(
+        "cross-track", "How far off the path? Short paths",
+        ["Worst error over 10 000 paths from 1 µm to 1 km long, with a point 1 m to 1 km to the side,",
+         "against the exact answer. Log scale; shorter is better."],
+        [("geo3d", "n-vectors, from the latitude/longitude differences", xt["geo3d"], True),
+         ("geo", "haversine and bearings", xt["geo"], False),
+         ("jord", "n-vectors, S2's stable cross product", xt["jord"], False),
+         ("textbook", "n-vectors, n1 × n2 (NavLab, nvector)", xt[textbook], False)],
+        ["On paths of 1 km to 1 000 km, geo3d, geo and jord are all within a few nanometres; the textbook",
+         "formula is within 2 µm. It loses precision as the path gets shorter."],
+        f"Worst cross-track error on short paths: geo3d {metres(xt['geo3d'])}, geo {metres(xt['geo'])}, "
+        f"jord {metres(xt['jord'])}, textbook n-vector formula {metres(xt[textbook])}")
+
+    # 7. Features (from comparisons/README.md, "Features and footprint").
     Y, N = "✓", None
     feats = [
         ("No dependencies", [Y, Y, N, N, Y, N, N]),
@@ -433,19 +450,19 @@ def main():
         ("Datum shift (Helmert)", [Y, N, N, N, N, N, N]),
         ("Inertial frame (TEME)", [Y, Y, N, N, N, N, N]),
         ("Any ellipsoid", [Y, "10 named", N, N, Y, Y, N]),
-        ("n-vector", ["planned", N, Y, N, Y, N, N]),
+        ("Path tools (cross-track, crossings, centre)", [Y, N, N, N, Y, N, "some"]),
         ("Attitude (yaw, pitch, roll)", ["planned", N, N, Y, Y, N, N]),
     ]
     scorecard(
         "features", "Features",
-        ["What each crate offers, checked in its source at the versions compared. \"planned\" items are on",
-         "geo3d's roadmap (issues #7 and #13)."],
+        ["What each crate offers, checked in its source at the versions compared. \"planned\" is on geo3d's",
+         "roadmap (issue #13)."],
         CRATES, feats, ["— : not offered."],
         "Feature matrix: geo3d is the only crate with ground strike, 3D volumes, closest approach, covariance and "
         "datum shifts",
         "text")
 
-    # 7. Speed: small multiples, one panel per operation, fixed crate order.
+    # 8. Speed: small multiples, one panel per operation, fixed crate order.
     sp = speed_rows()
     ops = [
         ("geodetic_to_ecef", "Latitude/longitude/height → x, y, z"),

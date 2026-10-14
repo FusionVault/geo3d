@@ -133,6 +133,14 @@ pub mod with_geo3d {
         let v: Vec<Geodetic> = vertices.iter().map(|p| Geodetic::new(p[0], p[1], 0.0)).collect();
         WGS84.polygon_area(&v).map(|p| p.area_m2)
     }
+
+    /// Distance from `p` to the great circle through `a` and `b`, metres, on a sphere of radius
+    /// 6 371 008.771 m (unsigned, for comparison).
+    #[inline]
+    pub fn cross_track_m(a: LatLon, b: LatLon, p: LatLon) -> Option<f64> {
+        let g = |x: LatLon| Geodetic::new(x[0], x[1], 0.0);
+        Some(WGS84.cross_track_distance_m(g(a), g(b), g(p)).abs())
+    }
 }
 
 pub mod with_map_3d {
@@ -319,7 +327,7 @@ pub mod with_jord {
     use super::*;
     use jord::ellipsoidal::Ellipsoid;
     use jord::local::EnuFrame;
-    use jord::spherical::{Loop, Sphere};
+    use jord::spherical::{GreatCircle, Loop, Sphere};
     use jord::{GeocentricPosition, GeodeticPosition, LatLong, Length, NVector, PositionVector, Surface};
 
     #[inline]
@@ -384,6 +392,19 @@ pub mod with_jord {
         Some(Sphere::EARTH.distance(p, q).as_metres())
     }
 
+    /// Distance from `p` to the great circle through `a` and `b`, metres, on the sphere of radius
+    /// 6 371 000.8 m (unsigned, for comparison).
+    #[inline]
+    pub fn cross_track_m(a: LatLon, b: LatLon, p: LatLon) -> Option<f64> {
+        let n = |x: LatLon| NVector::from_lat_long_degrees(x[0], x[1]);
+        Some(
+            Sphere::EARTH
+                .cross_track_distance(n(p), GreatCircle::new(n(a), n(b)))
+                .as_metres()
+                .abs(),
+        )
+    }
+
     /// Area in m² on the sphere of radius 6 371 000.8 m, from the spherical excess (unsigned).
     #[inline]
     pub fn polygon_area_m2(vertices: &[LatLon]) -> Option<f64> {
@@ -430,8 +451,8 @@ pub mod with_geographiclib {
 pub mod with_geo {
     use super::*;
     use geo::{
-        ChamberlainDuquetteArea, Coord, Destination, Distance, Geodesic, GeodesicArea, Haversine, LineString, Point,
-        Polygon,
+        ChamberlainDuquetteArea, Coord, CrossTrackDistance, Destination, Distance, Geodesic, GeodesicArea, Haversine,
+        LineString, Point, Polygon,
     };
 
     #[inline]
@@ -460,6 +481,12 @@ pub mod with_geo {
     fn polygon(vertices: &[LatLon]) -> Polygon {
         let ring: Vec<Coord> = vertices.iter().map(|p| Coord { x: p[1], y: p[0] }).collect();
         Polygon::new(LineString::from(ring), vec![])
+    }
+
+    /// `CrossTrackDistance` (haversine bearings), radius 6 371 008.8 m; unsigned.
+    #[inline]
+    pub fn cross_track_m(a: LatLon, b: LatLon, p: LatLon) -> Option<f64> {
+        Some(point(p).cross_track_distance(&point(a), &point(b)))
     }
 
     /// `GeodesicArea`, which calls geographiclib-rs: signed m², counter-clockwise positive.

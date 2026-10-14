@@ -52,6 +52,7 @@ fn main() {
     round_trip();
     geodesics();
     areas();
+    cross_track();
     look_angles();
     robustness();
 }
@@ -403,7 +404,85 @@ fn areas() {
     );
 }
 
-// ── 4. Local frames and look angles, compared pairwise ──────────────────────────────────────────
+// ── 4. Cross-track distance on short and long paths ──────────────────────────────────────────────
+
+/// The textbook n-vector cross-track distance (NavLab's example 10, and nvector's): the path's
+/// normal is unit(n1 × n2). Written out here for reference; geo3d used it before #7.
+fn textbook_cross_track_m(a: LatLon, b: LatLon, p: LatLon) -> Option<f64> {
+    let n = |x: LatLon| {
+        let (la, lo) = (x[0].to_radians(), x[1].to_radians());
+        [la.cos() * lo.cos(), la.cos() * lo.sin(), la.sin()]
+    };
+    let (u, v, w) = (n(a), n(b), n(p));
+    let c = [
+        u[1] * v[2] - u[2] * v[1],
+        u[2] * v[0] - u[0] * v[2],
+        u[0] * v[1] - u[1] * v[0],
+    ];
+    let len = (c[0] * c[0] + c[1] * c[1] + c[2] * c[2]).sqrt();
+    let s = -(c[0] * w[0] + c[1] * w[1] + c[2] * w[2]) / len;
+    Some((6_371_008.771_415_059 * s.asin()).abs())
+}
+
+type CrossTrack = fn(LatLon, LatLon, LatLon) -> Option<f64>;
+
+fn cross_track() {
+    // Paths due north along a meridian, so the exact answer is known: a point Δλ east of the
+    // meridian at latitude φ is R·asin(cos φ·sin Δλ) from it, on a sphere of radius R.
+    let mut rng = Rng::new(0x2f6b_8c1d_3a5e_9071);
+    let libs: [(&str, f64, CrossTrack); 4] = [
+        ("geo3d", 6_371_008.771_415_059, with_geo3d::cross_track_m),
+        ("jord", 6_371_000.8, with_jord::cross_track_m),
+        ("geo", 6_371_008.8, with_geo::cross_track_m),
+        (
+            "textbook n1 × n2 (NavLab)",
+            6_371_008.771_415_059,
+            textbook_cross_track_m,
+        ),
+    ];
+    let mut rows = Vec::new();
+    for (set, lo, hi) in [
+        ("short paths, 1 µm to 1 km", -6.0, 3.0),
+        ("long paths, 1 km to 1 000 km", 3.0, 6.0),
+    ] {
+        let cases: Vec<(LatLon, LatLon, LatLon, f64)> = (0..10_000)
+            .map(|_| {
+                let (lat, lon) = (rng.range(-70.0, 70.0), rng.range(-180.0, 180.0));
+                let len = 10f64.powf(rng.range(lo, hi)) / 6_371e3; // radians of latitude
+                let off = 10f64.powf(rng.range(0.0, 3.0)) / 6_371e3; // 1 m to 1 km to the side
+                let plat = lat + (len / 2.0).to_degrees();
+                let dlon = (off / plat.to_radians().cos()).to_degrees();
+                let angle = (plat.to_radians().cos() * dlon.to_radians().sin()).asin();
+                ([lat, lon], [lat + len.to_degrees(), lon], [plat, lon + dlon], angle)
+            })
+            .collect();
+        for (name, radius, f) in libs {
+            let (mut failed, mut worst) = (0, 0.0f64);
+            for &(a, b, p, angle) in &cases {
+                match finite(guarded(|| f(a, b, p).map(|d| [d]))) {
+                    Some([d]) => worst = worst.max((d - radius * angle).abs()),
+                    None => failed += 1,
+                }
+            }
+            rows.push(vec![
+                name.to_string(),
+                set.to_string(),
+                cases.len().to_string(),
+                failed.to_string(),
+                sci(worst),
+            ]);
+        }
+    }
+    println!("## Cross-track distance, against the exact answer\n");
+    println!("Paths due north along a meridian at random places, and a point 1 m to 1 km to one side of the middle. On a sphere the exact distance is R·asin(cos φ·sin Δλ); each crate is checked on its own sphere radius. A failure is `None`, NaN or a panic.\n");
+    table(
+        "Distance from a point to a path",
+        &["Library", "Paths", "Count", "Failures", "Max error (m)"],
+        &rows,
+    );
+}
+
+// ── 5. Local frames and look angles, compared pairwise ──────────────────────────────────────────
 
 fn aer_to_enu(a: AerV) -> EnuV {
     let (sa, ca) = a[0].to_radians().sin_cos();
@@ -542,7 +621,7 @@ fn look_angles() {
     }
 }
 
-// ── 5. Robustness: edge cases ───────────────────────────────────────────────────────────────────
+// ── 6. Robustness: edge cases ───────────────────────────────────────────────────────────────────
 
 /// What came back, in a word: ok, NaN, rejected, panic, or wrong (with the value).
 fn verdict<const N: usize>(

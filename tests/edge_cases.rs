@@ -131,6 +131,18 @@ fn distances_and_bearings_between_every_pair() {
                 "{a:?} -> {b:?}: landed at {end:?}"
             );
             assert!(finite(WGS84.interpolate(a, b, 0.5)), "{a:?} -> {b:?}");
+            // Path tools: finite, except for a "path" whose ends are the same or opposite points.
+            let c = Geodetic::new(-33.87, 151.21, 0.0);
+            let half = core::f64::consts::PI * WGS84.mean_radius();
+            let path = WGS84.great_circle_distance_m(a, b);
+            if path > 1e-3 && path < half - 1e-3 {
+                assert!(WGS84.cross_track_distance_m(a, b, c).is_finite(), "{a:?} -> {b:?}");
+                assert!(WGS84.along_track_distance_m(a, b, c).is_finite(), "{a:?} -> {b:?}");
+            }
+            if path < half - 1e-3 {
+                assert!(finite(WGS84.great_circle_interpolate(a, b, 0.3)), "{a:?} -> {b:?}");
+            }
+            assert!(WGS84.mean_position(&[a, b, c]).is_some_and(finite), "{a:?} -> {b:?}");
             // A triangle through both, which may wrap a pole or cross the antimeridian.
             let p = WGS84.polygon_area(&[a, b, Geodetic::new(-33.87, 151.21, 0.0)]).unwrap();
             assert!(

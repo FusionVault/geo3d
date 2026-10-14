@@ -6,7 +6,7 @@ exactly the same inputs. This page shows what we found, and how you can check it
 The crates are [map_3d](https://crates.io/crates/map_3d), [nav-types](https://crates.io/crates/nav-types),
 [sguaba](https://crates.io/crates/sguaba), [jord](https://crates.io/crates/jord) and
 [geographiclib-rs](https://crates.io/crates/geographiclib-rs). We also used
-[geo](https://crates.io/crates/geo) for its distance and area functions.
+[geo](https://crates.io/crates/geo) for its distance, area and route functions.
 
 ## 🏁 The short version
 
@@ -17,7 +17,7 @@ The crates are [map_3d](https://crates.io/crates/map_3d), [nav-types](https://cr
 - 🛡️ **Tricky cases.** geo3d passed all nine. Every other crate that converts positions failed at
   least one.
 - 🧰 **Features.** Only geo3d has ground strikes, 3D zones, collision checks, uncertainty and datum
-  shifts. Others are ahead on n-vectors and attitude, which are on our roadmap.
+  shifts. Others are ahead on attitude, which is on our roadmap.
 - ⚡ **Speed.** geo3d was fastest, or level with the fastest, in six of the eleven tests. It's slower
   in the other five, and we explain why below.
 
@@ -172,6 +172,42 @@ the area, whatever its sign.
 
 </details>
 
+## 🧭 How far off the path?
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="charts/cross-track-dark.svg">
+  <img alt="Worst cross-track error on short paths: geo3d 1.6 nm, geo 3.4 nm, jord 73 µm, textbook n-vector formula 2.0 km" src="charts/cross-track-light.svg">
+</picture>
+
+We asked each crate how far a point is from a path, on 20 000 paths from a micrometre to 1 000 km
+long. The paths run due north along a meridian, so the exact answer is known.
+
+geo3d stays within 2 nanometres everywhere. It builds each path from the latitude and longitude
+differences, so short paths lose nothing. geo is within 4 nm. jord is within about 5 nm on long
+paths, but drifts to 73 µm on short ones. The textbook n-vector formula, used in the NavLab examples and
+by geo3d itself before #7, can be kilometres out when the path is only micrometres long.
+
+<details>
+<summary>📋 Show the numbers</summary>
+
+10 000 paths of each kind, at random places between 70° S and 70° N, with a point 1 m to 1 km to
+one side of the middle. Each crate is checked on its own sphere radius. "Textbook" is the formula
+written out in [`src/bin/accuracy.rs`](src/bin/accuracy.rs): the path's normal is the unit vector
+of n1 × n2.
+
+| Crate | Paths | Failures | Max error (m) |
+|---|---|---|---|
+| geo3d | short paths, 1 µm to 1 km | 0 | 1.6e-9 |
+| jord | short paths, 1 µm to 1 km | 0 | 7.3e-5 |
+| geo | short paths, 1 µm to 1 km | 0 | 3.4e-9 |
+| textbook n1 × n2 (NavLab) | short paths, 1 µm to 1 km | 0 | 2.0e3 |
+| geo3d | long paths, 1 km to 1 000 km | 0 | 1.6e-9 |
+| jord | long paths, 1 km to 1 000 km | 0 | 5.1e-9 |
+| geo | long paths, 1 km to 1 000 km | 0 | 3.8e-9 |
+| textbook n1 × n2 (NavLab) | long paths, 1 km to 1 000 km | 0 | 1.8e-6 |
+
+</details>
+
 ## 📡 Look angles
 
 <picture>
@@ -303,7 +339,8 @@ features, from `cargo tree -e normal`.
 | Geodesics | Karney | haversine only | haversine only | haversine only | great circles on a sphere | Karney | Karney (geographiclib-rs) |
 | Polygon area | geodesic | no | no | no | on a sphere | geodesic | geodesic (geographiclib-rs); on a sphere |
 | Covariance through frames | ECEF, ENU, NED, AER, geodetic | no | no | no | no | — | no |
-| n-vector | no | no | yes | no | yes | no | no |
+| n-vector type | no (used inside) | no | yes | no | yes | no | no |
+| Route tools | cross-track, along-track, crossings, centre, interpolation | no | no | no | yes | no | cross-track, interpolation |
 | Attitude (yaw, pitch, roll) | no | no | no | yes | yes | no | no |
 
 </details>
@@ -376,7 +413,7 @@ distances use different sphere radii; see [Distance along the ground](#-distance
 | [sguaba](https://crates.io/crates/sguaba) | 0.10.7 | typed coordinate frames and rigid-body transforms, with uom units |
 | [jord](https://crates.io/crates/jord) | 0.20.0 | n-vector positions, local frames, spherical navigation |
 | [geographiclib-rs](https://crates.io/crates/geographiclib-rs) | 0.2.7 | Karney's geodesics; the reference for geodesics |
-| [geo](https://crates.io/crates/geo) | 0.33.1 | 2D geometry; only its `Haversine` and `Geodesic` distances and its `GeodesicArea` and `ChamberlainDuquetteArea` areas are used |
+| [geo](https://crates.io/crates/geo) | 0.33.1 | 2D geometry; only its `Haversine` and `Geodesic` distances and its `GeodesicArea` and `ChamberlainDuquetteArea` areas and its `CrossTrackDistance` are used |
 
 All crates get the same inputs, in degrees and metres. Each one is called through a small adapter
 in [`src/lib.rs`](src/lib.rs) that does what its users would write: degrees to radians for

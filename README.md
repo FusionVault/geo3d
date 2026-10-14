@@ -196,6 +196,30 @@ and clockwise ones a negative area. Use `size.area_m2.abs()` if you don't mind w
 The edges are the shortest paths between corners. Areas around a pole or across the antimeridian
 work as they are.
 
+### Follow a route
+
+How far off the route is it, and how far along?
+
+```rust
+use geo3d::{Geodetic, WGS84};
+
+let sydney = Geodetic::new(-33.95, 151.18, 0.0);
+let melbourne = Geodetic::new(-37.67, 144.84, 0.0);
+let plane = Geodetic::new(-35.31, 149.19, 10_000.0);
+
+let off = WGS84.cross_track_distance_m(sydney, melbourne, plane);    // 10.6 km to the left
+let along = WGS84.along_track_distance_m(sydney, melbourne, plane);  // 236 km along the way
+let halfway = WGS84.great_circle_interpolate(sydney, melbourne, 0.5);
+assert!((off + 10_580.0).abs() < 1.0);
+```
+
+💡 There's also `great_circle_intersection` (where two routes cross) and `mean_position` (the
+centre of a group of positions). The [NavLab examples](src/navlab.rs) walk through ten classic
+navigation problems.
+
+These use a sphere, like the great-circle distance, and they're exact on it at any length, from a
+micrometre to thousands of kilometres.
+
 ### Check if something is inside a zone
 
 Every shape answers `contains`:
@@ -312,6 +336,8 @@ and then:
 | `vdist` / `distance` | `WGS84.geodesic_inverse(a, b)` |
 | `vreckon` / `reckon` | `WGS84.geodesic_direct(a, bearing, distance)` |
 | `areaint` | `WGS84.polygon_area(&corners)` |
+| `gcxgc` | `WGS84.great_circle_intersection(a1, a2, b1, b2)` |
+| `meanm` | `WGS84.mean_position(&points)` |
 | `ecef2eci` / `eci2ecef` | `e.to_eci(gmst)` / `i.to_ecef(gmst)` |
 
 Everything is in degrees, so there's no `deg` flag to remember.
@@ -353,6 +379,17 @@ geo3d's areas match GeographicLib, from a 10 m field to a ring around the South 
 treat the Earth as a ball are 0.7 % to 1.4 % out, and geo's breaks across the antimeridian and
 around the poles.
 
+### 🧭 How far off the path?
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="comparisons/charts/cross-track-dark.svg">
+  <img alt="Worst cross-track error on short paths: geo3d 1.6 nm, geo 3.4 nm, jord 73 µm, textbook n-vector formula 2.0 km" src="comparisons/charts/cross-track-light.svg">
+</picture>
+
+geo3d builds each path from the latitude and longitude differences, so it stays exact on paths of
+any length. The textbook n-vector formula, used in the NavLab examples, loses precision as the path
+gets shorter, and can be kilometres out on a path a few micrometres long.
+
 ### 📡 Pointing straight up
 
 <picture>
@@ -381,7 +418,7 @@ or the poles, give a wrong answer far out in space, or panic.
 </picture>
 
 Only geo3d has ground strikes, 3D zones, collision checks, uncertainty and datum shifts, and it does
-it with no dependencies. Other crates are ahead on n-vectors and attitude. Both are on our
+it with no dependencies. Other crates are ahead on attitude (yaw, pitch and roll), which is on our
 [roadmap](https://github.com/FusionVault/geo3d/issues).
 
 ### ⚡ Speed
@@ -414,7 +451,7 @@ other five, and we know why:
 | Distance and travel along the ground | 15 nm, for any two points |
 | Polygon area | within 0.1 m² of GeographicLib, for any polygon |
 | Uncertainty between frames | exact for ENU, NED and x, y, z; first order for pointing and latitude/longitude |
-| Great-circle estimates and horizon distance | within 0.6 % |
+| Great-circle tools (distance, route, crossings, centre) and horizon distance | within 0.6 %; exact on a sphere |
 | Closest approach | exact for objects moving in straight lines |
 | Datum shifts | exact for the published numbers |
 | Satellite frame (`eci`) | exact rotation; up to 400 m from treating UTC as UT1 |
@@ -464,6 +501,8 @@ let p: geo_types::Point = geo3d::Geodetic::new(-33.87, 151.21, 20.0).into(); // 
 - **Geodesic:** the shortest path along the ground.
 - **Antimeridian:** the line at 180° longitude, where east meets west.
 - **Great circle:** the shortest path on a perfect sphere. A quick stand-in for a geodesic.
+- **n-vector:** the unit vector pointing straight up out of the surface at a position. Maths with
+  n-vectors has no trouble at the poles or the antimeridian.
 - **Datum:** a reference frame for coordinates. Helmert numbers convert between two of them.
 - **Covariance:** how uncertain a position is in each direction, and how the errors are linked. The
   square roots of its diagonal are the standard deviations.
