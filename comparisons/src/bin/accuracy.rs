@@ -54,6 +54,7 @@ fn main() {
     areas();
     cross_track();
     attitude();
+    utm_grid();
     look_angles();
     robustness();
 }
@@ -608,7 +609,152 @@ fn attitude() {
     );
 }
 
-// ── 6. Local frames and look angles, compared pairwise ──────────────────────────────────────────
+// ── 6. UTM grid coordinates ──────────────────────────────────────────────────────────────────────
+
+/// GeographicLib's GeoConvert (2.5.2) at nanometre precision, standard zones in UTM's range
+/// (latitude, longitude, zone, easting, northing). The same points as geo3d's tests/utm_check.rs.
+#[rustfmt::skip]
+#[allow(clippy::excessive_precision)] // as GeoConvert printed them
+const GEOGRAPHICLIB_UTM: [(f64, f64, u8, f64, f64); 18] = [
+    (33.3, 44.4, 38, 444140.544918426, 3684706.355549777),
+    (-33.87, 151.21, 56, 334435.706141829, 6250816.397804656),
+    (40.748433, -73.985656, 18, 585632.081341873, 4511326.153663830),
+    (51.5, -0.12, 30, 699889.806985106, 5709362.292819306),
+    (60.0, 5.0, 32, 276979.926401006, 6658157.202407252),
+    (63.9, 2.9, 31, 495091.311822963, 7085874.811547142),
+    (78.0, 8.9, 31, 636716.845988947, 8665261.549757802),
+    (78.0, 9.0, 33, 360973.603634535, 8665496.995776532),
+    (78.0, 20.9, 33, 636716.845988947, 8665261.549757802),
+    (78.0, 21.0, 35, 360973.603634535, 8665496.995776532),
+    (78.0, 41.9, 37, 567282.208954672, 8660035.492844149),
+    (83.9, -179.9, 1, 465609.168730046, 9317795.753332415),
+    (-79.9, 123.0, 51, 500000.000000000, 1129575.677877436),
+    (-80.0, 10.0, 32, 519384.803295973, 1118247.585192557),
+    (45.0, 3.0, 31, 500000.000000000, 4982950.400226552),
+    (-45.0, -177.0, 1, 500000.000000000, 5017049.599773448),
+    (10.0, 179.9999999, 60, 828928.725084910, 1106908.854143274),
+    (-1e-06, 177.0, 60, 500000.000000000, 9999999.889469954),
+];
+
+fn utm_grid() {
+    // Against GeographicLib.
+    type Forward = fn(f64, f64) -> Option<[f64; 3]>;
+    let libs: [(&str, Forward); 2] = [("geo3d", with_geo3d::utm_forward), ("utm", with_utm::utm_forward)];
+    let mut rows = Vec::new();
+    for (name, f) in libs {
+        let (mut wrong_zone, mut worst) = (0, 0.0f64);
+        for (lat, lon, zone, e, n) in GEOGRAPHICLIB_UTM {
+            match finite(guarded(|| f(lat, lon))) {
+                Some([z, x, y]) if z as u8 == zone => worst = worst.max((x - e).hypot(y - n)),
+                _ => wrong_zone += 1,
+            }
+        }
+        rows.push(vec![
+            name.to_string(),
+            "GeographicLib's reference points".to_string(),
+            GEOGRAPHICLIB_UTM.len().to_string(),
+            wrong_zone.to_string(),
+            sci(worst),
+        ]);
+    }
+    // Against geo3d on many points (geo3d agrees with GeographicLib to a few nanometres), in three
+    // places: near a zone's central meridian, at its edges, and in Svalbard's double-width zones.
+    let mut rng = Rng::new(0x51f1_5d9b_2c3a_7e4f);
+    type Pick = fn(&mut Rng) -> (f64, f64);
+    let sets: [(&str, Pick); 3] = [
+        ("within 1° of the central meridian", |r| {
+            let zone = 1 + (r.f64() * 60.0) as i32;
+            (r.range(-80.0, 84.0), (6 * zone - 183) as f64 + r.range(-1.0, 1.0))
+        }),
+        ("2° to 3° from the central meridian", |r| {
+            let zone = 1 + (r.f64() * 60.0) as i32;
+            let side = if r.f64() < 0.5 { -1.0 } else { 1.0 };
+            (
+                r.range(-80.0, 56.0),
+                (6 * zone - 183) as f64 + side * r.range(2.0, 2.999),
+            )
+        }),
+        ("Svalbard's wide zones, 72° to 84° N", |r| {
+            (r.range(72.0, 84.0), r.range(0.0, 41.999))
+        }),
+    ];
+    for (set, pick) in sets {
+        let (mut worst, mut worst_trip_utm, mut worst_trip_geo3d, mut wrong) = (0.0f64, 0.0f64, 0.0f64, 0);
+        let count = 10_000;
+        for _ in 0..count {
+            let (lat, lon) = pick(&mut rng);
+            let (Some(g), Some(u)) = (with_geo3d::utm_forward(lat, lon), with_utm::utm_forward(lat, lon)) else {
+                continue;
+            };
+            if g[0] != u[0] {
+                wrong += 1; // the crates disagree about the zone
+                continue;
+            }
+            worst = worst.max((g[1] - u[1]).hypot(g[2] - u[2]));
+            let north = lat >= 0.0;
+            let back = |ll: Option<LatLon>| {
+                ll.map_or(f64::INFINITY, |b| {
+                    with_geographiclib::inverse([lat, lon], b).unwrap()[0]
+                })
+            };
+            worst_trip_geo3d = worst_trip_geo3d.max(back(with_geo3d::utm_reverse(g[0] as u8, north, g[1], g[2])));
+            let letter = utm::lat_to_zone_letter(lat).unwrap_or('Z');
+            worst_trip_utm = worst_trip_utm.max(back(with_utm::utm_reverse(u[0] as u8, letter, u[1], u[2])));
+        }
+        rows.push(vec![
+            "utm".to_string(),
+            format!("{set}, against geo3d"),
+            count.to_string(),
+            wrong.to_string(),
+            sci(worst),
+        ]);
+        rows.push(vec![
+            "geo3d".to_string(),
+            format!("{set}, grid and back"),
+            count.to_string(),
+            "0".to_string(),
+            sci(worst_trip_geo3d),
+        ]);
+        rows.push(vec![
+            "utm".to_string(),
+            format!("{set}, grid and back"),
+            count.to_string(),
+            "0".to_string(),
+            sci(worst_trip_utm),
+        ]);
+    }
+    println!("## UTM grid coordinates\n");
+    println!("geo3d and the `utm` crate, against GeographicLib's GeoConvert at nanometre precision, and against each other on 10 000 random points per set (geo3d agrees with GeographicLib to a few nanometres). \"Grid and back\" is each crate's own round trip, as a distance on the ground. A wrong zone is a different zone from GeographicLib's, or a refusal.\n");
+    table(
+        "UTM easting and northing",
+        &["Library", "Points", "Count", "Wrong zone", "Max error (m)"],
+        &rows,
+    );
+
+    // Places where the rules matter: GeographicLib's answer, and what each crate gives.
+    let cases: [(&str, f64, f64); 3] = [
+        ("Exactly on the equator (0°, 3°)", 0.0, 3.0),
+        ("On the 180° meridian (10°, 180°)", 10.0, 180.0),
+        ("Beyond 84° N, where UTM stops (85°, 10°)", 85.0, 10.0),
+    ];
+    let cell = |r: Option<[f64; 3]>| match r {
+        Some([z, e, n]) => format!("zone {z}, {e:.0} E, {n:.0} N"),
+        None => "UPS (not UTM)".to_string(),
+    };
+    let edge_rows: Vec<Vec<String>> = cases
+        .iter()
+        .map(|&(case, lat, lon)| {
+            vec![
+                case.to_string(),
+                cell(with_geo3d::utm_forward(lat, lon)),
+                cell(with_utm::utm_forward(lat, lon)),
+            ]
+        })
+        .collect();
+    table("UTM at the edges of its rules", &["Case", "geo3d", "utm"], &edge_rows);
+}
+
+// ── 7. Local frames and look angles, compared pairwise ──────────────────────────────────────────
 
 fn aer_to_enu(a: AerV) -> EnuV {
     let (sa, ca) = a[0].to_radians().sin_cos();
@@ -747,7 +893,7 @@ fn look_angles() {
     }
 }
 
-// ── 7. Robustness: edge cases ───────────────────────────────────────────────────────────────────
+// ── 8. Robustness: edge cases ───────────────────────────────────────────────────────────────────
 
 /// What came back, in a word: ok, NaN, rejected, panic, or wrong (with the value).
 fn verdict<const N: usize>(

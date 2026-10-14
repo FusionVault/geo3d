@@ -1,7 +1,7 @@
 //! [`Quaternion`]: a rotation as four numbers, the way flight controllers store attitude.
 
+use crate::angle::sincosd;
 use crate::attitude::Attitude;
-use crate::geodesic::sincosd;
 #[cfg(all(feature = "libm", not(feature = "std"), not(test)))]
 use crate::math::Float as _;
 

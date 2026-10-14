@@ -5,6 +5,18 @@ release is tagged `vX.Y.Z`.
 
 ## Unreleased
 
+- 🗺️ **UTM and UPS** ([#14](https://github.com/FusionVault/geo3d/issues/14)).
+  `Ellipsoid::to_utm_ups`, `to_utm_ups_zone` (a chosen zone) and `from_utm_ups`. Standard zones
+  include the Norway and Svalbard exceptions, and UPS covers the poles. Built on two new projections
+  for any ellipsoid:
+  - `TransverseMercator`, by Krüger's series to the eighth order (Karney 2011), with grid
+    convergence and scale;
+  - `PolarStereographic`, exact.
+
+  Within 2 nm of GeographicLib on its own reference points, and 4 nm grid-and-back anywhere. The
+  `utm` crate is up to 77 cm out on a round trip.
+- 🎯 Sine and cosine of whole multiples of 30° and 45° are now correctly rounded, as in current
+  GeographicLib. Results at those exact angles can change in the last digit.
 - 🔄 **Quaternions.** `Quaternion { w, x, y, z }` in the Hamilton convention, scalar first, turning
   body vectors into NED, as PX4 and MAVLink store attitude. `Attitude::to_quaternion` and
   `from_quaternion` (exact pointing straight up), `Quaternion::to_rotation` and `from_rotation`
@@ -56,7 +68,7 @@ release is tagged `vX.Y.Z`.
   run. `Cov3` converts to `nalgebra::Matrix3`, `glam::DMat3` and the `mint` matrices.
 - 🗺️ **Polygon area** ([#4](https://github.com/FusionVault/geo3d/issues/4)).
   `Ellipsoid::polygon_area` gives the area and perimeter of a polygon whose edges are geodesics. It
-  is a port of GeographicLib's method, and matches it to within 0.1 m² on any polygon, including
+  is a port of GeographicLib's method, and matches it to within 0.2 m² on any polygon, including
   ones around a pole or across the antimeridian. Counter-clockwise polygons have a positive area.
 - 🛰️ **Satellite time** ([#8](https://github.com/FusionVault/geo3d/issues/8)):
   - `eci::gmst_from_unix_with_dut1` corrects UTC to UT1, which removes up to 400 m of error.

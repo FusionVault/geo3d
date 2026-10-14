@@ -60,6 +60,7 @@ positions into frames where normal 3D maths works.
 | `Attitude` | which way a vehicle faces: yaw, pitch and roll | degrees |
 | `Frd` | an offset in a vehicle's own frame: forward, right, down | metres |
 | `Quaternion` | the same turn as yaw, pitch and roll, as four numbers | none |
+| `UtmUps` | a UTM or UPS grid position: zone, easting and northing | metres |
 
 A few rules hold everywhere:
 
@@ -87,6 +88,24 @@ assert!((back.lat_deg - sydney.lat_deg).abs() < 1e-11);
 
 let on_grs80 = GRS80.to_ecef(sydney);  // other ellipsoids work the same way
 ```
+
+### Use UTM grid coordinates
+
+UTM covers the world in 60 zones of easting and northing in metres, with UPS for the polar caps:
+
+```rust
+use geo3d::{Geodetic, WGS84};
+
+let sydney = Geodetic::new(-33.87, 151.21, 20.0);
+let grid = WGS84.to_utm_ups(sydney).unwrap();   // zone 56 south: 334 436 E, 6 250 816 N
+let back = WGS84.from_utm_ups(grid).unwrap();   // Sydney again, at height 0 (the grid is flat)
+assert_eq!((grid.zone, grid.north), (56, false));
+assert!((back.lat_deg - sydney.lat_deg).abs() < 1e-12);
+```
+
+💡 Zone 0 is UPS, near the poles. `to_utm_ups_zone` keeps nearby data in one zone. For other
+grids built on the same projection, such as the British National Grid or Gauss–Krüger zones, use
+`TransverseMercator::new(ellipsoid, scale)`.
 
 ### Find where something is, relative to you
 
@@ -366,13 +385,15 @@ and then:
 | `gcxgc` | `WGS84.great_circle_intersection(a1, a2, b1, b2)` |
 | `meanm` | `WGS84.mean_position(&points)` |
 | `ecef2eci` / `eci2ecef` | `e.to_eci(gmst)` / `i.to_ecef(gmst)` |
+| `utmzone` | `UtmUps::standard_zone(g)` |
+| `projfwd` / `projinv` with UTM | `WGS84.to_utm_ups(g)` / `WGS84.from_utm_ups(u)` |
 | `angle2dcm` / `dcm2angle` | `Attitude::new(yaw, pitch, roll).to_rotation()` / `Attitude::from_rotation(m)` (MATLAB's matrix is the transpose: NED to body) |
 
 Everything is in degrees, so there's no `deg` flag to remember.
 
 ## 📊 How it compares
 
-We tested geo3d against five other Rust crates, giving them all the same inputs. The
+We tested geo3d against six other Rust crates, giving them all the same inputs. The
 [full comparison](comparisons/README.md) has every number, and shows how to run it yourself.
 
 ### 🎯 Converting x, y, z back to latitude and longitude
@@ -417,6 +438,18 @@ around the poles.
 geo3d builds each path from the latitude and longitude differences, so it stays exact on paths of
 any length. The textbook n-vector formula, used in the NavLab examples, loses precision as the path
 gets shorter, and can be kilometres out on a path a few micrometres long.
+
+### 🗺️ UTM grid coordinates
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="comparisons/charts/utm-dark.svg">
+  <img alt="UTM: geo3d within 1.9 nm of GeographicLib and 3.5 nm grid and back; utm crate 750 µm and 77 cm" src="comparisons/charts/utm-light.svg">
+</picture>
+
+geo3d agrees with GeographicLib to 2 nm, and gets you back where you started to within 4 nm. The
+utm crate uses older formulas: under a millimetre to the grid, but up to 77 cm off on the way back.
+It also gives zone 61 on the 180° meridian, puts the equator 10 000 km south, and doesn't switch to
+UPS near the poles.
 
 ### ✈️ Yaw, pitch and roll near straight up
 
@@ -464,11 +497,11 @@ it with no dependencies.
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="comparisons/charts/speed-dark.svg">
-  <img alt="Time per call for 11 operations; geo3d is fastest in 3 and tied in 3" src="comparisons/charts/speed-light.svg">
+  <img alt="Time per call for 13 operations; geo3d is fastest in 3 and tied in 3" src="comparisons/charts/speed-light.svg">
 </picture>
 
-geo3d is the fastest, or level with the fastest, in six of the eleven tests. It's slower in the
-other five, and we know why:
+geo3d is the fastest, or level with the fastest, in six of the thirteen tests. It's slower in the
+other seven, and we know why:
 
 - **x, y, z back to latitude and longitude** (two of the tests). geo3d is about 10 % behind map_3d
   and jord here, and further behind nav-types and sguaba. It spends that time on a final check
@@ -477,6 +510,8 @@ other five, and we know why:
   target onwards.
 - **Quick great-circle distance.** geo3d uses a formula that stays exact on the far side of the Earth.
 - **Distance along the ground.** It's about 4 % behind geographiclib-rs.
+- **UTM, both ways.** The utm crate is quicker (1.5× to the grid, 4× back), but uses older formulas
+  that are up to 77 cm out on a round trip. geo3d's are good to a few nanometres.
 
 💡 To use your CPU's fused multiply-add, build with `RUSTFLAGS="-C target-cpu=native"`.
 
@@ -488,7 +523,8 @@ other five, and we know why:
 | x, y, z → latitude/longitude/height | 3 nm near the Earth, 20 nm at satellite heights |
 | Local frames, pointing, ground strikes and zones | exact, even straight up |
 | Distance and travel along the ground | 15 nm, for any two points |
-| Polygon area | within 0.1 m² of GeographicLib, for any polygon |
+| Polygon area | within 0.2 m² of GeographicLib, for any polygon |
+| UTM/UPS and map projections | 5 nm (within 2 nm of GeographicLib) |
 | Yaw, pitch and roll | exact, even pointing straight up or down |
 | Uncertainty between frames | exact for ENU, NED and x, y, z; first order for pointing and latitude/longitude |
 | Great-circle tools (distance, route, crossings, centre) and horizon distance | within 0.6 %; exact on a sphere |
@@ -542,8 +578,9 @@ is 10–20 % faster, and its answers agree with the standard build to within 25 
 
 - **2D shape operations** like joining polygons or testing if a point is inside one: use
   [`geo`](https://crates.io/crates/geo). geo3d does measure polygon areas.
-- **Map grids** like UTM and MGRS: use [`utm`](https://crates.io/crates/utm) or
-  [`proj`](https://crates.io/crates/proj) for now. UTM is on our roadmap.
+- **MGRS grid references** (like `56HLH3443550816`): on our
+  [roadmap](https://github.com/FusionVault/geo3d/issues/22). Other projections: use
+  [`proj`](https://crates.io/crates/proj) for now.
 - **Height above sea level** and terrain.
 - **High-precision Earth rotation** (precession and nutation).
 
@@ -562,6 +599,8 @@ is 10–20 % faster, and its answers agree with the standard build to within 25 
 - **n-vector:** the unit vector pointing straight up out of the surface at a position. Maths with
   n-vectors has no trouble at the poles or the antimeridian.
 - **Datum:** a reference frame for coordinates. Helmert numbers convert between two of them.
+- **Map projection:** a way of flattening the curved Earth onto a map, in metres.
+- **UTM / UPS:** a world grid in metres: 60 north–south strips (UTM), plus two polar caps (UPS).
 - **no_std:** Rust without its standard library, for chips with no operating system.
 - **Attitude:** which way a vehicle faces: its yaw (heading), pitch (nose up) and roll (right wing
   down).

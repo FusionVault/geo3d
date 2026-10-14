@@ -156,11 +156,13 @@ fn polygons() -> Vec<Vec<Geodetic>> {
     v
 }
 
-/// With the standard library, geo3d and geographiclib-rs share the system's sine and cosine, and
-/// agree to a rounding step or two (0.06 m² at worst). With `libm` the maths library differs in the
-/// last digit, and over the edges of an Earth-sized polygon that adds up to about half a square
-/// metre (2e-15 of the area): neither answer is the more accurate one.
-const AREA_TOLERANCE_M2: f64 = if cfg!(feature = "std") { 0.1 } else { 1.0 };
+/// A polygon's area is a sum of huge edge terms (up to about 2e13 m² each) that cancel, so a rounding
+/// step in any sine moves it by a tenth of a square metre. geo3d's sine and cosine are correctly
+/// rounded at 30° and 45°, as current GeographicLib's are but geographiclib-rs's aren't, which
+/// shows up on rings round a pole with edges 30° apart (0.16 m² at worst). With `libm`, whose
+/// last digit differs from the system library's, Earth-sized polygons differ by up to half a square
+/// metre. Neither side is the more accurate one at that level.
+const AREA_TOLERANCE_M2: f64 = if cfg!(feature = "std") { 0.2 } else { 1.0 };
 
 fn check_polygons(ell: Ellipsoid) {
     let reference = Geodesic::new(ell.a(), ell.f());

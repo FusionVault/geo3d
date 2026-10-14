@@ -31,6 +31,8 @@ THEMES = {
 }
 FONT = "system-ui, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif"
 CRATES = ["geo3d", "map_3d", "nav-types", "sguaba", "jord", "geographiclib-rs", "geo"]
+# The `utm` crate appears only where it has something to compare: features and speed.
+WIDE = CRATES + ["utm"]
 
 
 # ── Reading the results ────────────────────────────────────────────────────────────────────────
@@ -66,7 +68,7 @@ def speed_rows():
     if os.path.isdir(root):
         rows = []
         for op in sorted(os.listdir(root)):
-            for crate in CRATES:
+            for crate in WIDE:
                 est = os.path.join(root, op, crate, "new", "estimates.json")
                 if os.path.exists(est):
                     with open(est) as f:
@@ -397,7 +399,7 @@ def main():
         m2, share = num(r["Max error (m²)"]), r["Max error (share of the area)"]
         if int(r["Failures"]) > 0:
             return (False, "fails")
-        if m2 <= 0.1:
+        if m2 <= 0.2:
             return (True, "matches")
         pc = num(share.replace("%", "").strip())
         return (False, "wrong" if pc > 10 else f"{pc:.1f} % off")
@@ -410,7 +412,7 @@ def main():
     worst_g3 = max(num(r["Max error (m²)"]) for r in area if r["Library"] == "geo3d")
     scorecard(
         "polygon-area", "Polygon area: does it match GeographicLib?",
-        ["1 000 polygons of each kind, 3 to 32 vertices. A pass is within 0.1 m² of GeographicLib, the",
+        ["1 000 polygons of each kind, 3 to 32 vertices. A pass is within 0.2 m² of GeographicLib, the",
          "reference. Spherical methods treat the Earth as a ball, so they are 0.7 % to 1.4 % off."],
         [c for _, c in area_cols], rows,
         [f"geo3d's largest difference from GeographicLib is {worst_g3:g} m², around a pole. geo's geodesic area calls",
@@ -453,29 +455,47 @@ def main():
         f"Worst attitude error near ±90° pitch, at 1 000 km: geo3d {metres(g3)}, sguaba "
         f"{metres(near('sguaba', 'within'))}, jord via ECEF {metres(near('jord', 'via ECEF'))}")
 
-    # 8. Features (from comparisons/README.md, "Features and footprint").
+    # 8. UTM: to the grid against GeographicLib, and each crate's own round trip.
+    utm = find(tabs, "UTM easting and northing")
+    worst = lambda lib, part: max(num(r["Max error (m)"]) for r in utm if r["Library"] == lib and part in r["Points"])
+    bars_log(
+        "utm", "UTM grid coordinates",
+        ["Worst error to the grid, against GeographicLib at nanometre precision, and each crate's own",
+         "round trip (grid and back, on 30 000 points). Log scale; shorter is better."],
+        [("geo3d", "to the grid", worst("geo3d", "GeographicLib"), True),
+         ("utm", "to the grid", worst("utm", "GeographicLib"), False),
+         ("geo3d", "grid and back", worst("geo3d", "grid and back"), True),
+         ("utm", "grid and back", worst("utm", "grid and back"), False)],
+        ["geo3d uses Krüger's series to the eighth order, as GeographicLib does to the sixth. The utm crate",
+         "uses the older USGS series, and doesn't switch to UPS beyond 84° N or 80° S."],
+        f"UTM: geo3d within {metres(worst('geo3d', 'GeographicLib'))} of GeographicLib and "
+        f"{metres(worst('geo3d', 'grid and back'))} grid and back; utm crate {metres(worst('utm', 'GeographicLib'))} "
+        f"and {metres(worst('utm', 'grid and back'))}")
+
+    # 9. Features (from comparisons/README.md, "Features and footprint").
     Y, N = "✓", None
     feats = [
-        ("No dependencies", [Y, Y, N, N, Y, N, N]),
-        ("No unsafe code (forbidden)", [Y, N, N, N, Y, N, N]),
-        ("Runs without std (no_std)", [Y, N, N, Y, N, N, N]),
-        ("Ellipsoidal geodesics", [Y, N, N, N, N, Y, Y]),
-        ("Geodesic polygon area", [Y, N, N, N, "sphere", Y, Y]),
-        ("Uncertainty (covariance)", [Y, N, N, N, N, N, N]),
-        ("Look angles", [Y, Y, N, Y, Y, N, N]),
-        ("Ray–ellipsoid ground strike", [Y, N, N, N, N, N, N]),
-        ("3D volumes", [Y, N, N, N, N, N, N]),
-        ("3D closest approach", [Y, N, N, N, "sphere", N, N]),
-        ("Datum shift (Helmert)", [Y, N, N, N, N, N, N]),
-        ("Inertial frame (TEME)", [Y, Y, N, N, N, N, N]),
-        ("Any ellipsoid", [Y, "10 named", N, N, Y, Y, N]),
-        ("Path tools (cross-track, crossings, centre)", [Y, N, N, N, Y, N, "some"]),
-        ("Attitude (yaw, pitch, roll)", [Y, N, N, Y, Y, N, N]),
+        ("No dependencies", [Y, Y, N, N, Y, N, N, Y]),
+        ("No unsafe code (forbidden)", [Y, N, N, N, Y, N, N, N]),
+        ("Runs without std (no_std)", [Y, N, N, Y, N, N, N, Y]),
+        ("Ellipsoidal geodesics", [Y, N, N, N, N, Y, Y, N]),
+        ("Geodesic polygon area", [Y, N, N, N, "sphere", Y, Y, N]),
+        ("Uncertainty (covariance)", [Y, N, N, N, N, N, N, N]),
+        ("Look angles", [Y, Y, N, Y, Y, N, N, N]),
+        ("Ray–ellipsoid ground strike", [Y, N, N, N, N, N, N, N]),
+        ("3D volumes", [Y, N, N, N, N, N, N, N]),
+        ("3D closest approach", [Y, N, N, N, "sphere", N, N, N]),
+        ("Datum shift (Helmert)", [Y, N, N, N, N, N, N, N]),
+        ("Inertial frame (TEME)", [Y, Y, N, N, N, N, N, N]),
+        ("Any ellipsoid", [Y, "10 named", N, N, Y, Y, N, N]),
+        ("Path tools (cross-track, crossings, centre)", [Y, N, N, N, Y, N, "some", N]),
+        ("Attitude (yaw, pitch, roll)", [Y, N, N, Y, Y, N, N, N]),
+        ("UTM/UPS grid", [Y, N, N, N, N, N, N, "UTM only"]),
     ]
     scorecard(
         "features", "Features",
         ["What each crate offers, checked in its source at the versions compared."],
-        CRATES, feats, ["— : not offered."],
+        WIDE, feats, ["— : not offered."],
         "Feature matrix: geo3d is the only crate with ground strike, 3D volumes, closest approach, covariance and "
         "datum shifts",
         "text")
@@ -494,11 +514,13 @@ def main():
         ("great_circle_distance", "Great-circle distance"),
         ("ecef_to_geodetic_orbit", "x, y, z → lat/lon/height, orbit heights"),
         ("polygon_area", "Polygon area, 10 vertices"),
+        ("utm_forward", "Latitude/longitude → UTM"),
+        ("utm_reverse", "UTM → latitude/longitude"),
     ]
     panels = []
     for op, ptitle in ops:
         rows = [(c + ("*" if c == "geo" and op.startswith("geodesic") else ""), ns, c == "geo3d")
-                for c in CRATES for o, cc, ns in sp if o == op and cc == c]
+                for c in WIDE for o, cc, ns in sp if o == op and cc == c]
         if rows:
             panels.append((ptitle, rows))
     # Within 3 % of the fastest is a tie: closer than run-to-run noise.

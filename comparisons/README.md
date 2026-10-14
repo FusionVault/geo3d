@@ -1,11 +1,12 @@
 # 📊 How geo3d compares
 
-We tested geo3d against five other Rust crates that work with 3D positions on Earth. Every crate got
+We tested geo3d against six other Rust crates that work with positions on Earth. Every crate got
 exactly the same inputs. This page shows what we found, and how you can check it yourself.
 
 The crates are [map_3d](https://crates.io/crates/map_3d), [nav-types](https://crates.io/crates/nav-types),
 [sguaba](https://crates.io/crates/sguaba), [jord](https://crates.io/crates/jord) and
-[geographiclib-rs](https://crates.io/crates/geographiclib-rs). We also used
+[geographiclib-rs](https://crates.io/crates/geographiclib-rs), and [utm](https://crates.io/crates/utm) for
+grid coordinates. We also used
 [geo](https://crates.io/crates/geo) for its distance, area and route functions.
 
 ## 🏁 The short version
@@ -20,7 +21,7 @@ The crates are [map_3d](https://crates.io/crates/map_3d), [nav-types](https://cr
   jord can lose it there.
 - 🧰 **Features.** Only geo3d has ground strikes, 3D zones, collision checks, uncertainty and datum
   shifts.
-- ⚡ **Speed.** geo3d was fastest, or level with the fastest, in six of the eleven tests. It's slower
+- ⚡ **Speed.** geo3d was fastest, or level with the fastest, in six of the thirteen tests. It's slower
   in the other five, and we explain why below.
 
 ## 🎯 Converting x, y, z back to latitude and longitude
@@ -136,8 +137,10 @@ Great-circle (spherical) distance against the ellipsoidal geodesic, all 110 000 
 </picture>
 
 We measured 4 000 polygons: small fields, regions up to 100 km across, shapes that cross the
-antimeridian, and rings around both poles. geo3d matched GeographicLib on all of them, to 0.03 m²
-at worst. geo's geodesic area calls geographiclib-rs, so it matches too.
+antimeridian, and rings around both poles. geo3d matched GeographicLib on all of them, to 0.12 m²
+at worst. That's on rings around a pole, where the area is what's left when edge terms of up to
+20 million km² cancel, so a rounding step in one sine shows. geo's geodesic area calls
+geographiclib-rs, so it matches too.
 
 The spherical methods in geo and jord treat the Earth as a ball, so they are about 0.7 % out, and
 jord up to 1.4 % on small fields. geo's spherical method also treats longitude as a plain number
@@ -207,6 +210,53 @@ of n1 × n2.
 | jord | long paths, 1 km to 1 000 km | 0 | 5.1e-9 |
 | geo | long paths, 1 km to 1 000 km | 0 | 3.8e-9 |
 | textbook n1 × n2 (NavLab) | long paths, 1 km to 1 000 km | 0 | 1.8e-6 |
+
+</details>
+
+## 🗺️ UTM grid coordinates
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="charts/utm-dark.svg">
+  <img alt="UTM: geo3d within 1.9 nm of GeographicLib and 3.5 nm grid and back; utm crate 750 µm and 77 cm" src="charts/utm-light.svg">
+</picture>
+
+We checked UTM against GeographicLib's own GeoConvert at nanometre precision, then compared geo3d
+and the utm crate on 30 000 random points: near zones' central meridians, at their edges, and in
+Svalbard's double-width zones.
+
+- geo3d uses Krüger's series to the eighth order (GeographicLib uses the sixth). It's within 2 nm of
+  GeographicLib, and a round trip comes back within 4 nm.
+- The utm crate uses the older USGS formulas. To the grid it's under a millimetre out, but its way
+  back is cruder: a round trip can land 77 cm away.
+- At the edges of the rules, the utm crate:
+  - puts a point exactly on the equator 10 000 km south;
+  - calls the 180° meridian zone 61, which doesn't exist;
+  - carries on in UTM beyond 84° N instead of switching to UPS.
+
+<details>
+<summary>📋 Show the numbers</summary>
+
+| Library | Points | Count | Wrong zone | Max error (m) |
+|---|---|---|---|---|
+| geo3d | GeographicLib's reference points | 18 | 0 | 1.9e-9 |
+| utm | GeographicLib's reference points | 18 | 0 | 7.5e-4 |
+| utm | within 1° of the central meridian, against geo3d | 10000 | 0 | 9.2e-4 |
+| geo3d | within 1° of the central meridian, grid and back | 10000 | 0 | 2.5e-9 |
+| utm | within 1° of the central meridian, grid and back | 10000 | 0 | 3.3e-1 |
+| utm | 2° to 3° from the central meridian, against geo3d | 10000 | 0 | 8.4e-4 |
+| geo3d | 2° to 3° from the central meridian, grid and back | 10000 | 0 | 3.2e-9 |
+| utm | 2° to 3° from the central meridian, grid and back | 10000 | 0 | 7.7e-1 |
+| utm | Svalbard's wide zones, 72° to 84° N, against geo3d | 10000 | 0 | 9.6e-4 |
+| geo3d | Svalbard's wide zones, 72° to 84° N, grid and back | 10000 | 0 | 3.5e-9 |
+| utm | Svalbard's wide zones, 72° to 84° N, grid and back | 10000 | 0 | 2.0e-1 |
+
+At the edges of its rules:
+
+| Case | geo3d | utm |
+|---|---|---|
+| Exactly on the equator (0°, 3°) | zone 31, 500000 E, 0 N | zone 31, 500000 E, 10000000 N |
+| On the 180° meridian (10°, 180°) | zone 1, 171071 E, 1106909 N | zone 61, 171071 E, 1106909 N |
+| Beyond 84° N, where UTM stops (85°, 10°) | UPS (not UTM) | zone 32, 509730 E, 9439817 N |
 
 </details>
 
@@ -366,26 +416,27 @@ this with no dependencies and no `unsafe` code.
 Checked in each crate's source at the versions above. Dependencies are counted with default
 features, from `cargo tree -e normal`.
 
-| | geo3d | map_3d | nav-types | sguaba | jord | geographiclib-rs | geo |
-|---|---|---|---|---|---|---|---|
-| Direct dependencies | 0 | 0 | 1 | 5 | 0 | 2 | 13 |
-| All crates pulled in | 0 | 0 | 19 | 21 | 0 | 5 | 41 |
-| `unsafe` | `#![forbid(unsafe_code)]` | none, not forbidden | none, not forbidden | marks frame assumptions: users write `unsafe` to build ECEF ↔ ENU/NED transforms; no memory-unsafe code | `#![deny(unsafe_code)]` | none, not forbidden | 2 blocks |
-| MSRV | 1.85 | not declared | not declared | 1.89 | 1.85 | 1.70 | 1.88 |
-| Without std (no_std) | yes, with `libm` | no | no | yes, with `libm` | no | no | no |
-| Ellipsoids | 8 named, or any | 10 named | WGS84 | WGS84 | 4 named, or any; spheres | any | WGS84 (`Geodesic`); spheres |
-| Look angles | yes | yes | no (ENU/NED only) | yes | yes | — | — |
-| Ray–ellipsoid ground strike | yes | no | no | no | no | — | — |
-| 3D volumes | sphere, cone, cylinder, altitude band | no | no | no | no (caps and polygons on a sphere) | — | no (2D shapes) |
-| Closest approach | 3D, constant velocity | no | no | no | on a sphere (surface tracks) | — | no |
-| Datum shift (Helmert) | yes | no | no | no | no | — | no |
-| Inertial frame | TEME (GMST rotation) | GMST rotation (`ecef2eci`) | no | no | no | — | no |
-| Geodesics | Karney | haversine only | haversine only | haversine only | great circles on a sphere | Karney | Karney (geographiclib-rs) |
-| Polygon area | geodesic | no | no | no | on a sphere | geodesic | geodesic (geographiclib-rs); on a sphere |
-| Covariance through frames | ECEF, ENU, NED, AER, geodetic | no | no | no | no | — | no |
-| n-vector type | no (used inside) | no | yes | no | yes | no | no |
-| Route tools | cross-track, along-track, crossings, centre, interpolation | no | no | no | yes | no | cross-track, interpolation |
-| Attitude (yaw, pitch, roll) | yes, exact at ±90° pitch | no | no | yes | yes | no | no |
+| | geo3d | map_3d | nav-types | sguaba | jord | geographiclib-rs | geo | utm |
+|---|---|---|---|---|---|---|---|---|
+| Direct dependencies | 0 | 0 | 1 | 5 | 0 | 2 | 13 | 0 |
+| All crates pulled in | 0 | 0 | 19 | 21 | 0 | 5 | 41 | 0 |
+| `unsafe` | `#![forbid(unsafe_code)]` | none, not forbidden | none, not forbidden | marks frame assumptions: users write `unsafe` to build ECEF ↔ ENU/NED transforms; no memory-unsafe code | `#![deny(unsafe_code)]` | none, not forbidden | 2 blocks | none, not forbidden |
+| MSRV | 1.85 | not declared | not declared | 1.89 | 1.85 | 1.70 | 1.88 | not declared |
+| Without std (no_std) | yes, with `libm` | no | no | yes, with `libm` | no | no | no | yes, with its `no_std` feature |
+| Ellipsoids | 8 named, or any | 10 named | WGS84 | WGS84 | 4 named, or any; spheres | any | WGS84 (`Geodesic`); spheres | WGS84 |
+| Look angles | yes | yes | no (ENU/NED only) | yes | yes | — | — | — |
+| Ray–ellipsoid ground strike | yes | no | no | no | no | — | — | — |
+| 3D volumes | sphere, cone, cylinder, altitude band | no | no | no | no (caps and polygons on a sphere) | — | no (2D shapes) | — |
+| Closest approach | 3D, constant velocity | no | no | no | on a sphere (surface tracks) | — | no | — |
+| Datum shift (Helmert) | yes | no | no | no | no | — | no | — |
+| Inertial frame | TEME (GMST rotation) | GMST rotation (`ecef2eci`) | no | no | no | — | no | — |
+| Geodesics | Karney | haversine only | haversine only | haversine only | great circles on a sphere | Karney | Karney (geographiclib-rs) | — |
+| Polygon area | geodesic | no | no | no | on a sphere | geodesic | geodesic (geographiclib-rs); on a sphere | — |
+| Covariance through frames | ECEF, ENU, NED, AER, geodetic | no | no | no | no | — | no | — |
+| n-vector type | no (used inside) | no | yes | no | yes | no | no | — |
+| Route tools | cross-track, along-track, crossings, centre, interpolation | no | no | no | yes | no | cross-track, interpolation | — |
+| Attitude (yaw, pitch, roll) | yes, exact at ±90° pitch | no | no | yes | yes | no | no | — |
+| UTM/UPS grid | UTM and UPS, Krüger to the 8th order | — | — | — | — | — | — | UTM only (USGS series) |
 
 </details>
 
@@ -393,11 +444,11 @@ features, from `cargo tree -e normal`.
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="charts/speed-dark.svg">
-  <img alt="Time per call for 11 operations; geo3d is fastest in 3 and tied in 3" src="charts/speed-light.svg">
+  <img alt="Time per call for 13 operations; geo3d is fastest in 3 and tied in 3" src="charts/speed-light.svg">
 </picture>
 
-geo3d is the fastest, or level with the fastest, in six of the eleven tests. It's slower in the
-other five, and we know why:
+geo3d is the fastest, or level with the fastest, in six of the thirteen tests. It's slower in the
+other seven, and we know why:
 
 - **x, y, z back to latitude and longitude** (two tests): about 10 % behind map_3d and jord, and
   further behind nav-types and sguaba. geo3d spends that time on a final check that makes it the
@@ -408,6 +459,8 @@ other five, and we know why:
   Earth. The faster formula most crates use can be almost a metre out there.
 - **Distance along the ground:** about 4 % behind geographiclib-rs. geo is faster again because it
   skips the compass bearings.
+- **UTM, both ways:** the utm crate is quicker (1.5× to the grid, 4× back). geo3d finds the
+  latitude exactly on the way back, where the utm crate's formulas can be 77 cm out.
 
 <details>
 <summary>📋 Show the numbers</summary>
@@ -420,24 +473,26 @@ Measured on:
 
 Median nanoseconds per call. In bold: the fastest, and anything within 3 % of it.
 
-| Operation | geo3d | map_3d | nav-types | sguaba | jord | geographiclib-rs | geo |
-|---|---|---|---|---|---|---|---|
-| Geodetic → ECEF | **21** | 30 | 36 | 53 | 28 | — | — |
-| ECEF → geodetic, −500 m to 12 km | 119 | 109 | 87 | **69** | 104 | — | — |
-| ECEF → geodetic, 400 km to 35 786 km | 121 | 108 | **85** | 98 | 102 | — | — |
-| ENU, one observer (frame reused) | **28** | 49 | 146 | 59 | 34 | — | — |
-| ENU, single call (frame built each time) | 53 | **49** | 185 | 132 | 90 | — | — |
-| Look angles, one observer (frame reused) | **67** | 94 | — | 98 | **67** | — | — |
-| Look angles, single call | **91** | **93** | — | 170 | 125 | — | — |
-| Geodesic inverse | 861 | — | — | — | — | 830 | **768 (distance only)** |
-| Geodesic direct | **275** | — | — | — | — | 316 | 286 (position only) |
-| Great-circle distance | 60 | 46 | **38** | 53 | 67 | — | **38** |
-| Polygon area, 10 vertices | **4 985** | — | — | — | — | **4 960** | 5 174 |
+| Operation | geo3d | map_3d | nav-types | sguaba | jord | geographiclib-rs | geo | utm |
+|---|---|---|---|---|---|---|---|---|
+| Geodetic → ECEF | **21** | 30 | 36 | 53 | 28 | — | — | — |
+| ECEF → geodetic, −500 m to 12 km | 119 | 109 | 87 | **69** | 104 | — | — | — |
+| ECEF → geodetic, 400 km to 35 786 km | 121 | 108 | **85** | 98 | 102 | — | — | — |
+| ENU, one observer (frame reused) | **28** | 49 | 146 | 59 | 34 | — | — | — |
+| ENU, single call (frame built each time) | 53 | **49** | 185 | 132 | 90 | — | — | — |
+| Look angles, one observer (frame reused) | **67** | 94 | — | 98 | **67** | — | — | — |
+| Look angles, single call | **91** | **93** | — | 170 | 125 | — | — | — |
+| Geodesic inverse | 861 | — | — | — | — | 830 | **768 (distance only)** | — |
+| Geodesic direct | **275** | — | — | — | — | 316 | 286 (position only) | — |
+| Great-circle distance | 60 | 46 | **38** | 53 | 67 | — | **38** | — |
+| Polygon area, 10 vertices | **4 985** | — | — | — | — | **4 960** | 5 174 | — |
+| Latitude/longitude → UTM | 198 | — | — | — | — | — | — | **129** |
+| UTM → latitude/longitude | 300 | — | — | — | — | — | — | **75** |
 
 Inputs: 1 000 points anywhere on Earth from −500 m to 12 km high (and from 400 km to 35 786 km for
 the second ECEF → geodetic row); a radar near Sydney with 1 000 aircraft within a degree of it, up
 to 12 km high; 1 000 random point pairs; 1 000 lines on random bearings up to 20 000 km long; 1 000
-polygons of 10 vertices, 1 km to 100 km across.
+polygons of 10 vertices, 1 km to 100 km across; 1 000 points between 80° S and 84° N for UTM.
 geo3d and geographiclib-rs return the distance and both azimuths (inverse) or the position and
 final azimuth (direct). geo's `Geodesic` calls geographiclib-rs and returns less. The great-circle
 distances use different sphere radii; see [Distance along the ground](#-distance-along-the-ground).
@@ -457,6 +512,7 @@ distances use different sphere radii; see [Distance along the ground](#-distance
 | [sguaba](https://crates.io/crates/sguaba) | 0.10.7 | typed coordinate frames and rigid-body transforms, with uom units |
 | [jord](https://crates.io/crates/jord) | 0.20.0 | n-vector positions, local frames, spherical navigation |
 | [geographiclib-rs](https://crates.io/crates/geographiclib-rs) | 0.2.7 | Karney's geodesics; the reference for geodesics |
+| [utm](https://crates.io/crates/utm) | 0.1.6 | UTM coordinates on WGS84, by the USGS series |
 | [geo](https://crates.io/crates/geo) | 0.33.1 | 2D geometry; only its `Haversine` and `Geodesic` distances and its `GeodesicArea` and `ChamberlainDuquetteArea` areas and its `CrossTrackDistance` are used |
 
 All crates get the same inputs, in degrees and metres. Each one is called through a small adapter

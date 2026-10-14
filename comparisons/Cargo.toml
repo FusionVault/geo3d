@@ -22,6 +22,7 @@ geographiclib-rs = "=0.2.7"
 # Only its `Haversine` and `Geodesic` distances, `GeodesicArea` and `ChamberlainDuquetteArea` areas and
 # `CrossTrackDistance` are used; the default features add nothing to them.
 geo = { version = "=0.33.1", default-features = false }
+utm = "=0.1.6"
 
 [dev-dependencies]
 criterion = { version = "=0.5.1", default-features = false }

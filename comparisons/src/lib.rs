@@ -134,6 +134,20 @@ pub mod with_geo3d {
         WGS84.polygon_area(&v).map(|p| p.area_m2)
     }
 
+    /// UTM in the standard zone: `[zone, easting, northing]`, `None` where geo3d uses UPS.
+    #[inline]
+    pub fn utm_forward(lat: f64, lon: f64) -> Option<[f64; 3]> {
+        let u = WGS84.to_utm_ups(Geodetic::new(lat, lon, 0.0))?;
+        (u.zone != 0).then_some([u.zone as f64, u.easting_m, u.northing_m])
+    }
+
+    /// UTM back to latitude and longitude.
+    #[inline]
+    pub fn utm_reverse(zone: u8, north: bool, easting: f64, northing: f64) -> Option<LatLon> {
+        let g = WGS84.from_utm_ups(geo3d::UtmUps::new(zone, north, easting, northing))?;
+        Some([g.lat_deg, g.lon_deg])
+    }
+
     /// Yaw, pitch and roll (degrees) → rotation → yaw, pitch and roll.
     #[inline]
     pub fn attitude_round_trip(ypr: [f64; 3]) -> Option<[f64; 3]> {
@@ -528,6 +542,26 @@ pub mod with_geo {
     #[inline]
     pub fn spherical_area_m2(vertices: &[LatLon]) -> Option<f64> {
         Some(polygon(vertices).chamberlain_duquette_signed_area())
+    }
+}
+
+/// The `utm` crate: the classic USGS series, WGS84 only.
+pub mod with_utm {
+    use super::*;
+
+    /// `[zone, easting, northing]` in its own standard zone.
+    #[inline]
+    pub fn utm_forward(lat: f64, lon: f64) -> Option<[f64; 3]> {
+        let zone = utm::lat_lon_to_zone_number(lat, lon);
+        let (northing, easting, _) = utm::to_utm_wgs84(lat, lon, zone);
+        Some([zone as f64, easting, northing])
+    }
+
+    /// Back to latitude and longitude; it needs a latitude band letter, which a user would have.
+    #[inline]
+    pub fn utm_reverse(zone: u8, letter: char, easting: f64, northing: f64) -> Option<LatLon> {
+        let (lat, lon) = utm::wsg84_utm_to_lat_lon(easting, northing, zone, letter).ok()?;
+        Some([lat, lon])
     }
 }
 

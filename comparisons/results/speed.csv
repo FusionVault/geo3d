@@ -47,3 +47,7 @@ great_circle_distance,geo,37.8
 polygon_area,geo3d,4984.7
 polygon_area,geographiclib-rs,4959.6
 polygon_area,geo,5173.8
+utm_forward,geo3d,197.9
+utm_forward,utm,128.9
+utm_reverse,geo3d,299.9
+utm_reverse,utm,74.9

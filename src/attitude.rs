@@ -1,8 +1,8 @@
 //! [`Attitude`]: which way a vehicle faces (yaw, pitch and roll), and [`Frd`] offsets in its own
 //! body frame (forward, right, down).
 
+use crate::angle::{atan2d, sincosd};
 use crate::frame::LocalFrame;
-use crate::geodesic::{atan2d, sincosd};
 use crate::local::{wrap_360, Ned};
 #[cfg(all(feature = "libm", not(feature = "std"), not(test)))]
 use crate::math::Float as _;
