@@ -301,6 +301,27 @@ turn error is how far the rebuilt orientation points from the original, at 1 000
 
 </details>
 
+## 🖨️ Printing a position
+
+Only geo3d and sguaba can print a position. geo3d prints the number you gave it: −33.87 comes out
+as `-33.87°`, and `{:.3}` gives three decimals. sguaba keeps angles in radians, so the same latitude
+comes back as `33.869999999999976°S`, and it ignores `{:.3}`.
+
+<details>
+<summary>📋 Show the numbers</summary>
+
+The same position, typed in and after a trip through ECEF and back with geo3d (as a computed one
+would be), printed plainly and with three decimals.
+
+| Position and format | geo3d | sguaba |
+|---|---|---|
+| typed in, `{}` | `-33.87°, 151.21°, 20 m` | `33.869999999999976°S, 151.21°E, 20m` |
+| typed in, `{:.3}` | `-33.870°, 151.210°, 20 m` | `33.869999999999976°S, 151.21°E, 20m` |
+| computed, `{}` | `-33.87°, 151.21°, 19.99999999992662 m` | `33.869999999999976°S, 151.21°E, 19.99999999992662m` |
+| computed, `{:.3}` | `-33.870°, 151.210°, 20 m` | `33.869999999999976°S, 151.21°E, 19.99999999992662m` |
+
+</details>
+
 ## 📡 Look angles
 
 <picture>
@@ -437,6 +458,7 @@ features, from `cargo tree -e normal`.
 | Route tools | cross-track, along-track, crossings, centre, interpolation | no | no | no | yes | no | cross-track, interpolation | — |
 | Attitude (yaw, pitch, roll) | yes, exact at ±90° pitch | no | no | yes | yes | no | no | — |
 | UTM/UPS grid | UTM and UPS, Krüger to the 8th order | — | — | — | — | — | — | UTM only (USGS series) |
+| Prints positions | yes: lossless, `{:.N}`, `{:#}` for N/S/E/W | no | no | yes, ignoring `{:.N}` | no | no | no | no |
 
 </details>
 

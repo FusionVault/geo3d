@@ -55,6 +55,7 @@ fn main() {
     cross_track();
     attitude();
     utm_grid();
+    printing();
     look_angles();
     robustness();
 }
@@ -754,7 +755,32 @@ fn utm_grid() {
     table("UTM at the edges of its rules", &["Case", "geo3d", "utm"], &edge_rows);
 }
 
-// ── 7. Local frames and look angles, compared pairwise ──────────────────────────────────────────
+// ── 7. Printing ──────────────────────────────────────────────────────────────────────────────────
+
+fn printing() {
+    // A typed-in position, and the same one after a trip through ECEF (as a computed one would be).
+    let typed = [-33.87, 151.21, 20.0];
+    let computed = with_geo3d::to_geodetic(with_geo3d::to_ecef(typed).unwrap()).unwrap();
+    let mut rows = Vec::new();
+    for (what, p) in [("typed in", typed), ("computed", computed)] {
+        for (fmt, d) in [("`{}`", None), ("`{:.3}`", Some(3))] {
+            rows.push(vec![
+                format!("{what}, {fmt}"),
+                format!("`{}`", with_geo3d::print(p, d)),
+                format!("`{}`", with_sguaba::print(p, d)),
+            ]);
+        }
+    }
+    println!("## Printing a position\n");
+    println!("The same position printed by each crate that can print one, plainly and asking for three decimals. The others have no `Display` for positions.\n");
+    table(
+        "What `format!` gives",
+        &["Position and format", "geo3d", "sguaba"],
+        &rows,
+    );
+}
+
+// ── 8. Local frames and look angles, compared pairwise ──────────────────────────────────────────
 
 fn aer_to_enu(a: AerV) -> EnuV {
     let (sa, ca) = a[0].to_radians().sin_cos();
@@ -893,7 +919,7 @@ fn look_angles() {
     }
 }
 
-// ── 8. Robustness: edge cases ───────────────────────────────────────────────────────────────────
+// ── 9. Robustness: edge cases ───────────────────────────────────────────────────────────────────
 
 /// What came back, in a word: ok, NaN, rejected, panic, or wrong (with the value).
 fn verdict<const N: usize>(

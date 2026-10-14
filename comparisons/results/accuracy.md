@@ -155,6 +155,19 @@ geo3d and the `utm` crate, against GeographicLib's GeoConvert at nanometre preci
 | On the 180° meridian (10°, 180°) | zone 1, 171071 E, 1106909 N | zone 61, 171071 E, 1106909 N |
 | Beyond 84° N, where UTM stops (85°, 10°) | UPS (not UTM) | zone 32, 509730 E, 9439817 N |
 
+## Printing a position
+
+The same position printed by each crate that can print one, plainly and asking for three decimals. The others have no `Display` for positions.
+
+### What `format!` gives
+
+| Position and format | geo3d | sguaba |
+|---|---|---|
+| typed in, `{}` | `-33.87°, 151.21°, 20 m` | `33.869999999999976°S, 151.21°E, 20m` |
+| typed in, `{:.3}` | `-33.870°, 151.210°, 20 m` | `33.869999999999976°S, 151.21°E, 20m` |
+| computed, `{}` | `-33.87°, 151.21°, 19.99999999992662 m` | `33.869999999999976°S, 151.21°E, 19.99999999992662m` |
+| computed, `{:.3}` | `-33.870°, 151.210°, 20 m` | `33.869999999999976°S, 151.21°E, 19.99999999992662m` |
+
 ## Local frames and look angles
 
 Every library is compared with geo3d and with map_3d. For targets built from a known pointing, that pointing is the reference too. Disagreements are in micrometres. For look angles, each answer (azimuth, elevation, range) is turned back into a point and the distance between the two points is reported, so a pointing error counts by how far it moves the target.
