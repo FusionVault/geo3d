@@ -1,7 +1,7 @@
 //! The Earth's shape — a reference [`Ellipsoid`] — and the conversions between latitude/longitude/height
 //! and x/y/z on it.
 
-use crate::geodesic::atan2d;
+use crate::angle::atan2d;
 #[cfg(all(feature = "libm", not(feature = "std"), not(test)))]
 use crate::math::Float as _;
 use crate::position::{Ecef, Geodetic};

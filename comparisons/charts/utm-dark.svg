@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="760" height="344" viewBox="0 0 760 344" font-family="system-ui, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" role="img" aria-label="UTM: geo3d within 1.9 nm of GeographicLib and 3.5 nm grid and back; utm crate 750 µm and 77 cm">
+<title>UTM: geo3d within 1.9 nm of GeographicLib and 3.5 nm grid and back; utm crate 750 µm and 77 cm</title>
+<rect x="0.5" y="0.5" width="759" height="343" rx="10" fill="#1a1a19" stroke="#2c2c2a"/>
+<text x="24.0" y="34.0" font-size="16" font-weight="600" fill="#ffffff" text-anchor="start">UTM grid coordinates</text>
+<text x="24.0" y="56.0" font-size="12.5" font-weight="400" fill="#c3c2b7" text-anchor="start">Worst error to the grid, against GeographicLib at nanometre precision, and each crate's own</text>
+<text x="24.0" y="74.0" font-size="12.5" font-weight="400" fill="#c3c2b7" text-anchor="start">round trip (grid and back, on 30 000 points). Log scale; shorter is better.</text>
+<line x1="119.7" y1="106" x2="119.7" y2="266" stroke="#2c2c2a"/>
+<text x="119.7" y="282.0" font-size="11" font-weight="400" fill="#9b9a93" text-anchor="middle">1 nm</text>
+<line x1="301.1" y1="106" x2="301.1" y2="266" stroke="#2c2c2a"/>
+<text x="301.1" y="282.0" font-size="11" font-weight="400" fill="#9b9a93" text-anchor="middle">1 µm</text>
+<line x1="482.6" y1="106" x2="482.6" y2="266" stroke="#2c2c2a"/>
+<text x="482.6" y="282.0" font-size="11" font-weight="400" fill="#9b9a93" text-anchor="middle">1 mm</text>
+<line x1="664.0" y1="106" x2="664.0" y2="266" stroke="#2c2c2a"/>
+<text x="664.0" y="282.0" font-size="11" font-weight="400" fill="#9b9a93" text-anchor="middle">1 m</text>
+<line x1="119.72000000000001" y1="106" x2="119.72000000000001" y2="266" stroke="#383835"/>
+<text x="24.0" y="125.0" font-size="13" font-weight="600" fill="#ffffff" text-anchor="start">geo3d</text>
+<text x="24.0" y="139.0" font-size="11.5" font-weight="400" fill="#9b9a93" text-anchor="start">to the grid</text>
+<path d="M119.7,117.0 H132.6 A4.0,4.0 0 0 1 136.6,121.0 V131.0 A4.0,4.0 0 0 1 132.6,135.0 H119.7 Z" fill="#3987e5"/>
+<text x="143.6" y="130.5" font-size="12.5" font-weight="600" fill="#ffffff" text-anchor="start">1.9 nm</text>
+<text x="24.0" y="165.0" font-size="13" font-weight="400" fill="#ffffff" text-anchor="start">utm</text>
+<text x="24.0" y="179.0" font-size="11.5" font-weight="400" fill="#9b9a93" text-anchor="start">to the grid</text>
+<path d="M119.7,157.0 H471.0 A4.0,4.0 0 0 1 475.0,161.0 V171.0 A4.0,4.0 0 0 1 471.0,175.0 H119.7 Z" fill="#75746d"/>
+<text x="482.0" y="170.5" font-size="12.5" font-weight="400" fill="#ffffff" text-anchor="start">750 µm</text>
+<text x="24.0" y="205.0" font-size="13" font-weight="600" fill="#ffffff" text-anchor="start">geo3d</text>
+<text x="24.0" y="219.0" font-size="11.5" font-weight="400" fill="#9b9a93" text-anchor="start">grid and back</text>
+<path d="M119.7,197.0 H148.6 A4.0,4.0 0 0 1 152.6,201.0 V211.0 A4.0,4.0 0 0 1 148.6,215.0 H119.7 Z" fill="#3987e5"/>
+<text x="159.6" y="210.5" font-size="12.5" font-weight="600" fill="#ffffff" text-anchor="start">3.5 nm</text>
+<text x="24.0" y="245.0" font-size="13" font-weight="400" fill="#ffffff" text-anchor="start">utm</text>
+<text x="24.0" y="259.0" font-size="11.5" font-weight="400" fill="#9b9a93" text-anchor="start">grid and back</text>
+<path d="M119.7,237.0 H653.1 A4.0,4.0 0 0 1 657.1,241.0 V251.0 A4.0,4.0 0 0 1 653.1,255.0 H119.7 Z" fill="#75746d"/>
+<text x="664.1" y="250.5" font-size="12.5" font-weight="400" fill="#ffffff" text-anchor="start">77 cm</text>
+<text x="24.0" y="306.0" font-size="11.5" font-weight="400" fill="#9b9a93" text-anchor="start">geo3d uses Krüger's series to the eighth order, as GeographicLib does to the sixth. The utm crate</text>
+<text x="24.0" y="322.0" font-size="11.5" font-weight="400" fill="#9b9a93" text-anchor="start">uses the older USGS series, and doesn't switch to UPS beyond 84° N or 80° S.</text>
+</svg>

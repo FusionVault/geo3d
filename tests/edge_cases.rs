@@ -52,6 +52,13 @@ fn conversions_round_trip_at_every_awkward_place() {
             apart(g, back) < 1e-6 * (1.0 + g.height_m.abs() / 6.4e6),
             "{g:?} -> {back:?}"
         );
+        // The UTM/UPS grid works at every awkward place, poles and antimeridian included.
+        let u = WGS84.to_utm_ups(g).expect("every valid position has a grid position");
+        let back = WGS84.from_utm_ups(u).unwrap().with_height(g.height_m);
+        assert!(
+            apart(g, back) < 1e-6 * (1.0 + g.height_m.abs() / 6.4e6),
+            "{g:?} -> {u:?} -> {back:?}"
+        );
         // Uncertainty carries through too: 3 m across, 5 m up (in degrees for the geodetic form).
         let local = Cov3::from_std_devs([3.0, 3.0, 5.0]);
         assert!(finite_cov(LocalFrame::new(g).enu_cov_to_ecef(local)), "{g:?}");
@@ -226,6 +233,8 @@ fn nan_and_infinity_in_give_nan_infinity_or_none_out() {
                 "{g:?}"
             );
             assert!(ground_strike(g, 0.0, -10.0).is_none(), "{g:?}");
+            // Height plays no part in the grid, so only a bad latitude or longitude is refused.
+            assert_eq!(WGS84.to_utm_ups(g).is_none(), g.height_m.is_finite(), "{g:?}");
             let cov = WGS84.geodetic_cov_to_ecef(g, Cov3::from_std_devs([1e-5, 1e-5, 1.0]));
             assert!(!finite_cov(cov), "{g:?}: {cov:?}");
             let aer = LocalFrame::new(ok).look_angles(g);
@@ -239,6 +248,7 @@ fn nan_and_infinity_in_give_nan_infinity_or_none_out() {
             assert!(!finite(ecef_to_geodetic(e)), "{e:?}");
         }
         assert!(LocalFrame::new(ok).ground_strike(x, -10.0).is_none());
+        assert!(WGS84.from_utm_ups(UtmUps::new(31, true, x, 1e6)).is_none());
         let q = Attitude::from_quaternion(Quaternion::new(x, 0.1, 0.2, 0.3));
         assert!(
             !(q.yaw_deg.is_finite() && q.pitch_deg.is_finite() && q.roll_deg.is_finite()),

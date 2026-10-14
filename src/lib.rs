@@ -51,6 +51,7 @@
 //! | [`Attitude`] | which way a vehicle faces: yaw, pitch and roll | degrees |
 //! | [`Frd`] | an offset in a vehicle's own frame: forward, right, down | metres |
 //! | [`Quaternion`] | the same turn as yaw, pitch and roll, as four numbers | none |
+//! | [`UtmUps`] | a UTM or UPS grid position: zone, easting and northing | metres |
 //!
 //! A few rules hold everywhere:
 //!
@@ -76,6 +77,7 @@
 //! | I want to… | Use |
 //! |---|---|
 //! | convert between latitude/longitude and x, y, z | [`geodetic_to_ecef`], [`ecef_to_geodetic`] |
+//! | use UTM/UPS grid coordinates, or another transverse Mercator grid | [`Ellipsoid::to_utm_ups`], [`Ellipsoid::from_utm_ups`], [`TransverseMercator`], [`PolarStereographic`] |
 //! | find where something is, relative to me | [`LocalFrame::enu_of`], [`LocalFrame::ned_of`] |
 //! | work out which way to point, and back | [`LocalFrame::look_angles`], [`LocalFrame::destination`] |
 //! | find where a line of sight hits the ground | [`ground_strike`], [`Ellipsoid::ray_intersect`] |
@@ -134,7 +136,9 @@ mod math;
 #[doc = include_str!("../README.md")]
 pub struct ReadmeDoctests;
 
+mod angle;
 mod attitude;
+mod auxlat;
 mod covariance;
 mod datum;
 pub mod eci;
@@ -147,6 +151,7 @@ mod local;
 mod motion;
 pub mod navlab;
 mod position;
+mod projection;
 mod quaternion;
 mod vector;
 mod visibility;
@@ -161,6 +166,7 @@ pub use geodesic::{Geodesic, PolygonArea};
 pub use local::{Aer, Enu, Ned};
 pub use motion::{closest_approach, Course, Cpa, Track};
 pub use position::{Ecef, Eci, Geodetic};
+pub use projection::{MapPoint, PolarStereographic, TransverseMercator, UtmUps};
 pub use quaternion::Quaternion;
 pub use vector::Vec3;
 pub use visibility::STANDARD_REFRACTION_K;

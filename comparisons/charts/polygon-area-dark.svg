@@ -2,7 +2,7 @@
 <title>Polygon area scorecard: geo3d matches GeographicLib on all four kinds of polygon; spherical methods are 0.7 % to 1.4 % off, and geo's fails across the antimeridian and around the poles</title>
 <rect x="0.5" y="0.5" width="819" height="311" rx="10" fill="#1a1a19" stroke="#2c2c2a"/>
 <text x="24.0" y="34.0" font-size="16" font-weight="600" fill="#ffffff" text-anchor="start">Polygon area: does it match GeographicLib?</text>
-<text x="24.0" y="56.0" font-size="12.5" font-weight="400" fill="#c3c2b7" text-anchor="start">1 000 polygons of each kind, 3 to 32 vertices. A pass is within 0.1 m² of GeographicLib, the</text>
+<text x="24.0" y="56.0" font-size="12.5" font-weight="400" fill="#c3c2b7" text-anchor="start">1 000 polygons of each kind, 3 to 32 vertices. A pass is within 0.2 m² of GeographicLib, the</text>
 <text x="24.0" y="74.0" font-size="12.5" font-weight="400" fill="#c3c2b7" text-anchor="start">reference. Spherical methods treat the Earth as a ball, so they are 0.7 % to 1.4 % off.</text>
 <rect x="201.0" y="102.0" width="148.8" height="150.0" rx="6" fill="#202e3e"/>
 <text x="275.4" y="122.0" font-size="12" font-weight="600" fill="#ffffff" text-anchor="middle">geo3d</text>
@@ -65,6 +65,6 @@
 <circle cx="690.6" cy="237.0" r="7" fill="#d03b3b"/>
 <path d="M688.0,234.4 L693.2,239.6 M693.2,234.4 L688.0,239.6" stroke="#ffffff" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
 <text x="701.6" y="241.0" font-size="11.5" font-weight="400" fill="#c3c2b7" text-anchor="start">0.9 % off</text>
-<text x="24.0" y="274.0" font-size="11.5" font-weight="400" fill="#9b9a93" text-anchor="start">geo3d's largest difference from GeographicLib is 0.031 m², around a pole. geo's geodesic area calls</text>
+<text x="24.0" y="274.0" font-size="11.5" font-weight="400" fill="#9b9a93" text-anchor="start">geo3d's largest difference from GeographicLib is 0.12 m², around a pole. geo's geodesic area calls</text>
 <text x="24.0" y="290.0" font-size="11.5" font-weight="400" fill="#9b9a93" text-anchor="start">geographiclib-rs. "wrong": more than 10 % off; geo's sphere method can't cross ±180° or circle a pole.</text>
 </svg>

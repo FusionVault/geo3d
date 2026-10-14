@@ -79,7 +79,7 @@ Simple polygons of 3 to 32 vertices, counter-clockwise, with longitudes in [-180
 | geo3d | fields, 10 m to 1 km across | 1000 | 0 | 0 | 0 % |
 | geo3d | regions, 1 km to 100 km across | 1000 | 0 | 0 | 0 % |
 | geo3d | across the antimeridian, 10 km to 100 km | 1000 | 0 | 0 | 0 % |
-| geo3d | around a pole, 60° to 89.9° | 1000 | 0 | 3.1e-2 | 6.2e-9 % |
+| geo3d | around a pole, 60° to 89.9° | 1000 | 0 | 1.2e-1 | 9.5e-9 % |
 | geo (`GeodesicArea`) | fields, 10 m to 1 km across | 1000 | 0 | 0 | 0 % |
 | geo (`GeodesicArea`) | regions, 1 km to 100 km across | 1000 | 0 | 0 | 0 % |
 | geo (`GeodesicArea`) | across the antimeridian, 10 km to 100 km | 1000 | 0 | 0 | 0 % |
@@ -126,6 +126,34 @@ Each crate turns yaw, pitch and roll into its own rotation and back. "Via ECEF" 
 | jord | within 1e-15° to 0.1° of ±90° pitch | 10000 | 0 | 1.4e-14 | 1.4e-9 |
 | geo3d | via ECEF, within 1e-15° to 0.1° of ±90° pitch | 10000 | 0 | 1.4e-14 | 8.9e-10 |
 | jord | via ECEF, within 1e-15° to 0.1° of ±90° pitch | 10000 | 0 | 1.4e-14 | 2.0e6 |
+
+## UTM grid coordinates
+
+geo3d and the `utm` crate, against GeographicLib's GeoConvert at nanometre precision, and against each other on 10 000 random points per set (geo3d agrees with GeographicLib to a few nanometres). "Grid and back" is each crate's own round trip, as a distance on the ground. A wrong zone is a different zone from GeographicLib's, or a refusal.
+
+### UTM easting and northing
+
+| Library | Points | Count | Wrong zone | Max error (m) |
+|---|---|---|---|---|
+| geo3d | GeographicLib's reference points | 18 | 0 | 1.9e-9 |
+| utm | GeographicLib's reference points | 18 | 0 | 7.5e-4 |
+| utm | within 1° of the central meridian, against geo3d | 10000 | 0 | 9.2e-4 |
+| geo3d | within 1° of the central meridian, grid and back | 10000 | 0 | 2.5e-9 |
+| utm | within 1° of the central meridian, grid and back | 10000 | 0 | 3.3e-1 |
+| utm | 2° to 3° from the central meridian, against geo3d | 10000 | 0 | 8.4e-4 |
+| geo3d | 2° to 3° from the central meridian, grid and back | 10000 | 0 | 3.2e-9 |
+| utm | 2° to 3° from the central meridian, grid and back | 10000 | 0 | 7.7e-1 |
+| utm | Svalbard's wide zones, 72° to 84° N, against geo3d | 10000 | 0 | 9.6e-4 |
+| geo3d | Svalbard's wide zones, 72° to 84° N, grid and back | 10000 | 0 | 3.5e-9 |
+| utm | Svalbard's wide zones, 72° to 84° N, grid and back | 10000 | 0 | 2.0e-1 |
+
+### UTM at the edges of its rules
+
+| Case | geo3d | utm |
+|---|---|---|
+| Exactly on the equator (0°, 3°) | zone 31, 500000 E, 0 N | zone 31, 500000 E, 10000000 N |
+| On the 180° meridian (10°, 180°) | zone 1, 171071 E, 1106909 N | zone 61, 171071 E, 1106909 N |
+| Beyond 84° N, where UTM stops (85°, 10°) | UPS (not UTM) | zone 32, 509730 E, 9439817 N |
 
 ## Local frames and look angles
 

@@ -184,6 +184,34 @@ fn bench(c: &mut Criterion) {
         })
         .collect();
     let polygons: Vec<&[LatLon]> = polygons.iter().map(Vec::as_slice).collect();
+    // UTM: 1 000 points in UTM's range, to the grid in the standard zone, and back.
+    let mut rng = Rng::new(13);
+    let utm_points: Vec<LatLon> = (0..N)
+        .map(|_| [rng.range(-80.0, 84.0), rng.range(-180.0, 180.0)])
+        .collect();
+    let mut g = group(c, "utm_forward");
+    run(&mut g, "geo3d", &utm_points, |p| with_geo3d::utm_forward(p[0], p[1]));
+    run(&mut g, "utm", &utm_points, |p| with_utm::utm_forward(p[0], p[1]));
+    g.finish();
+    let grid: Vec<(LatLon, [f64; 3], char)> = utm_points
+        .iter()
+        .map(|&p| {
+            (
+                p,
+                with_geo3d::utm_forward(p[0], p[1]).unwrap(),
+                utm::lat_to_zone_letter(p[0]).unwrap(),
+            )
+        })
+        .collect();
+    let mut g = group(c, "utm_reverse");
+    run(&mut g, "geo3d", &grid, |(p, u, _)| {
+        with_geo3d::utm_reverse(u[0] as u8, p[0] >= 0.0, u[1], u[2])
+    });
+    run(&mut g, "utm", &grid, |(_, u, letter)| {
+        with_utm::utm_reverse(u[0] as u8, letter, u[1], u[2])
+    });
+    g.finish();
+
     let mut g = group(c, "polygon_area");
     run(&mut g, "geo3d", &polygons, with_geo3d::polygon_area_m2);
     run(

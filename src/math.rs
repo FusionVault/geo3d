@@ -15,6 +15,10 @@ pub(crate) trait Float {
     fn atan(self) -> f64;
     fn atan2(self, other: f64) -> f64;
     fn atanh(self) -> f64;
+    fn sinh(self) -> f64;
+    fn asinh(self) -> f64;
+    fn exp(self) -> f64;
+    fn exp_m1(self) -> f64;
     fn floor(self) -> f64;
     fn rem_euclid(self, rhs: f64) -> f64;
     fn mul_add(self, a: f64, b: f64) -> f64;
@@ -60,6 +64,22 @@ impl Float for f64 {
     #[inline]
     fn atanh(self) -> f64 {
         libm::atanh(self)
+    }
+    #[inline]
+    fn sinh(self) -> f64 {
+        libm::sinh(self)
+    }
+    #[inline]
+    fn asinh(self) -> f64 {
+        libm::asinh(self)
+    }
+    #[inline]
+    fn exp(self) -> f64 {
+        libm::exp(self)
+    }
+    #[inline]
+    fn exp_m1(self) -> f64 {
+        libm::expm1(self)
     }
     #[inline]
     fn floor(self) -> f64 {

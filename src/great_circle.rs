@@ -4,8 +4,8 @@
 //! paths cross, the centre of a set of positions, and moving along a path. Like the n-vector
 //! method (Gade 2010), they have no special cases at the poles or the antimeridian.
 
+use crate::angle::{ang_diff, atan2d};
 use crate::ellipsoid::Ellipsoid;
-use crate::geodesic::{ang_diff, atan2d};
 use crate::local::wrap_360;
 #[cfg(all(feature = "libm", not(feature = "std"), not(test)))]
 use crate::math::Float as _;

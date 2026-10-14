@@ -9,6 +9,7 @@
 
 use core::f64::consts::PI;
 
+use crate::angle::{ang_diff, ang_normalize, ang_round, atan2d, lat_fix, sincosd, two_sum};
 use crate::ellipsoid::{Ellipsoid, WGS84};
 use crate::local::wrap_360;
 #[cfg(all(feature = "libm", not(feature = "std"), not(test)))]
@@ -98,7 +99,7 @@ impl Ellipsoid {
     }
 
     /// The area and perimeter of a polygon on the ellipsoid surface, matching GeographicLib to
-    /// within 0.1 m².
+    /// within 0.2 m².
     /// Each edge is the shortest path (a geodesic) between neighbouring vertices, and the last
     /// vertex joins back to the first. Heights are ignored.
     ///
@@ -960,122 +961,10 @@ fn norm2(x: f64, y: f64) -> (f64, f64) {
     (x / r, y / r)
 }
 
-/// Error-free sum: `s + t == u + v` exactly.
-#[inline]
-fn two_sum(u: f64, v: f64) -> (f64, f64) {
-    let s = u + v;
-    let up = s - v;
-    let vpp = s - up;
-    (s, -((up - u) + (vpp - v)))
-}
-
 /// The polynomial `p[0]·xⁿ + … + p[n]`, by Horner's rule.
 #[inline]
 fn polyval(n: usize, p: &[f64], x: f64) -> f64 {
     p[1..=n].iter().fold(p[0], |y, &c| fma(y, x, c))
-}
-
-/// Tiny angles round to zero; the rest keep a resolution of 2⁻⁵⁷ (0.7 pm on the Earth), so
-/// near-singular inputs like 1e-200° need no special handling.
-fn ang_round(x: f64) -> f64 {
-    const Z: f64 = 1.0 / 16.0;
-    let mut y = x.abs();
-    if y < Z {
-        y = Z - (Z - y);
-    }
-    if x == 0.0 {
-        0.0
-    } else {
-        y.copysign(x)
-    }
-}
-
-/// An angle in degrees reduced to `(-180, 180]`.
-fn ang_normalize(x: f64) -> f64 {
-    if x > -180.0 && x <= 180.0 {
-        return x; // the common case, without the cost of a remainder
-    }
-    let z = if x.is_finite() { x % 360.0 } else { f64::NAN };
-    let z = if x == 0.0 { x } else { z };
-    let y = if z < -180.0 {
-        z + 360.0
-    } else if z < 180.0 {
-        z
-    } else {
-        z - 360.0
-    };
-    if y == -180.0 {
-        180.0
-    } else {
-        y
-    }
-}
-
-/// NaN for a latitude beyond ±90°.
-fn lat_fix(x: f64) -> f64 {
-    if x.abs() > 90.0 {
-        f64::NAN
-    } else {
-        x
-    }
-}
-
-/// `y − x` reduced to `[-180, 180]`, as an exact sum `(d, e)`.
-pub(crate) fn ang_diff(x: f64, y: f64) -> (f64, f64) {
-    let (d, t) = two_sum(ang_normalize(-x), ang_normalize(y));
-    let d = ang_normalize(d);
-    if d == 180.0 && t > 0.0 {
-        two_sum(-180.0, t)
-    } else {
-        two_sum(d, t)
-    }
-}
-
-/// Sine and cosine of an angle in degrees, exact at multiples of 90°: the angle is reduced to
-/// `|r| ≤ 45°` before converting to radians.
-pub(crate) fn sincosd(x: f64) -> (f64, f64) {
-    // `%` is a slow library call, so it is only used for large angles; below 720° every step here
-    // is exact (Sterbenz's lemma), so the reduction loses nothing. NaN and ±∞ give NaN.
-    let r = if x.abs() < 720.0 { x } else { x % 360.0 };
-    let mut q = (r / 90.0) as i64;
-    let mut r = r - 90.0 * q as f64;
-    if r > 45.0 {
-        q += 1;
-        r -= 90.0;
-    } else if r < -45.0 {
-        q -= 1;
-        r += 90.0;
-    }
-    let (s, c) = r.to_radians().sin_cos();
-    let (s, c) = match q & 3 {
-        0 => (s, c),
-        1 => (c, -s),
-        2 => (-s, -c),
-        _ => (-c, s),
-    };
-    // No negative zeros except sin(−0).
-    (if s == 0.0 { s.copysign(x) } else { s }, c + 0.0)
-}
-
-/// `atan2(y, x)` in degrees, in `(-180, 180]`, exact for the cardinal directions.
-pub(crate) fn atan2d(mut y: f64, mut x: f64) -> f64 {
-    let mut q = if y.abs() > x.abs() {
-        core::mem::swap(&mut x, &mut y);
-        2
-    } else {
-        0
-    };
-    if x < 0.0 {
-        q += 1;
-        x = -x;
-    }
-    let ang = y.atan2(x).to_degrees();
-    match q {
-        1 => (if y >= 0.0 { 180.0 } else { -180.0 }) - ang,
-        2 => 90.0 - ang,
-        3 => -90.0 + ang,
-        _ => ang,
-    }
 }
 
 /// Clenshaw summation of `Σ c[l]·sin(2l·x)` (`sinp`) or `Σ c[l]·cos((2l+1)·x)`.
