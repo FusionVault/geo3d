@@ -2,6 +2,26 @@
 
 All notable changes to `geo3d`. Plain semver; tags `vX.Y.Z` at the published commit.
 
+## 0.2.4 — unreleased
+
+Documentation and internal structure. No public API change: every type, method and trait impl is
+unchanged, and results are identical.
+
+- Rewritten README and crate docs: a short pitch, a "find what you need" table, task-by-task
+  recipes, an accuracy table, conventions (units, ranges, height reference), a glossary, and a
+  lookup table for people coming from MATLAB, pymap3d or map_3d.
+- Corrected the `eci` docs: `Eci` is the TEME frame that SGP4 / TLE propagators output, not
+  J2000 / GCRF (about 0.4° apart), and `gmst_from_unix` treats UTC as UT1 (up to about 400 m at
+  the equator). The old "tens of metres" claim did not hold against J2000 / GCRF data.
+- docs.rs now builds with all features, so the `serde` and interop impls show up; the `tracking`
+  example is scraped into the docs; search aliases for the MATLAB / pymap3d names
+  (`geodetic2ecef`, `ecef2enu`, `geodetic2aer`, `vdist`, `vreckon`, `haversine`, …).
+- crates.io metadata: a plainer description; `gps` and `coordinates` keywords in place of `enu`
+  and `geospatial`; dropped the `no-std::no-alloc` category (the crate needs `std` for its float
+  maths); added `aerospace` and `science::robotics`.
+- Source split into one module per topic (vectors, positions, local frames, ellipsoid, geodesics,
+  great circles, visibility, motion, volumes, datum, ECI); `Course` moved next to `Track`.
+
 ## 0.2.3 — 2026-10-06
 
 Fix: `ground_strike` (`LocalFrame::ground_strike` and the WGS84 shorthand) returns the nearest point of the surface **ahead** of the observer.

@@ -1,19 +1,22 @@
-//! Closed-form 3D volumes. Domain-neutral: an altitude band is airspace or a warehouse mezzanine; a
-//! cone is a camera field of view, an antenna beam or a spotlight; a sphere is a delivery radius or a
-//! proximity alert.
+//! 3D shapes for "is it inside?" tests: [`Sphere`], [`Cone`], [`Cylinder`] and [`AltitudeBand`], all
+//! behind the [`Volume`] trait. Each does its trigonometry once when built, so testing many points
+//! against one shape is cheap.
 
 use crate::ellipsoid::{Ellipsoid, WGS84};
 use crate::frame::LocalFrame;
-use crate::types::{Aer, Ecef, Geodetic, Vec3};
+use crate::local::Aer;
+use crate::position::{Ecef, Geodetic};
+use crate::vector::Vec3;
 
-/// Something that can decide whether a geodetic point is inside it.
+/// A 3D shape that can answer "is this position inside?".
 pub trait Volume {
     /// Whether `point` lies inside (boundary inclusive).
     fn contains(&self, point: Geodetic) -> bool;
 }
 
-/// A vertical band of ellipsoidal heights, metres. A `None` bound is open on that side, so a
-/// floor-only or ceiling-only band works. Compose with any 2D footprint test for an extruded prism:
+/// A range of heights with an optional floor and ceiling, metres — a slice of airspace. A `None`
+/// bound is open on that side. Combine it with any 2D footprint test (from `geo`, PostGIS, …) for
+/// an extruded shape:
 ///
 /// ```
 /// use geo3d::AltitudeBand;
@@ -56,7 +59,7 @@ impl AltitudeBand {
         height_m >= self.floor_m.unwrap_or(f64::NEG_INFINITY) && height_m <= self.ceiling_m.unwrap_or(f64::INFINITY)
     }
 
-    /// The extruded-prism test: inside the 2D footprint **and** inside the band.
+    /// Inside the 2D footprint **and** inside the band: pass in your footprint test's answer.
     #[inline]
     pub fn within_prism(&self, footprint_contains: bool, height_m: f64) -> bool {
         footprint_contains && self.contains_height(height_m)
@@ -70,8 +73,8 @@ impl Volume for AltitudeBand {
     }
 }
 
-/// A sphere about a geodetic centre — a range/coverage bubble. The centre's ECEF position is
-/// computed once at construction.
+/// A ball of `radius_m` around a centre — a range, coverage or proximity bubble. Distance is the
+/// straight line through space.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Sphere {
     ellipsoid: Ellipsoid,
@@ -123,10 +126,8 @@ impl Volume for Sphere {
     }
 }
 
-/// A right-circular cone: apex at a reference point, axis along an azimuth (degrees from north,
-/// clockwise) and elevation (degrees above the horizon), a half-angle spread and a slant range. A
-/// directional coverage volume — sector, field of view, beam, scan arc. The apex frame, axis and
-/// the half-angle cosine are computed once at construction.
+/// A cone from an apex, pointing along an azimuth and elevation (degrees), with a half-angle spread
+/// (degrees) and a reach (metres) — a camera's field of view, an antenna beam or a scan sector.
 ///
 /// ```
 /// use geo3d::{Cone, Geodetic, Volume};
@@ -213,51 +214,9 @@ impl Volume for Cone {
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn altitude_band() {
-        assert!(AltitudeBand::new(Some(3000.0), Some(10_000.0)).contains_height(5000.0));
-        assert!(!AltitudeBand::new(Some(3000.0), Some(10_000.0)).contains_height(2000.0));
-        assert!(AltitudeBand::default().contains_height(999_999.0));
-        assert!(AltitudeBand::below(2000.0).contains_height(1000.0));
-        assert!(!AltitudeBand::above(2000.0).contains_height(1000.0));
-        assert!(AltitudeBand::new(Some(5000.0), Some(12_000.0)).contains(Geodetic::new(1.0, 2.0, 8000.0)));
-    }
-
-    #[test]
-    fn sphere() {
-        let site = Geodetic::new(34.0, -118.0, 0.0);
-        let s = Sphere::new(site, 10_000.0);
-        assert!(s.contains(Geodetic::new(34.0, -118.0, 1000.0)));
-        assert!(!s.contains(Geodetic::new(34.2, -118.0, 0.0)));
-        assert_eq!(s.center(), site);
-        assert_eq!(s.radius_m(), 10_000.0);
-    }
-
-    #[test]
-    fn cone_directional_volume() {
-        let up = Cone::new(Geodetic::new(0.0, 0.0, 0.0), 0.0, 90.0, 30.0, 20_000.0);
-        assert!(up.contains(Geodetic::new(0.0, 0.0, 5000.0)));
-        assert!(!up.contains(Geodetic::new(0.0, 0.0, 25_000.0)));
-        assert!(!up.contains(Geodetic::new(0.2, 0.0, 1000.0)));
-        assert!(up.contains(up.apex()));
-        let east = Cone::new(Geodetic::new(0.0, 0.0, 1000.0), 90.0, 0.0, 20.0, 100_000.0);
-        assert!(east.contains(Geodetic::new(0.0, 0.3, 1000.0)));
-        assert!(!east.contains(Geodetic::new(0.3, 0.0, 1000.0)));
-        assert_eq!(east.axis().azimuth_deg, 90.0);
-        assert_eq!(east.half_angle_deg(), 20.0);
-    }
-}
-
-// ── 0.2 additions ────────────────────────────────────────────────────────────────────────────────────
-
-/// A vertical cylinder: a circular footprint of `radius_m` about a centre, extruded through an
-/// [`AltitudeBand`] — a circular airspace, a geofence with a height range, a well-defined
-/// "within R of the site between these heights". Horizontal distance is measured in the centre's
-/// local tangent plane, so it is a flat-Earth approximation valid for radii up to a few hundred km.
+/// A circle on the ground extruded through an [`AltitudeBand`] — circular airspace, or a geofence
+/// with a height range. Distance from the centre is measured flat in the centre's local frame, which
+/// is accurate for radii up to a few hundred km.
 ///
 /// ```
 /// use geo3d::{AltitudeBand, Cylinder, Geodetic, Volume};
@@ -319,8 +278,42 @@ impl Volume for Cylinder {
 }
 
 #[cfg(test)]
-mod tests_0_2 {
+mod tests {
     use super::*;
+
+    #[test]
+    fn altitude_band() {
+        assert!(AltitudeBand::new(Some(3000.0), Some(10_000.0)).contains_height(5000.0));
+        assert!(!AltitudeBand::new(Some(3000.0), Some(10_000.0)).contains_height(2000.0));
+        assert!(AltitudeBand::default().contains_height(999_999.0));
+        assert!(AltitudeBand::below(2000.0).contains_height(1000.0));
+        assert!(!AltitudeBand::above(2000.0).contains_height(1000.0));
+        assert!(AltitudeBand::new(Some(5000.0), Some(12_000.0)).contains(Geodetic::new(1.0, 2.0, 8000.0)));
+    }
+
+    #[test]
+    fn sphere() {
+        let site = Geodetic::new(34.0, -118.0, 0.0);
+        let s = Sphere::new(site, 10_000.0);
+        assert!(s.contains(Geodetic::new(34.0, -118.0, 1000.0)));
+        assert!(!s.contains(Geodetic::new(34.2, -118.0, 0.0)));
+        assert_eq!(s.center(), site);
+        assert_eq!(s.radius_m(), 10_000.0);
+    }
+
+    #[test]
+    fn cone_directional_volume() {
+        let up = Cone::new(Geodetic::new(0.0, 0.0, 0.0), 0.0, 90.0, 30.0, 20_000.0);
+        assert!(up.contains(Geodetic::new(0.0, 0.0, 5000.0)));
+        assert!(!up.contains(Geodetic::new(0.0, 0.0, 25_000.0)));
+        assert!(!up.contains(Geodetic::new(0.2, 0.0, 1000.0)));
+        assert!(up.contains(up.apex()));
+        let east = Cone::new(Geodetic::new(0.0, 0.0, 1000.0), 90.0, 0.0, 20.0, 100_000.0);
+        assert!(east.contains(Geodetic::new(0.0, 0.3, 1000.0)));
+        assert!(!east.contains(Geodetic::new(0.3, 0.0, 1000.0)));
+        assert_eq!(east.axis().azimuth_deg, 90.0);
+        assert_eq!(east.half_angle_deg(), 20.0);
+    }
 
     #[test]
     fn cylinder() {

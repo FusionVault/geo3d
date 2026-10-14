@@ -1,9 +1,12 @@
-//! Datum shifts.
+//! [`Helmert7`]: shifting positions between datums (reference frames).
 
-use crate::types::{fma, Ecef, Vec3};
+use crate::position::Ecef;
+use crate::vector::{fma, Vec3};
 
-/// A 7-parameter Helmert (Bursa-Wolf) transformation between ECEF frames: translations (metres),
-/// rotations (**radians**) and a scale factor (unitless, e.g. `ppm × 1e-6`).
+/// A 7-parameter Helmert (Bursa-Wolf) transformation: moves ECEF positions from one datum to
+/// another with a shift (metres), a small rotation (**radians**) and a scale change (unitless,
+/// `ppm × 1e-6`). Build it from published parameters with [`position_vector`](Self::position_vector)
+/// or [`coordinate_frame`](Self::coordinate_frame).
 ///
 /// Rotation sign follows the **position-vector** convention (EPSG method 9606, the one most European
 /// datums publish). For parameters published in the coordinate-frame convention (EPSG 9607, common in

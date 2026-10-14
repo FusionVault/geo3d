@@ -37,6 +37,26 @@ jobs:
       - name: publish dry-run
         run: cargo publish --dry-run
 
+  # Docs are part of every change: a pull request that touches the library must say what changed in
+  # CHANGELOG.md (and, by the PR checklist, update the README and API docs where users will see it).
+  changelog:
+    name: docs · CHANGELOG updated with code changes
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: src/ changes need a CHANGELOG.md line
+        env:
+          BASE: ${{ github.base_ref }}
+        run: |
+          changed=$(git diff --name-only "origin/$BASE...HEAD")
+          if echo "$changed" | grep -q '^src/' && ! echo "$changed" | grep -qx 'CHANGELOG.md'; then
+            echo "::error::src/ changed but CHANGELOG.md did not. Add a line, and update the README and docs where users will see the change."
+            exit 1
+          fi
+
   msrv:
     name: msrv · the declared rust-version builds
     runs-on: ubuntu-latest
