@@ -28,14 +28,16 @@ cargo add geo3d
 
 ## Why geo3d?
 
+- **Accurate.** Exact conversions, and geodesics accurate to 15 nanometres. Every function states
+  its accuracy, and the tests pin it to GeographicLib and two independent implementations.
+- **Reliable.** Geodesics work for every pair of points, including ones on opposite sides of the
+  Earth, where Vincenty-based libraries fail. No `unsafe`, no dependencies, and every example in this
+  README runs as a test.
 - **Simple.** Plain, typed coordinates with named fields. Degrees and metres everywhere, latitude
   always first, so nothing gets mixed up.
-- **Accurate.** Exact conversions and half-millimetre geodesics, tested against GeographicLib and
-  cross-checked against an independent implementation.
 - **Fast.** Nothing allocates. A `LocalFrame` does its trigonometry once; after that, each point
-  costs a few multiplications.
-- **Light.** No dependencies, no `unsafe`, Rust 1.85+. Optional bridges to `glam`, `nalgebra`,
-  `mint`, `geo-types` and `serde`.
+  costs a few multiplications. Rust 1.85+, with optional bridges to `glam`, `nalgebra`, `mint`,
+  `geo-types` and `serde`.
 
 ## The coordinate types
 
@@ -128,7 +130,7 @@ There are three different distances. Pick the one you mean:
 | Distance | Function | Accuracy |
 |---|---|---|
 | Straight line through space (slant range) | `distance3d_m(a, b)` | exact |
-| Along the surface | `WGS84.geodesic_inverse(a, b)` | about 0.5 mm |
+| Along the surface | `WGS84.geodesic_inverse(a, b)` | about 15 nm |
 | Along the surface, quick estimate | `WGS84.great_circle_distance_m(a, b)` | about 0.5 % |
 
 ```rust
@@ -146,7 +148,8 @@ let (arrive, _) = WGS84.geodesic_direct(lax, surface.initial_bearing_deg, surfac
 assert!((arrive.lat_deg - jfk.lat_deg).abs() < 1e-8);
 ```
 
-`geodesic_inverse` returns `None` for points on nearly opposite sides of the Earth.
+The surface distance works for every pair of points, including ones on opposite sides of the Earth
+(where the older Vincenty method used by many libraries fails).
 
 ### Is it inside?
 
@@ -269,14 +272,16 @@ Angles go in and come out in degrees; there is no `deg` flag to remember.
 | latitude/longitude/height → x, y, z | closed form | exact |
 | x, y, z → latitude/longitude/height | Bowring, iterated | 1e-11° and 0.01 mm, from 11 km underground to geostationary orbit |
 | local frames, look angles, ground strike, volumes | closed form | exact |
-| surface distance and destination | Vincenty | about 0.5 mm |
+| surface distance and destination | Karney (as in GeographicLib) | about 15 nm, for every pair of points |
 | great-circle helpers, horizon distance | sphere of mean radius | about 0.5 % |
 | closest approach, tracks | constant velocity | exact for straight-line motion |
 | datum shift (`Helmert7`) | small-angle Helmert | exact for the given parameters |
 | inertial frame (`eci`) | sidereal time (TEME) | rotation exact; UTC-as-UT1 up to ~400 m |
 
-The tests pin these to GeographicLib reference values and cross-check the conversions against an
-independent crate ([`map_3d`](https://crates.io/crates/map_3d)) over a global grid.
+The tests pin these to GeographicLib reference values, cross-check the conversions against an
+independent crate ([`map_3d`](https://crates.io/crates/map_3d)) over a global grid, and cross-check
+the geodesics against [`geographiclib-rs`](https://crates.io/crates/geographiclib-rs) on 25 000
+pairs, 5 000 of them nearly antipodal, on four ellipsoids. They agree to within 4 nm.
 
 ## Optional features
 
