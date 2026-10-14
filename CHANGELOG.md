@@ -5,6 +5,14 @@ release is tagged `vX.Y.Z`.
 
 ## Unreleased
 
+- 🛡️ **An edge-case test suite** ([#10](https://github.com/FusionVault/geo3d/issues/10)). It runs
+  every public conversion at the exact poles, the antimeridian, the Earth's centre, 100 000 km up,
+  deep underground, exact antipodes, and NaN or infinite input. It found and fixed two bugs:
+  - Bearings and azimuths could come out as exactly 360° (from a tiny negative angle). They are
+    now always in `[0, 360)`. This affects look angles, `Course`, `initial_bearing_deg` and
+    geodesic bearings.
+  - `ground_strike` returned `Some(NaN position)` for a NaN latitude or longitude at height 0.
+    It now returns `None`.
 - 🧹 CI now runs [cargo-semver-checks](https://github.com/obi1kenobi/cargo-semver-checks) on every
   pull request, so accidental breaking changes are caught before release
   ([#11](https://github.com/FusionVault/geo3d/issues/11)).

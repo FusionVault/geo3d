@@ -2,7 +2,7 @@
 //! [`closest_approach`] for near-miss checks. Motion is assumed constant — straight lines at
 //! steady speed.
 
-use crate::local::Enu;
+use crate::local::{wrap_360, Enu};
 use crate::position::Ecef;
 use crate::vector::Vec3;
 
@@ -37,7 +37,7 @@ impl Course {
         let course_deg = if ground == 0.0 {
             0.0
         } else {
-            v.east.atan2(v.north).to_degrees().rem_euclid(360.0)
+            wrap_360(v.east.atan2(v.north).to_degrees())
         };
         Course {
             course_deg,

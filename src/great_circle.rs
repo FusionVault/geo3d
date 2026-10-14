@@ -2,6 +2,7 @@
 //! of the ellipsoid's mean radius. Within 0.6 % of the true surface distance on WGS84.
 
 use crate::ellipsoid::Ellipsoid;
+use crate::local::wrap_360;
 use crate::position::Geodetic;
 
 impl Ellipsoid {
@@ -26,7 +27,7 @@ impl Ellipsoid {
         let dl = b.lon_rad() - a.lon_rad();
         let y = dl.sin() * p2.cos();
         let x = p1.cos() * p2.sin() - p1.sin() * p2.cos() * dl.cos();
-        y.atan2(x).to_degrees().rem_euclid(360.0)
+        wrap_360(y.atan2(x).to_degrees())
     }
 
     /// The position `distance_m` along the great circle from `from` on an initial `bearing_deg`;
