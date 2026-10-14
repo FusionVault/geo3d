@@ -51,6 +51,7 @@ fn main() {
     std::panic::set_hook(Box::new(|_| {}));
     round_trip();
     geodesics();
+    areas();
     look_angles();
     robustness();
 }
@@ -309,7 +310,100 @@ fn geodesics() {
     );
 }
 
-// ── 3. Local frames and look angles, compared pairwise ──────────────────────────────────────────
+// ── 3. Polygon areas against geographiclib-rs ──────────────────────────────────────────────────
+
+type Area = fn(&[LatLon]) -> Option<f64>;
+
+/// A percentage, readable at any size: scientific notation below 0.01 % and above 1 000 %.
+fn pct(x: f64) -> String {
+    if (1e-4..10.0).contains(&x) {
+        format!("{:.2} %", x * 100.0)
+    } else {
+        format!("{} %", sci(x * 100.0))
+    }
+}
+
+fn areas() {
+    let mut rng = Rng::new(0x5851_f42d_4c95_7f2d);
+    let mut sets: Vec<(&str, Vec<Vec<LatLon>>)> = Vec::new();
+    // Up to 100 km across, so the edges' path barely matters: a geodesic, a great circle and a
+    // straight line on an equal-area map (geo's spherical method) enclose almost the same area.
+    let stars = |rng: &mut Rng, lo: f64, hi: f64, lon: Option<f64>| -> Vec<Vec<LatLon>> {
+        (0..1_000)
+            .map(|_| {
+                let centre = [rng.range(-70.0, 70.0), lon.unwrap_or_else(|| rng.range(-175.0, 175.0))];
+                let (size, n) = (10f64.powf(rng.range(lo, hi)), 3 + (rng.f64() * 30.0) as usize);
+                star(rng, centre, size, n)
+            })
+            .collect()
+    };
+    sets.push(("fields, 10 m to 1 km across", stars(&mut rng, -4.0, -2.0, None)));
+    sets.push(("regions, 1 km to 100 km across", stars(&mut rng, -2.0, -0.05, None)));
+    sets.push((
+        "across the antimeridian, 10 km to 100 km",
+        stars(&mut rng, -1.05, -0.05, Some(180.0)),
+    ));
+    let rings = (0..1_000)
+        .map(|_| {
+            let (north, lat) = (rng.f64() < 0.5, rng.range(60.0, 89.9));
+            let (n, start) = (3 + (rng.f64() * 30.0) as usize, rng.range(-180.0, 180.0));
+            // Counter-clockwise seen from above: eastward round the north pole, westward round the south.
+            let step = if north { 360.0 } else { -360.0 } / n as f64;
+            (0..n)
+                .map(|i| [if north { lat } else { -lat }, wrap(start + step * i as f64)])
+                .collect()
+        })
+        .collect();
+    sets.push(("around a pole, 60° to 89.9°", rings));
+
+    let libs: [(&str, Area); 4] = [
+        ("geo3d", with_geo3d::polygon_area_m2),
+        ("geo (`GeodesicArea`)", with_geo::geodesic_area_m2),
+        ("geo (`ChamberlainDuquetteArea`, sphere)", with_geo::spherical_area_m2),
+        ("jord (spherical excess, sphere)", with_jord::polygon_area_m2),
+    ];
+    let mut rows = Vec::new();
+    for (name, f) in libs {
+        for (set, polys) in &sets {
+            let (mut failed, mut max_abs, mut max_rel) = (0, 0.0f64, 0.0f64);
+            for poly in polys {
+                let reference = with_geographiclib::polygon_area_m2(poly).unwrap();
+                match finite(guarded(|| f(poly).map(|a| [a]))) {
+                    Some([a]) => {
+                        let err = (a.abs() - reference.abs()).abs();
+                        max_abs = max_abs.max(err);
+                        max_rel = max_rel.max(err / reference.abs());
+                    }
+                    None => failed += 1,
+                }
+            }
+            rows.push(vec![
+                name.to_string(),
+                set.to_string(),
+                polys.len().to_string(),
+                failed.to_string(),
+                sci(max_abs),
+                pct(max_rel),
+            ]);
+        }
+    }
+    println!("## Polygon areas, against geographiclib-rs\n");
+    println!("Simple polygons of 3 to 32 vertices, counter-clockwise, with longitudes in [-180°, 180°) as GeoJSON has them. The rings round a pole have vertices on one parallel. Errors are in the size of the area, whatever its sign. A failure is `None`, NaN or a panic. geo's `GeodesicArea` calls geographiclib-rs, so it matches it exactly.\n");
+    table(
+        "Area of a polygon",
+        &[
+            "Library",
+            "Polygons",
+            "Count",
+            "Failures",
+            "Max error (m²)",
+            "Max error (share of the area)",
+        ],
+        &rows,
+    );
+}
+
+// ── 4. Local frames and look angles, compared pairwise ──────────────────────────────────────────
 
 fn aer_to_enu(a: AerV) -> EnuV {
     let (sa, ca) = a[0].to_radians().sin_cos();
@@ -448,7 +542,7 @@ fn look_angles() {
     }
 }
 
-// ── 4. Robustness: edge cases ───────────────────────────────────────────────────────────────────
+// ── 5. Robustness: edge cases ───────────────────────────────────────────────────────────────────
 
 /// What came back, in a word: ok, NaN, rejected, panic, or wrong (with the value).
 fn verdict<const N: usize>(

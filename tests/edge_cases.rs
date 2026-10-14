@@ -109,6 +109,12 @@ fn distances_and_bearings_between_every_pair() {
                 "{a:?} -> {b:?}: landed at {end:?}"
             );
             assert!(finite(WGS84.interpolate(a, b, 0.5)), "{a:?} -> {b:?}");
+            // A triangle through both, which may wrap a pole or cross the antimeridian.
+            let p = WGS84.polygon_area(&[a, b, Geodetic::new(-33.87, 151.21, 0.0)]).unwrap();
+            assert!(
+                p.perimeter_m.is_finite() && p.area_m2.abs() <= 2.6e14,
+                "{a:?} -> {b:?}: {p:?}"
+            );
         }
     }
     // Exact antipodes, the case Vincenty's method could not solve.
@@ -169,6 +175,10 @@ fn nan_and_infinity_in_give_nan_infinity_or_none_out() {
             } else {
                 assert!(surface.is_some_and(|s| s.distance_m.is_finite()), "{g:?}");
             }
+            assert_eq!(
+                WGS84.polygon_area(&[ok, g, Geodetic::new(0.0, 0.0, 0.0)]).is_none(),
+                surface.is_none()
+            );
             assert!(
                 !finite(WGS84.geodesic_direct(g, 10.0, 1_000.0).0) || g.height_m.is_infinite(),
                 "{g:?}"

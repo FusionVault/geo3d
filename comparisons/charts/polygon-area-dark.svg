@@ -1,0 +1,70 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="820" height="312" viewBox="0 0 820 312" font-family="system-ui, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" role="img" aria-label="Polygon area scorecard: geo3d matches GeographicLib on all four kinds of polygon; spherical methods are 0.7 % to 1.4 % off, and geo's fails across the antimeridian and around the poles">
+<title>Polygon area scorecard: geo3d matches GeographicLib on all four kinds of polygon; spherical methods are 0.7 % to 1.4 % off, and geo's fails across the antimeridian and around the poles</title>
+<rect x="0.5" y="0.5" width="819" height="311" rx="10" fill="#1a1a19" stroke="#2c2c2a"/>
+<text x="24.0" y="34.0" font-size="16" font-weight="600" fill="#ffffff" text-anchor="start">Polygon area: does it match GeographicLib?</text>
+<text x="24.0" y="56.0" font-size="12.5" font-weight="400" fill="#c3c2b7" text-anchor="start">1 000 polygons of each kind, 3 to 32 vertices. A pass is within 0.1 m² of GeographicLib, the</text>
+<text x="24.0" y="74.0" font-size="12.5" font-weight="400" fill="#c3c2b7" text-anchor="start">reference. Spherical methods treat the Earth as a ball, so they are 0.7 % to 1.4 % off.</text>
+<rect x="201.0" y="102.0" width="148.8" height="150.0" rx="6" fill="#202e3e"/>
+<text x="275.4" y="122.0" font-size="12" font-weight="600" fill="#ffffff" text-anchor="middle">geo3d</text>
+<text x="424.1" y="122.0" font-size="12" font-weight="500" fill="#ffffff" text-anchor="middle">geo, geodesic</text>
+<text x="572.9" y="122.0" font-size="12" font-weight="500" fill="#ffffff" text-anchor="middle">geo, sphere</text>
+<text x="721.6" y="122.0" font-size="12" font-weight="500" fill="#ffffff" text-anchor="middle">jord, sphere</text>
+<line x1="24" y1="132.0" x2="796" y2="132.0" stroke="#2c2c2a"/>
+<text x="24.0" y="151.0" font-size="12.5" font-weight="400" fill="#ffffff" text-anchor="start">Fields, 10 m to 1 km</text>
+<circle cx="250.8" cy="147.0" r="7" fill="#0ca30c"/>
+<path d="M247.6,147.2 L249.9,149.6 L254.2,144.4" stroke="#ffffff" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+<text x="261.8" y="151.0" font-size="11.5" font-weight="400" fill="#c3c2b7" text-anchor="start">matches</text>
+<circle cx="399.6" cy="147.0" r="7" fill="#0ca30c"/>
+<path d="M396.4,147.2 L398.7,149.6 L403.0,144.4" stroke="#ffffff" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+<text x="410.6" y="151.0" font-size="11.5" font-weight="400" fill="#c3c2b7" text-anchor="start">matches</text>
+<circle cx="541.9" cy="147.0" r="7" fill="#d03b3b"/>
+<path d="M539.3,144.4 L544.5,149.6 M544.5,144.4 L539.3,149.6" stroke="#ffffff" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+<text x="552.9" y="151.0" font-size="11.5" font-weight="400" fill="#c3c2b7" text-anchor="start">0.7 % off</text>
+<circle cx="690.6" cy="147.0" r="7" fill="#d03b3b"/>
+<path d="M688.0,144.4 L693.2,149.6 M693.2,144.4 L688.0,149.6" stroke="#ffffff" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+<text x="701.6" y="151.0" font-size="11.5" font-weight="400" fill="#c3c2b7" text-anchor="start">1.4 % off</text>
+<line x1="24" y1="162.0" x2="796" y2="162.0" stroke="#2c2c2a"/>
+<text x="24.0" y="181.0" font-size="12.5" font-weight="400" fill="#ffffff" text-anchor="start">Regions, 1 km to 100 km</text>
+<circle cx="250.8" cy="177.0" r="7" fill="#0ca30c"/>
+<path d="M247.6,177.2 L249.9,179.6 L254.2,174.4" stroke="#ffffff" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+<text x="261.8" y="181.0" font-size="11.5" font-weight="400" fill="#c3c2b7" text-anchor="start">matches</text>
+<circle cx="399.6" cy="177.0" r="7" fill="#0ca30c"/>
+<path d="M396.4,177.2 L398.7,179.6 L403.0,174.4" stroke="#ffffff" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+<text x="410.6" y="181.0" font-size="11.5" font-weight="400" fill="#c3c2b7" text-anchor="start">matches</text>
+<circle cx="541.9" cy="177.0" r="7" fill="#d03b3b"/>
+<path d="M539.3,174.4 L544.5,179.6 M544.5,174.4 L539.3,179.6" stroke="#ffffff" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+<text x="552.9" y="181.0" font-size="11.5" font-weight="400" fill="#c3c2b7" text-anchor="start">0.7 % off</text>
+<circle cx="690.6" cy="177.0" r="7" fill="#d03b3b"/>
+<path d="M688.0,174.4 L693.2,179.6 M693.2,174.4 L688.0,179.6" stroke="#ffffff" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+<text x="701.6" y="181.0" font-size="11.5" font-weight="400" fill="#c3c2b7" text-anchor="start">0.7 % off</text>
+<line x1="24" y1="192.0" x2="796" y2="192.0" stroke="#2c2c2a"/>
+<text x="24.0" y="211.0" font-size="12.5" font-weight="400" fill="#ffffff" text-anchor="start">Across the antimeridian</text>
+<circle cx="250.8" cy="207.0" r="7" fill="#0ca30c"/>
+<path d="M247.6,207.2 L249.9,209.6 L254.2,204.4" stroke="#ffffff" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+<text x="261.8" y="211.0" font-size="11.5" font-weight="400" fill="#c3c2b7" text-anchor="start">matches</text>
+<circle cx="399.6" cy="207.0" r="7" fill="#0ca30c"/>
+<path d="M396.4,207.2 L398.7,209.6 L403.0,204.4" stroke="#ffffff" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+<text x="410.6" y="211.0" font-size="11.5" font-weight="400" fill="#c3c2b7" text-anchor="start">matches</text>
+<circle cx="554.8" cy="207.0" r="7" fill="#d03b3b"/>
+<path d="M552.2,204.4 L557.4,209.6 M557.4,204.4 L552.2,209.6" stroke="#ffffff" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+<text x="565.8" y="211.0" font-size="11.5" font-weight="400" fill="#c3c2b7" text-anchor="start">wrong</text>
+<circle cx="690.6" cy="207.0" r="7" fill="#d03b3b"/>
+<path d="M688.0,204.4 L693.2,209.6 M693.2,204.4 L688.0,209.6" stroke="#ffffff" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+<text x="701.6" y="211.0" font-size="11.5" font-weight="400" fill="#c3c2b7" text-anchor="start">0.7 % off</text>
+<line x1="24" y1="222.0" x2="796" y2="222.0" stroke="#2c2c2a"/>
+<text x="24.0" y="241.0" font-size="12.5" font-weight="400" fill="#ffffff" text-anchor="start">Around a pole</text>
+<circle cx="250.8" cy="237.0" r="7" fill="#0ca30c"/>
+<path d="M247.6,237.2 L249.9,239.6 L254.2,234.4" stroke="#ffffff" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+<text x="261.8" y="241.0" font-size="11.5" font-weight="400" fill="#c3c2b7" text-anchor="start">matches</text>
+<circle cx="399.6" cy="237.0" r="7" fill="#0ca30c"/>
+<path d="M396.4,237.2 L398.7,239.6 L403.0,234.4" stroke="#ffffff" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+<text x="410.6" y="241.0" font-size="11.5" font-weight="400" fill="#c3c2b7" text-anchor="start">matches</text>
+<circle cx="554.8" cy="237.0" r="7" fill="#d03b3b"/>
+<path d="M552.2,234.4 L557.4,239.6 M557.4,234.4 L552.2,239.6" stroke="#ffffff" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+<text x="565.8" y="241.0" font-size="11.5" font-weight="400" fill="#c3c2b7" text-anchor="start">wrong</text>
+<circle cx="690.6" cy="237.0" r="7" fill="#d03b3b"/>
+<path d="M688.0,234.4 L693.2,239.6 M693.2,234.4 L688.0,239.6" stroke="#ffffff" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+<text x="701.6" y="241.0" font-size="11.5" font-weight="400" fill="#c3c2b7" text-anchor="start">0.9 % off</text>
+<text x="24.0" y="274.0" font-size="11.5" font-weight="400" fill="#9b9a93" text-anchor="start">geo3d's largest difference from GeographicLib is 0.031 m², around a pole. geo's geodesic area calls</text>
+<text x="24.0" y="290.0" font-size="11.5" font-weight="400" fill="#9b9a93" text-anchor="start">geographiclib-rs. "wrong": more than 10 % off; geo's sphere method can't cross ±180° or circle a pole.</text>
+</svg>

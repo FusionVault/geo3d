@@ -68,6 +68,31 @@
 | jord | 6371000.8 m | 0.56 % | 0.13 % | 37.8 km | 0 |
 | geo | 6371008.8 m | 0.56 % | 0.13 % | 37.8 km | 0 |
 
+## Polygon areas, against geographiclib-rs
+
+Simple polygons of 3 to 32 vertices, counter-clockwise, with longitudes in [-180°, 180°) as GeoJSON has them. The rings round a pole have vertices on one parallel. Errors are in the size of the area, whatever its sign. A failure is `None`, NaN or a panic. geo's `GeodesicArea` calls geographiclib-rs, so it matches it exactly.
+
+### Area of a polygon
+
+| Library | Polygons | Count | Failures | Max error (m²) | Max error (share of the area) |
+|---|---|---|---|---|---|
+| geo3d | fields, 10 m to 1 km across | 1000 | 0 | 0 | 0 % |
+| geo3d | regions, 1 km to 100 km across | 1000 | 0 | 0 | 0 % |
+| geo3d | across the antimeridian, 10 km to 100 km | 1000 | 0 | 0 | 0 % |
+| geo3d | around a pole, 60° to 89.9° | 1000 | 0 | 3.1e-2 | 6.2e-9 % |
+| geo (`GeodesicArea`) | fields, 10 m to 1 km across | 1000 | 0 | 0 | 0 % |
+| geo (`GeodesicArea`) | regions, 1 km to 100 km across | 1000 | 0 | 0 | 0 % |
+| geo (`GeodesicArea`) | across the antimeridian, 10 km to 100 km | 1000 | 0 | 0 | 0 % |
+| geo (`GeodesicArea`) | around a pole, 60° to 89.9° | 1000 | 0 | 0 | 0 % |
+| geo (`ChamberlainDuquetteArea`, sphere) | fields, 10 m to 1 km across | 1000 | 0 | 3.0e3 | 0.67 % |
+| geo (`ChamberlainDuquetteArea`, sphere) | regions, 1 km to 100 km across | 1000 | 0 | 1.8e7 | 0.71 % |
+| geo (`ChamberlainDuquetteArea`, sphere) | across the antimeridian, 10 km to 100 km | 1000 | 0 | 3.0e12 | 9.4e5 % |
+| geo (`ChamberlainDuquetteArea`, sphere) | around a pole, 60° to 89.9° | 1000 | 0 | 3.4e13 | 100.00 % |
+| jord (spherical excess, sphere) | fields, 10 m to 1 km across | 1000 | 0 | 2.7e3 | 1.35 % |
+| jord (spherical excess, sphere) | regions, 1 km to 100 km across | 1000 | 0 | 2.1e7 | 0.74 % |
+| jord (spherical excess, sphere) | across the antimeridian, 10 km to 100 km | 1000 | 0 | 2.1e7 | 0.73 % |
+| jord (spherical excess, sphere) | around a pole, 60° to 89.9° | 1000 | 0 | 2.5e11 | 0.89 % |
+
 ## Local frames and look angles
 
 Every library is compared with geo3d and with map_3d. For targets built from a known pointing, that pointing is the reference too. Disagreements are in micrometres. For look angles, each answer (azimuth, elevation, range) is turned back into a point and the distance between the two points is reported, so a pointing error counts by how far it moves the target.

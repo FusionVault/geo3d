@@ -12,6 +12,7 @@ Give geo3d a GPS position, then ask everyday questions:
 - 📍 Where is that plane, seen from here?
 - 📡 Which way should the antenna point?
 - 📏 How far apart are they?
+- 🗺️ How big is that field?
 - 👀 Can they see each other?
 - 💥 Are they going to collide?
 
@@ -151,6 +152,29 @@ assert!((arrive.lat_deg - jfk.lat_deg).abs() < 1e-8);
 
 The distance along the ground works for any two points, even ones on opposite sides of the Earth.
 
+### Measure an area
+
+List the corners in order, and get the area and the distance around:
+
+```rust
+use geo3d::{Geodetic, WGS84};
+
+let field = [
+    Geodetic::new(-33.870, 151.200, 0.0),
+    Geodetic::new(-33.870, 151.210, 0.0),
+    Geodetic::new(-33.860, 151.210, 0.0),
+    Geodetic::new(-33.860, 151.200, 0.0),
+];
+let size = WGS84.polygon_area(&field).unwrap();  // 1 026 350 m² (about 1 km²), 4 069 m around
+assert!((size.area_m2 - 1_026_349.8).abs() < 0.1);
+```
+
+💡 The sign tells you the order. Counter-clockwise corners (seen from above) give a positive area,
+and clockwise ones a negative area. Use `size.area_m2.abs()` if you don't mind which way round.
+
+The edges are the shortest paths between corners. Areas around a pole or across the antimeridian
+work as they are.
+
 ### Check if something is inside a zone
 
 Every shape answers `contains`:
@@ -266,6 +290,7 @@ and then:
 | `lookAtSpheroid` | `frame.ground_strike(azimuth, elevation)` |
 | `vdist` / `distance` | `WGS84.geodesic_inverse(a, b)` |
 | `vreckon` / `reckon` | `WGS84.geodesic_direct(a, bearing, distance)` |
+| `areaint` | `WGS84.polygon_area(&corners)` |
 | `ecef2eci` / `eci2ecef` | `e.to_eci(gmst)` / `i.to_ecef(gmst)` |
 
 Everything is in degrees, so there's no `deg` flag to remember.
@@ -279,7 +304,7 @@ We tested geo3d against five other Rust crates, giving them all the same inputs.
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="comparisons/charts/roundtrip-dark.svg">
-  <img alt="Worst round-trip position error up to geostationary height: geo3d 15 nm, map_3d 81 m" src="comparisons/charts/roundtrip-light.svg">
+  <img alt="Worst round-trip position error up to geostationary height: geo3d 21 nm, map_3d 81 m" src="comparisons/charts/roundtrip-light.svg">
 </picture>
 
 geo3d solves this with an exact formula, then checks the last nanometre. It stays exact from deep
@@ -296,11 +321,22 @@ that far out.
 geo3d measures distance on the Earth's real, slightly squashed shape, just like GeographicLib. The
 other crates assume a perfect sphere, which can be tens of kilometres out on a long trip.
 
+### 🗺️ Area
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="comparisons/charts/polygon-area-dark.svg">
+  <img alt="Polygon area scorecard: geo3d matches GeographicLib on all four kinds of polygon; spherical methods are 0.7 % to 1.4 % off, and geo's fails across the antimeridian and around the poles" src="comparisons/charts/polygon-area-light.svg">
+</picture>
+
+geo3d's areas match GeographicLib, from a 10 m field to a ring around the South Pole. Methods that
+treat the Earth as a ball are 0.7 % to 1.4 % out, and geo's breaks across the antimeridian and
+around the poles.
+
 ### 📡 Pointing straight up
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="comparisons/charts/look-angles-dark.svg">
-  <img alt="Worst look-angle error on hard cases: geo3d 30 nm, jord 13 cm, sguaba 13 cm" src="comparisons/charts/look-angles-light.svg">
+  <img alt="Worst look-angle error on hard cases: geo3d 25 nm, jord 13 cm, sguaba 13 cm" src="comparisons/charts/look-angles-light.svg">
 </picture>
 
 geo3d uses a formula that stays precise in every direction. Some crates lose precision when
@@ -331,11 +367,11 @@ dependencies. Other crates are ahead on n-vectors and attitude. Both are on our
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="comparisons/charts/speed-dark.svg">
-  <img alt="Time per call for 10 operations; geo3d is fastest in 3 and tied in 2" src="comparisons/charts/speed-light.svg">
+  <img alt="Time per call for 11 operations; geo3d is fastest in 3 and tied in 3" src="comparisons/charts/speed-light.svg">
 </picture>
 
-geo3d is the fastest, or level with the fastest, in five of the ten tests. It's slower in the other
-five, and we know why:
+geo3d is the fastest, or level with the fastest, in six of the eleven tests. It's slower in the
+other five, and we know why:
 
 - **x, y, z back to latitude and longitude** (two of the tests). geo3d is about 10 % behind map_3d
   and jord here, and further behind nav-types and sguaba. It spends that time on a final check
@@ -355,6 +391,7 @@ five, and we know why:
 | x, y, z → latitude/longitude/height | 3 nm near the Earth, 20 nm at satellite heights |
 | Local frames, pointing, ground strikes and zones | exact, even straight up |
 | Distance and travel along the ground | 15 nm, for any two points |
+| Polygon area | within 0.1 m² of GeographicLib, for any polygon |
 | Great-circle estimates and horizon distance | within 0.6 % |
 | Closest approach | exact for objects moving in straight lines |
 | Datum shifts | exact for the published numbers |
@@ -386,7 +423,8 @@ let p: geo_types::Point = geo3d::Geodetic::new(-33.87, 151.21, 20.0).into(); // 
 
 ## 🚧 Not included (yet)
 
-- **2D shapes** like polygons: use [`geo`](https://crates.io/crates/geo).
+- **2D shape operations** like joining polygons or testing if a point is inside one: use
+  [`geo`](https://crates.io/crates/geo). geo3d does measure polygon areas.
 - **Map grids** like UTM and MGRS: use [`utm`](https://crates.io/crates/utm) or
   [`proj`](https://crates.io/crates/proj) for now. UTM is on our roadmap.
 - **Height above sea level** and terrain.
@@ -402,6 +440,7 @@ let p: geo_types::Point = geo3d::Geodetic::new(-33.87, 151.21, 20.0).into(); // 
 - **ECI:** like ECEF, but not spinning with the Earth. Used for satellites.
 - **TEME:** the version of ECI that SGP4 satellite models use.
 - **Geodesic:** the shortest path along the ground.
+- **Antimeridian:** the line at 180° longitude, where east meets west.
 - **Great circle:** the shortest path on a perfect sphere. A quick stand-in for a geodesic.
 - **Datum:** a reference frame for coordinates. Helmert numbers convert between two of them.
 

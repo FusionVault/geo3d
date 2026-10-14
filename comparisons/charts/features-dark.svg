@@ -1,10 +1,10 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="900" height="536" viewBox="0 0 900 536" font-family="system-ui, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" role="img" aria-label="Feature matrix: geo3d is the only crate with ground strike, 3D volumes, closest approach and datum shifts">
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="566" viewBox="0 0 900 566" font-family="system-ui, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" role="img" aria-label="Feature matrix: geo3d is the only crate with ground strike, 3D volumes, closest approach and datum shifts">
 <title>Feature matrix: geo3d is the only crate with ground strike, 3D volumes, closest approach and datum shifts</title>
-<rect x="0.5" y="0.5" width="899" height="535" rx="10" fill="#1a1a19" stroke="#2c2c2a"/>
+<rect x="0.5" y="0.5" width="899" height="565" rx="10" fill="#1a1a19" stroke="#2c2c2a"/>
 <text x="24.0" y="34.0" font-size="16" font-weight="600" fill="#ffffff" text-anchor="start">Features</text>
 <text x="24.0" y="56.0" font-size="12.5" font-weight="400" fill="#c3c2b7" text-anchor="start">What each crate offers, checked in its source at the versions compared. "planned" items are on</text>
 <text x="24.0" y="74.0" font-size="12.5" font-weight="400" fill="#c3c2b7" text-anchor="start">geo3d's roadmap (issues #7 and #13).</text>
-<rect x="229.0" y="102.0" width="92.4" height="390.0" rx="6" fill="#202e3e"/>
+<rect x="229.0" y="102.0" width="92.4" height="420.0" rx="6" fill="#202e3e"/>
 <text x="275.2" y="122.0" font-size="12" font-weight="600" fill="#ffffff" text-anchor="middle">geo3d</text>
 <text x="367.6" y="122.0" font-size="12" font-weight="500" fill="#ffffff" text-anchor="middle">map_3d</text>
 <text x="460.1" y="122.0" font-size="12" font-weight="500" fill="#ffffff" text-anchor="middle">nav-types</text>
@@ -40,25 +40,25 @@
 <path d="M732.4,207.0 L735.9,210.5 L742.9,202.5" stroke="#ffffff" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
 <path d="M824.8,207.0 L828.3,210.5 L835.3,202.5" stroke="#ffffff" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
 <line x1="24" y1="222.0" x2="876" y2="222.0" stroke="#2c2c2a"/>
-<text x="24.0" y="241.0" font-size="12.5" font-weight="400" fill="#ffffff" text-anchor="start">Look angles</text>
+<text x="24.0" y="241.0" font-size="12.5" font-weight="400" fill="#ffffff" text-anchor="start">Geodesic polygon area</text>
 <path d="M270.2,237.0 L273.7,240.5 L280.7,232.5" stroke="#ffffff" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
-<path d="M362.6,237.0 L366.1,240.5 L373.1,232.5" stroke="#ffffff" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+<text x="367.6" y="241.0" font-size="12.5" font-weight="400" fill="#9b9a93" text-anchor="middle">—</text>
 <text x="460.1" y="241.0" font-size="12.5" font-weight="400" fill="#9b9a93" text-anchor="middle">—</text>
-<path d="M547.5,237.0 L551.0,240.5 L558.0,232.5" stroke="#ffffff" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
-<path d="M639.9,237.0 L643.4,240.5 L650.4,232.5" stroke="#ffffff" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
-<text x="737.4" y="241.0" font-size="12.5" font-weight="400" fill="#9b9a93" text-anchor="middle">—</text>
-<text x="829.8" y="241.0" font-size="12.5" font-weight="400" fill="#9b9a93" text-anchor="middle">—</text>
+<text x="552.5" y="241.0" font-size="12.5" font-weight="400" fill="#9b9a93" text-anchor="middle">—</text>
+<text x="644.9" y="241.0" font-size="12" font-weight="500" fill="#c3c2b7" text-anchor="middle">sphere</text>
+<path d="M732.4,237.0 L735.9,240.5 L742.9,232.5" stroke="#ffffff" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M824.8,237.0 L828.3,240.5 L835.3,232.5" stroke="#ffffff" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
 <line x1="24" y1="252.0" x2="876" y2="252.0" stroke="#2c2c2a"/>
-<text x="24.0" y="271.0" font-size="12.5" font-weight="400" fill="#ffffff" text-anchor="start">Ray–ellipsoid ground strike</text>
+<text x="24.0" y="271.0" font-size="12.5" font-weight="400" fill="#ffffff" text-anchor="start">Look angles</text>
 <path d="M270.2,267.0 L273.7,270.5 L280.7,262.5" stroke="#ffffff" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
-<text x="367.6" y="271.0" font-size="12.5" font-weight="400" fill="#9b9a93" text-anchor="middle">—</text>
+<path d="M362.6,267.0 L366.1,270.5 L373.1,262.5" stroke="#ffffff" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
 <text x="460.1" y="271.0" font-size="12.5" font-weight="400" fill="#9b9a93" text-anchor="middle">—</text>
-<text x="552.5" y="271.0" font-size="12.5" font-weight="400" fill="#9b9a93" text-anchor="middle">—</text>
-<text x="644.9" y="271.0" font-size="12.5" font-weight="400" fill="#9b9a93" text-anchor="middle">—</text>
+<path d="M547.5,267.0 L551.0,270.5 L558.0,262.5" stroke="#ffffff" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M639.9,267.0 L643.4,270.5 L650.4,262.5" stroke="#ffffff" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
 <text x="737.4" y="271.0" font-size="12.5" font-weight="400" fill="#9b9a93" text-anchor="middle">—</text>
 <text x="829.8" y="271.0" font-size="12.5" font-weight="400" fill="#9b9a93" text-anchor="middle">—</text>
 <line x1="24" y1="282.0" x2="876" y2="282.0" stroke="#2c2c2a"/>
-<text x="24.0" y="301.0" font-size="12.5" font-weight="400" fill="#ffffff" text-anchor="start">3D volumes</text>
+<text x="24.0" y="301.0" font-size="12.5" font-weight="400" fill="#ffffff" text-anchor="start">Ray–ellipsoid ground strike</text>
 <path d="M270.2,297.0 L273.7,300.5 L280.7,292.5" stroke="#ffffff" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
 <text x="367.6" y="301.0" font-size="12.5" font-weight="400" fill="#9b9a93" text-anchor="middle">—</text>
 <text x="460.1" y="301.0" font-size="12.5" font-weight="400" fill="#9b9a93" text-anchor="middle">—</text>
@@ -67,58 +67,67 @@
 <text x="737.4" y="301.0" font-size="12.5" font-weight="400" fill="#9b9a93" text-anchor="middle">—</text>
 <text x="829.8" y="301.0" font-size="12.5" font-weight="400" fill="#9b9a93" text-anchor="middle">—</text>
 <line x1="24" y1="312.0" x2="876" y2="312.0" stroke="#2c2c2a"/>
-<text x="24.0" y="331.0" font-size="12.5" font-weight="400" fill="#ffffff" text-anchor="start">3D closest approach</text>
+<text x="24.0" y="331.0" font-size="12.5" font-weight="400" fill="#ffffff" text-anchor="start">3D volumes</text>
 <path d="M270.2,327.0 L273.7,330.5 L280.7,322.5" stroke="#ffffff" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
 <text x="367.6" y="331.0" font-size="12.5" font-weight="400" fill="#9b9a93" text-anchor="middle">—</text>
 <text x="460.1" y="331.0" font-size="12.5" font-weight="400" fill="#9b9a93" text-anchor="middle">—</text>
 <text x="552.5" y="331.0" font-size="12.5" font-weight="400" fill="#9b9a93" text-anchor="middle">—</text>
-<text x="644.9" y="331.0" font-size="12" font-weight="500" fill="#c3c2b7" text-anchor="middle">sphere</text>
+<text x="644.9" y="331.0" font-size="12.5" font-weight="400" fill="#9b9a93" text-anchor="middle">—</text>
 <text x="737.4" y="331.0" font-size="12.5" font-weight="400" fill="#9b9a93" text-anchor="middle">—</text>
 <text x="829.8" y="331.0" font-size="12.5" font-weight="400" fill="#9b9a93" text-anchor="middle">—</text>
 <line x1="24" y1="342.0" x2="876" y2="342.0" stroke="#2c2c2a"/>
-<text x="24.0" y="361.0" font-size="12.5" font-weight="400" fill="#ffffff" text-anchor="start">Datum shift (Helmert)</text>
+<text x="24.0" y="361.0" font-size="12.5" font-weight="400" fill="#ffffff" text-anchor="start">3D closest approach</text>
 <path d="M270.2,357.0 L273.7,360.5 L280.7,352.5" stroke="#ffffff" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
 <text x="367.6" y="361.0" font-size="12.5" font-weight="400" fill="#9b9a93" text-anchor="middle">—</text>
 <text x="460.1" y="361.0" font-size="12.5" font-weight="400" fill="#9b9a93" text-anchor="middle">—</text>
 <text x="552.5" y="361.0" font-size="12.5" font-weight="400" fill="#9b9a93" text-anchor="middle">—</text>
-<text x="644.9" y="361.0" font-size="12.5" font-weight="400" fill="#9b9a93" text-anchor="middle">—</text>
+<text x="644.9" y="361.0" font-size="12" font-weight="500" fill="#c3c2b7" text-anchor="middle">sphere</text>
 <text x="737.4" y="361.0" font-size="12.5" font-weight="400" fill="#9b9a93" text-anchor="middle">—</text>
 <text x="829.8" y="361.0" font-size="12.5" font-weight="400" fill="#9b9a93" text-anchor="middle">—</text>
 <line x1="24" y1="372.0" x2="876" y2="372.0" stroke="#2c2c2a"/>
-<text x="24.0" y="391.0" font-size="12.5" font-weight="400" fill="#ffffff" text-anchor="start">Inertial frame (TEME)</text>
+<text x="24.0" y="391.0" font-size="12.5" font-weight="400" fill="#ffffff" text-anchor="start">Datum shift (Helmert)</text>
 <path d="M270.2,387.0 L273.7,390.5 L280.7,382.5" stroke="#ffffff" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
-<path d="M362.6,387.0 L366.1,390.5 L373.1,382.5" stroke="#ffffff" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+<text x="367.6" y="391.0" font-size="12.5" font-weight="400" fill="#9b9a93" text-anchor="middle">—</text>
 <text x="460.1" y="391.0" font-size="12.5" font-weight="400" fill="#9b9a93" text-anchor="middle">—</text>
 <text x="552.5" y="391.0" font-size="12.5" font-weight="400" fill="#9b9a93" text-anchor="middle">—</text>
 <text x="644.9" y="391.0" font-size="12.5" font-weight="400" fill="#9b9a93" text-anchor="middle">—</text>
 <text x="737.4" y="391.0" font-size="12.5" font-weight="400" fill="#9b9a93" text-anchor="middle">—</text>
 <text x="829.8" y="391.0" font-size="12.5" font-weight="400" fill="#9b9a93" text-anchor="middle">—</text>
 <line x1="24" y1="402.0" x2="876" y2="402.0" stroke="#2c2c2a"/>
-<text x="24.0" y="421.0" font-size="12.5" font-weight="400" fill="#ffffff" text-anchor="start">Any ellipsoid</text>
+<text x="24.0" y="421.0" font-size="12.5" font-weight="400" fill="#ffffff" text-anchor="start">Inertial frame (TEME)</text>
 <path d="M270.2,417.0 L273.7,420.5 L280.7,412.5" stroke="#ffffff" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
-<text x="367.6" y="421.0" font-size="12" font-weight="500" fill="#c3c2b7" text-anchor="middle">10 named</text>
+<path d="M362.6,417.0 L366.1,420.5 L373.1,412.5" stroke="#ffffff" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
 <text x="460.1" y="421.0" font-size="12.5" font-weight="400" fill="#9b9a93" text-anchor="middle">—</text>
 <text x="552.5" y="421.0" font-size="12.5" font-weight="400" fill="#9b9a93" text-anchor="middle">—</text>
-<path d="M639.9,417.0 L643.4,420.5 L650.4,412.5" stroke="#ffffff" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
-<path d="M732.4,417.0 L735.9,420.5 L742.9,412.5" stroke="#ffffff" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+<text x="644.9" y="421.0" font-size="12.5" font-weight="400" fill="#9b9a93" text-anchor="middle">—</text>
+<text x="737.4" y="421.0" font-size="12.5" font-weight="400" fill="#9b9a93" text-anchor="middle">—</text>
 <text x="829.8" y="421.0" font-size="12.5" font-weight="400" fill="#9b9a93" text-anchor="middle">—</text>
 <line x1="24" y1="432.0" x2="876" y2="432.0" stroke="#2c2c2a"/>
-<text x="24.0" y="451.0" font-size="12.5" font-weight="400" fill="#ffffff" text-anchor="start">n-vector</text>
-<text x="275.2" y="451.0" font-size="12" font-weight="500" fill="#c3c2b7" text-anchor="middle">planned</text>
-<text x="367.6" y="451.0" font-size="12.5" font-weight="400" fill="#9b9a93" text-anchor="middle">—</text>
-<path d="M455.1,447.0 L458.6,450.5 L465.6,442.5" stroke="#ffffff" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+<text x="24.0" y="451.0" font-size="12.5" font-weight="400" fill="#ffffff" text-anchor="start">Any ellipsoid</text>
+<path d="M270.2,447.0 L273.7,450.5 L280.7,442.5" stroke="#ffffff" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+<text x="367.6" y="451.0" font-size="12" font-weight="500" fill="#c3c2b7" text-anchor="middle">10 named</text>
+<text x="460.1" y="451.0" font-size="12.5" font-weight="400" fill="#9b9a93" text-anchor="middle">—</text>
 <text x="552.5" y="451.0" font-size="12.5" font-weight="400" fill="#9b9a93" text-anchor="middle">—</text>
 <path d="M639.9,447.0 L643.4,450.5 L650.4,442.5" stroke="#ffffff" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
-<text x="737.4" y="451.0" font-size="12.5" font-weight="400" fill="#9b9a93" text-anchor="middle">—</text>
+<path d="M732.4,447.0 L735.9,450.5 L742.9,442.5" stroke="#ffffff" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
 <text x="829.8" y="451.0" font-size="12.5" font-weight="400" fill="#9b9a93" text-anchor="middle">—</text>
 <line x1="24" y1="462.0" x2="876" y2="462.0" stroke="#2c2c2a"/>
-<text x="24.0" y="481.0" font-size="12.5" font-weight="400" fill="#ffffff" text-anchor="start">Attitude (yaw, pitch, roll)</text>
+<text x="24.0" y="481.0" font-size="12.5" font-weight="400" fill="#ffffff" text-anchor="start">n-vector</text>
 <text x="275.2" y="481.0" font-size="12" font-weight="500" fill="#c3c2b7" text-anchor="middle">planned</text>
 <text x="367.6" y="481.0" font-size="12.5" font-weight="400" fill="#9b9a93" text-anchor="middle">—</text>
-<text x="460.1" y="481.0" font-size="12.5" font-weight="400" fill="#9b9a93" text-anchor="middle">—</text>
-<path d="M547.5,477.0 L551.0,480.5 L558.0,472.5" stroke="#ffffff" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M455.1,477.0 L458.6,480.5 L465.6,472.5" stroke="#ffffff" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+<text x="552.5" y="481.0" font-size="12.5" font-weight="400" fill="#9b9a93" text-anchor="middle">—</text>
 <path d="M639.9,477.0 L643.4,480.5 L650.4,472.5" stroke="#ffffff" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
 <text x="737.4" y="481.0" font-size="12.5" font-weight="400" fill="#9b9a93" text-anchor="middle">—</text>
 <text x="829.8" y="481.0" font-size="12.5" font-weight="400" fill="#9b9a93" text-anchor="middle">—</text>
-<text x="24.0" y="514.0" font-size="11.5" font-weight="400" fill="#9b9a93" text-anchor="start">— : not offered.</text>
+<line x1="24" y1="492.0" x2="876" y2="492.0" stroke="#2c2c2a"/>
+<text x="24.0" y="511.0" font-size="12.5" font-weight="400" fill="#ffffff" text-anchor="start">Attitude (yaw, pitch, roll)</text>
+<text x="275.2" y="511.0" font-size="12" font-weight="500" fill="#c3c2b7" text-anchor="middle">planned</text>
+<text x="367.6" y="511.0" font-size="12.5" font-weight="400" fill="#9b9a93" text-anchor="middle">—</text>
+<text x="460.1" y="511.0" font-size="12.5" font-weight="400" fill="#9b9a93" text-anchor="middle">—</text>
+<path d="M547.5,507.0 L551.0,510.5 L558.0,502.5" stroke="#ffffff" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M639.9,507.0 L643.4,510.5 L650.4,502.5" stroke="#ffffff" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+<text x="737.4" y="511.0" font-size="12.5" font-weight="400" fill="#9b9a93" text-anchor="middle">—</text>
+<text x="829.8" y="511.0" font-size="12.5" font-weight="400" fill="#9b9a93" text-anchor="middle">—</text>
+<text x="24.0" y="544.0" font-size="11.5" font-weight="400" fill="#9b9a93" text-anchor="start">— : not offered.</text>
 </svg>

@@ -1,6 +1,6 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="860" height="910" viewBox="0 0 860 910" font-family="system-ui, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" role="img" aria-label="Time per call for 10 operations; geo3d is fastest in 3 and tied in 2">
-<title>Time per call for 10 operations; geo3d is fastest in 3 and tied in 2</title>
-<rect x="0.5" y="0.5" width="859" height="909" rx="10" fill="#fcfcfb" stroke="#e1e0d9"/>
+<svg xmlns="http://www.w3.org/2000/svg" width="860" height="1028" viewBox="0 0 860 1028" font-family="system-ui, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" role="img" aria-label="Time per call for 11 operations; geo3d is fastest in 3 and tied in 3">
+<title>Time per call for 11 operations; geo3d is fastest in 3 and tied in 3</title>
+<rect x="0.5" y="0.5" width="859" height="1027" rx="10" fill="#fcfcfb" stroke="#e1e0d9"/>
 <text x="24.0" y="34.0" font-size="16" font-weight="600" fill="#0b0b0b" text-anchor="start">Time per call</text>
 <text x="24.0" y="56.0" font-size="12.5" font-weight="400" fill="#52514e" text-anchor="start">Median nanoseconds per call on an AMD Ryzen 9 5950X, rustc 1.98, no target-cpu=native. Shorter</text>
 <text x="24.0" y="74.0" font-size="12.5" font-weight="400" fill="#52514e" text-anchor="start">is faster. Each panel has its own scale.</text>
@@ -159,6 +159,17 @@
 <path d="M540.0,802.5 H742.6 A4.0,4.0 0 0 1 746.6,806.5 V811.5 A4.0,4.0 0 0 1 742.6,815.5 H540.0 Z" fill="#898781"/>
 <text x="752.6" y="813.0" font-size="11.5" font-weight="400" fill="#0b0b0b" text-anchor="start">102 ns</text>
 <line x1="540.0" y1="710" x2="540.0" y2="820" stroke="#c3c2b7"/>
-<text x="24.0" y="872.0" font-size="11.5" font-weight="400" fill="#6f6d68" text-anchor="start">* geo's Geodesic returns only the distance (inverse) or the position (direct); geo3d and geographiclib-rs</text>
-<text x="24.0" y="888.0" font-size="11.5" font-weight="400" fill="#6f6d68" text-anchor="start">also return the azimuths.</text>
+<text x="24.0" y="878.0" font-size="13" font-weight="600" fill="#0b0b0b" text-anchor="start">Polygon area, 10 vertices</text>
+<text x="24.0" y="909.0" font-size="11.5" font-weight="600" fill="#0b0b0b" text-anchor="start">geo3d</text>
+<path d="M120.0,898.5 H351.1 A4.0,4.0 0 0 1 355.1,902.5 V907.5 A4.0,4.0 0 0 1 351.1,911.5 H120.0 Z" fill="#2a78d6"/>
+<text x="361.1" y="909.0" font-size="11.5" font-weight="600" fill="#0b0b0b" text-anchor="start">4.98 µs</text>
+<text x="24.0" y="931.0" font-size="11.5" font-weight="400" fill="#52514e" text-anchor="start">geographiclib-rs</text>
+<path d="M120.0,920.5 H349.9 A4.0,4.0 0 0 1 353.9,924.5 V929.5 A4.0,4.0 0 0 1 349.9,933.5 H120.0 Z" fill="#898781"/>
+<text x="359.9" y="931.0" font-size="11.5" font-weight="400" fill="#0b0b0b" text-anchor="start">4.96 µs</text>
+<text x="24.0" y="953.0" font-size="11.5" font-weight="400" fill="#52514e" text-anchor="start">geo</text>
+<path d="M120.0,942.5 H360.0 A4.0,4.0 0 0 1 364.0,946.5 V951.5 A4.0,4.0 0 0 1 360.0,955.5 H120.0 Z" fill="#898781"/>
+<text x="370.0" y="953.0" font-size="11.5" font-weight="400" fill="#0b0b0b" text-anchor="start">5.17 µs</text>
+<line x1="120.0" y1="894" x2="120.0" y2="960" stroke="#c3c2b7"/>
+<text x="24.0" y="990.0" font-size="11.5" font-weight="400" fill="#6f6d68" text-anchor="start">* geo's Geodesic returns only the distance (inverse) or the position (direct); geo3d and geographiclib-rs</text>
+<text x="24.0" y="1006.0" font-size="11.5" font-weight="400" fill="#6f6d68" text-anchor="start">also return the azimuths.</text>
 </svg>
