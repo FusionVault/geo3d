@@ -110,6 +110,23 @@ Paths due north along a meridian at random places, and a point 1 m to 1 km to on
 | geo | long paths, 1 km to 1 000 km | 10000 | 0 | 3.8e-9 |
 | textbook n1 × n2 (NavLab) | long paths, 1 km to 1 000 km | 10000 | 0 | 1.8e-6 |
 
+## Attitude: yaw, pitch and roll there and back
+
+Each crate turns yaw, pitch and roll into its own rotation and back. "Via ECEF" instead reads the angles out of an attitude that has been turned into ECEF and back, as one from an inertial navigation system would be, so every entry carries ordinary rounding (sguaba has no matrix-to-angles function to call directly). The pitch error is in degrees. The turn error is how far the rebuilt attitude points from the original, as a distance at 1 000 km: near ±90° pitch, yaw and roll can't be told apart, so only the rotation they rebuild can be checked.
+
+### Yaw, pitch and roll → rotation → yaw, pitch and roll
+
+| Library | Attitudes | Count | Failures | Max pitch error (°) | Max turn error at 1 000 km (m) |
+|---|---|---|---|---|---|
+| geo3d | any pitch | 10000 | 0 | 1.4e-14 | 6.1e-10 |
+| sguaba | any pitch | 10000 | 0 | 1.4e-12 | 2.4e-8 |
+| jord | any pitch | 10000 | 0 | 2.1e-14 | 1.3e-9 |
+| geo3d | within 1e-15° to 0.1° of ±90° pitch | 10000 | 0 | 0 | 5.6e-10 |
+| sguaba | within 1e-15° to 0.1° of ±90° pitch | 10000 | 0 | 1.9e-6 | 1.9e6 |
+| jord | within 1e-15° to 0.1° of ±90° pitch | 10000 | 0 | 1.4e-14 | 1.4e-9 |
+| geo3d | via ECEF, within 1e-15° to 0.1° of ±90° pitch | 10000 | 0 | 1.4e-14 | 8.9e-10 |
+| jord | via ECEF, within 1e-15° to 0.1° of ±90° pitch | 10000 | 0 | 1.4e-14 | 2.0e6 |
+
 ## Local frames and look angles
 
 Every library is compared with geo3d and with map_3d. For targets built from a known pointing, that pointing is the reference too. Disagreements are in micrometres. For look angles, each answer (azimuth, elevation, range) is turned back into a point and the distance between the two points is reported, so a pointing error counts by how far it moves the target.

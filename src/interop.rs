@@ -52,6 +52,7 @@ mod mint_impls {
     vec3_bridge!(Vec3  { x, y, z }            <=> mint::Vector3<f64> : |x, y, z| mint::Vector3 { x, y, z }, |v| (v.x, v.y, v.z));
     vec3_bridge!(Enu   { east, north, up }    <=> mint::Vector3<f64> : |x, y, z| mint::Vector3 { x, y, z }, |v| (v.x, v.y, v.z));
     vec3_bridge!(Ned   { north, east, down }  <=> mint::Vector3<f64> : |x, y, z| mint::Vector3 { x, y, z }, |v| (v.x, v.y, v.z));
+    vec3_bridge!(Frd   { forward, right, down } <=> mint::Vector3<f64> : |x, y, z| mint::Vector3 { x, y, z }, |v| (v.x, v.y, v.z));
     vec3_bridge!(Ecef  { x, y, z }            <=> mint::Vector3<f64> : |x, y, z| mint::Vector3 { x, y, z }, |v| (v.x, v.y, v.z));
     vec3_bridge!(Eci   { x, y, z }            <=> mint::Vector3<f64> : |x, y, z| mint::Vector3 { x, y, z }, |v| (v.x, v.y, v.z));
     // The position types also convert to/from `Point3`.
@@ -98,6 +99,7 @@ mod glam_impls {
     vec3_bridge!(Vec3  { x, y, z }            <=> glam::DVec3 : |x, y, z| glam::DVec3::new(x, y, z), |v| (v.x, v.y, v.z));
     vec3_bridge!(Enu   { east, north, up }    <=> glam::DVec3 : |x, y, z| glam::DVec3::new(x, y, z), |v| (v.x, v.y, v.z));
     vec3_bridge!(Ned   { north, east, down }  <=> glam::DVec3 : |x, y, z| glam::DVec3::new(x, y, z), |v| (v.x, v.y, v.z));
+    vec3_bridge!(Frd   { forward, right, down } <=> glam::DVec3 : |x, y, z| glam::DVec3::new(x, y, z), |v| (v.x, v.y, v.z));
     vec3_bridge!(Ecef  { x, y, z }            <=> glam::DVec3 : |x, y, z| glam::DVec3::new(x, y, z), |v| (v.x, v.y, v.z));
     vec3_bridge!(Eci   { x, y, z }            <=> glam::DVec3 : |x, y, z| glam::DVec3::new(x, y, z), |v| (v.x, v.y, v.z));
 
@@ -122,6 +124,7 @@ mod nalgebra_impls {
     vec3_bridge!(Vec3  { x, y, z }            <=> nalgebra::Vector3<f64> : |x, y, z| nalgebra::Vector3::new(x, y, z), |v| (v.x, v.y, v.z));
     vec3_bridge!(Enu   { east, north, up }    <=> nalgebra::Vector3<f64> : |x, y, z| nalgebra::Vector3::new(x, y, z), |v| (v.x, v.y, v.z));
     vec3_bridge!(Ned   { north, east, down }  <=> nalgebra::Vector3<f64> : |x, y, z| nalgebra::Vector3::new(x, y, z), |v| (v.x, v.y, v.z));
+    vec3_bridge!(Frd   { forward, right, down } <=> nalgebra::Vector3<f64> : |x, y, z| nalgebra::Vector3::new(x, y, z), |v| (v.x, v.y, v.z));
     vec3_bridge!(Ecef  { x, y, z }            <=> nalgebra::Vector3<f64> : |x, y, z| nalgebra::Vector3::new(x, y, z), |v| (v.x, v.y, v.z));
     vec3_bridge!(Eci   { x, y, z }            <=> nalgebra::Vector3<f64> : |x, y, z| nalgebra::Vector3::new(x, y, z), |v| (v.x, v.y, v.z));
     vec3_bridge!(Ecef  { x, y, z }            <=> nalgebra::Point3<f64>  : |x, y, z| nalgebra::Point3::new(x, y, z),  |v| (v.coords.x, v.coords.y, v.coords.z));

@@ -134,6 +134,13 @@ pub mod with_geo3d {
         WGS84.polygon_area(&v).map(|p| p.area_m2)
     }
 
+    /// Yaw, pitch and roll (degrees) → rotation → yaw, pitch and roll.
+    #[inline]
+    pub fn attitude_round_trip(ypr: [f64; 3]) -> Option<[f64; 3]> {
+        let a = geo3d::Attitude::from_rotation(geo3d::Attitude::new(ypr[0], ypr[1], ypr[2]).to_rotation());
+        Some([a.yaw_deg, a.pitch_deg, a.roll_deg])
+    }
+
     /// Distance from `p` to the great circle through `a` and `b`, metres, on a sphere of radius
     /// 6 371 008.771 m (unsigned, for comparison).
     #[inline]
@@ -246,6 +253,20 @@ pub mod with_sguaba {
     use uom::si::length::meter;
 
     system!(pub struct ObserverEnu using ENU);
+    system!(pub struct PlaneNed using NED);
+
+    /// Yaw, pitch and roll (degrees) → `Orientation` → yaw, pitch and roll, through sguaba's
+    /// Tait-Bryan builder.
+    #[inline]
+    pub fn attitude_round_trip(ypr: [f64; 3]) -> Option<[f64; 3]> {
+        let o = sguaba::engineering::Orientation::<PlaneNed>::tait_bryan_builder()
+            .yaw(Angle::new::<degree>(ypr[0]))
+            .pitch(Angle::new::<degree>(ypr[1]))
+            .roll(Angle::new::<degree>(ypr[2]))
+            .build();
+        let (y, p, r) = o.to_tait_bryan_angles();
+        Some([y.get::<degree>(), p.get::<degree>(), r.get::<degree>()])
+    }
 
     /// The checked builder: `None` for a latitude outside ±90° (or NaN).
     #[inline]
@@ -390,6 +411,14 @@ pub mod with_jord {
             NVector::from_lat_long_degrees(b[0], b[1]),
         );
         Some(Sphere::EARTH.distance(p, q).as_metres())
+    }
+
+    /// Yaw, pitch and roll (degrees) → `zyx2r` → `r2zyx`.
+    #[inline]
+    pub fn attitude_round_trip(ypr: [f64; 3]) -> Option<[f64; 3]> {
+        let d = jord::Angle::from_degrees;
+        let (z, y, x) = jord::local::r2zyx(jord::local::zyx2r(d(ypr[0]), d(ypr[1]), d(ypr[2])));
+        Some([z.as_degrees(), y.as_degrees(), x.as_degrees()])
     }
 
     /// Distance from `p` to the great circle through `a` and `b`, metres, on the sphere of radius

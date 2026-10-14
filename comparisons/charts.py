@@ -435,7 +435,25 @@ def main():
         f"Worst cross-track error on short paths: geo3d {metres(xt['geo3d'])}, geo {metres(xt['geo'])}, "
         f"jord {metres(xt['jord'])}, textbook n-vector formula {metres(xt[textbook])}")
 
-    # 7. Features (from comparisons/README.md, "Features and footprint").
+    # 7. Attitude near straight up: how far the rebuilt orientation points off, at 1 000 km.
+    att = find(tabs, "Yaw, pitch and roll")
+    near = lambda lib, prefix: max(num(r["Max turn error at 1 000 km (m)"]) for r in att
+                                   if r["Library"] == lib and r["Attitudes"].startswith(prefix))
+    g3 = max(near("geo3d", "within"), near("geo3d", "via ECEF"))
+    away = max(num(r["Max turn error at 1 000 km (m)"]) for r in att if r["Attitudes"] == "any pitch")
+    bars_log(
+        "attitude", "Yaw, pitch and roll near straight up",
+        ["Worst error over 10 000 attitudes within 1e-15° to 0.1° of ±90° pitch, as how far the rebuilt",
+         "orientation points off at 1 000 km. Log scale; shorter is better."],
+        [("geo3d", "its own round trip, and via ECEF", g3, True),
+         ("sguaba", "its own round trip (asin, via nalgebra)", near("sguaba", "within"), False),
+         ("jord", "read back after a trip through ECEF", near("jord", "via ECEF"), False)],
+        [f"Away from the vertical, all three are within {metres(away)} at 1 000 km. jord's own round trip is",
+         "exact near the vertical too; it fails when the matrix carries ordinary rounding, as one from ECEF does."],
+        f"Worst attitude error near ±90° pitch, at 1 000 km: geo3d {metres(g3)}, sguaba "
+        f"{metres(near('sguaba', 'within'))}, jord via ECEF {metres(near('jord', 'via ECEF'))}")
+
+    # 8. Features (from comparisons/README.md, "Features and footprint").
     Y, N = "✓", None
     feats = [
         ("No dependencies", [Y, Y, N, N, Y, N, N]),
@@ -452,18 +470,17 @@ def main():
         ("Inertial frame (TEME)", [Y, Y, N, N, N, N, N]),
         ("Any ellipsoid", [Y, "10 named", N, N, Y, Y, N]),
         ("Path tools (cross-track, crossings, centre)", [Y, N, N, N, Y, N, "some"]),
-        ("Attitude (yaw, pitch, roll)", ["planned", N, N, Y, Y, N, N]),
+        ("Attitude (yaw, pitch, roll)", [Y, N, N, Y, Y, N, N]),
     ]
     scorecard(
         "features", "Features",
-        ["What each crate offers, checked in its source at the versions compared. \"planned\" is on geo3d's",
-         "roadmap (issue #13)."],
+        ["What each crate offers, checked in its source at the versions compared."],
         CRATES, feats, ["— : not offered."],
         "Feature matrix: geo3d is the only crate with ground strike, 3D volumes, closest approach, covariance and "
         "datum shifts",
         "text")
 
-    # 8. Speed: small multiples, one panel per operation, fixed crate order.
+    # 9. Speed: small multiples, one panel per operation, fixed crate order.
     sp = speed_rows()
     ops = [
         ("geodetic_to_ecef", "Latitude/longitude/height → x, y, z"),

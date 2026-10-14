@@ -53,6 +53,7 @@ fn main() {
     geodesics();
     areas();
     cross_track();
+    attitude();
     look_angles();
     robustness();
 }
@@ -482,7 +483,132 @@ fn cross_track() {
     );
 }
 
-// ── 5. Local frames and look angles, compared pairwise ──────────────────────────────────────────
+// ── 5. Attitude (yaw, pitch, roll) round trips, near and away from straight up ──────────────────
+
+type RoundTrip = fn([f64; 3]) -> Option<[f64; 3]>;
+
+/// How far apart two attitudes point, radians: the largest change in any body axis. Both are
+/// rebuilt with the same exact formula (geo3d's, which uses sine and cosine in degrees), so this
+/// compares the angles, not the matrix code.
+fn attitude_gap(a: [f64; 3], b: [f64; 3]) -> f64 {
+    let m = |v: [f64; 3]| geo3d::Attitude::new(v[0], v[1], v[2]).to_rotation();
+    let (p, q) = (m(a), m(b));
+    (0..9)
+        .map(|i| (p[i / 3][i % 3] - q[i / 3][i % 3]).abs())
+        .fold(0.0, f64::max)
+}
+
+fn attitude() {
+    let mut rng = Rng::new(0x6c8e_9cf5_7093_2d31);
+    let libs: [(&str, RoundTrip); 3] = [
+        ("geo3d", with_geo3d::attitude_round_trip),
+        ("sguaba", with_sguaba::attitude_round_trip),
+        ("jord", with_jord::attitude_round_trip),
+    ];
+    let mut rows = Vec::new();
+    for (set, near) in [("any pitch", false), ("within 1e-15° to 0.1° of ±90° pitch", true)] {
+        let cases: Vec<[f64; 3]> = (0..10_000)
+            .map(|i| {
+                let pitch = if near {
+                    (90.0 - 10f64.powf(rng.range(-15.0, -1.0))) * if i % 2 == 0 { 1.0 } else { -1.0 }
+                } else {
+                    rng.range(-89.0, 89.0)
+                };
+                [rng.range(0.0, 360.0), pitch, rng.range(-180.0, 180.0)]
+            })
+            .collect();
+        for (name, f) in libs {
+            let (mut failed, mut worst_pitch, mut worst_turn) = (0, 0.0f64, 0.0f64);
+            for &c in &cases {
+                match finite(guarded(|| f(c))) {
+                    Some(out) => {
+                        worst_pitch = worst_pitch.max((out[1] - c[1]).abs());
+                        worst_turn = worst_turn.max(attitude_gap(c, out));
+                    }
+                    None => failed += 1,
+                }
+            }
+            rows.push(vec![
+                name.to_string(),
+                set.to_string(),
+                cases.len().to_string(),
+                failed.to_string(),
+                sci(worst_pitch),
+                sci(worst_turn * 1_000e3),
+            ]);
+        }
+    }
+    // An attitude given in ECEF, as an inertial navigation system reports it, read back as yaw, pitch
+    // and roll at the vehicle: body → NED → ECEF and back, with plain matrix products, so every
+    // entry carries ordinary rounding. Only the angle extraction differs between crates.
+    type Extract = fn([[f64; 3]; 3]) -> [f64; 3];
+    let extract: [(&str, Extract); 2] = [
+        ("geo3d", |m| {
+            let a = geo3d::Attitude::from_rotation(m);
+            [a.yaw_deg, a.pitch_deg, a.roll_deg]
+        }),
+        ("jord", |m| {
+            let v = |r: [f64; 3]| jord::Vec3::new(r[0], r[1], r[2]);
+            let (z, y, x) = jord::local::r2zyx(jord::Mat33::new(v(m[0]), v(m[1]), v(m[2])));
+            [z.as_degrees(), y.as_degrees(), x.as_degrees()]
+        }),
+    ];
+    let mul = |a: [[f64; 3]; 3], b: [[f64; 3]; 3]| -> [[f64; 3]; 3] {
+        core::array::from_fn(|r| core::array::from_fn(|c| a[r][0] * b[0][c] + a[r][1] * b[1][c] + a[r][2] * b[2][c]))
+    };
+    let transpose = |m: [[f64; 3]; 3]| -> [[f64; 3]; 3] { core::array::from_fn(|r| core::array::from_fn(|c| m[c][r])) };
+    let cases: Vec<([f64; 3], [[f64; 3]; 3])> = (0..10_000)
+        .map(|i| {
+            let pitch = (90.0 - 10f64.powf(rng.range(-15.0, -1.0))) * if i % 2 == 0 { 1.0 } else { -1.0 };
+            let ypr = [rng.range(0.0, 360.0), pitch, rng.range(-180.0, 180.0)];
+            let (la, lo) = (
+                rng.range(-80.0f64, 80.0).to_radians(),
+                rng.range(-180.0f64, 180.0).to_radians(),
+            );
+            let (sla, cla, slo, clo) = (la.sin(), la.cos(), lo.sin(), lo.cos());
+            let ned_to_ecef = [
+                [-sla * clo, -slo, -cla * clo],
+                [-sla * slo, clo, -cla * slo],
+                [cla, 0.0, -sla],
+            ];
+            let body_to_ned = geo3d::Attitude::new(ypr[0], ypr[1], ypr[2]).to_rotation();
+            (ypr, mul(transpose(ned_to_ecef), mul(ned_to_ecef, body_to_ned)))
+        })
+        .collect();
+    for (name, f) in extract {
+        let (mut worst_pitch, mut worst_turn) = (0.0f64, 0.0f64);
+        for &(ypr, m) in &cases {
+            let out = f(m);
+            worst_pitch = worst_pitch.max((out[1] - ypr[1]).abs());
+            worst_turn = worst_turn.max(attitude_gap(ypr, out));
+        }
+        rows.push(vec![
+            name.to_string(),
+            "via ECEF, within 1e-15° to 0.1° of ±90° pitch".to_string(),
+            cases.len().to_string(),
+            "0".to_string(),
+            sci(worst_pitch),
+            sci(worst_turn * 1_000e3),
+        ]);
+    }
+
+    println!("## Attitude: yaw, pitch and roll there and back\n");
+    println!("Each crate turns yaw, pitch and roll into its own rotation and back. \"Via ECEF\" instead reads the angles out of an attitude that has been turned into ECEF and back, as one from an inertial navigation system would be, so every entry carries ordinary rounding (sguaba has no matrix-to-angles function to call directly). The pitch error is in degrees. The turn error is how far the rebuilt attitude points from the original, as a distance at 1 000 km: near ±90° pitch, yaw and roll can't be told apart, so only the rotation they rebuild can be checked.\n");
+    table(
+        "Yaw, pitch and roll → rotation → yaw, pitch and roll",
+        &[
+            "Library",
+            "Attitudes",
+            "Count",
+            "Failures",
+            "Max pitch error (°)",
+            "Max turn error at 1 000 km (m)",
+        ],
+        &rows,
+    );
+}
+
+// ── 6. Local frames and look angles, compared pairwise ──────────────────────────────────────────
 
 fn aer_to_enu(a: AerV) -> EnuV {
     let (sa, ca) = a[0].to_radians().sin_cos();
@@ -621,7 +747,7 @@ fn look_angles() {
     }
 }
 
-// ── 6. Robustness: edge cases ───────────────────────────────────────────────────────────────────
+// ── 7. Robustness: edge cases ───────────────────────────────────────────────────────────────────
 
 /// What came back, in a word: ok, NaN, rejected, panic, or wrong (with the value).
 fn verdict<const N: usize>(

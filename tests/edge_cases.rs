@@ -88,6 +88,14 @@ fn local_frames_and_pointing_between_every_pair() {
             assert!(apart(there, target) < tol, "{obs:?} -> {target:?}: {there:?}");
             assert!(apart(frame.geodetic_of(enu), target) < tol);
             assert!(apart(frame.geodetic_of_ned(ned), target) < tol);
+            // A vehicle at the observer, nose almost straight up: the body frame works everywhere.
+            let att = Attitude::new(123.0, 89.999_999_999, -45.0);
+            let frd = frame.body_of(att, target);
+            assert!(finite3(frd.into()), "{obs:?} -> {target:?}");
+            assert!(
+                apart(frame.geodetic_of_body(att, frd), target) < tol,
+                "{obs:?} -> {target:?}"
+            );
             // Pointing uncertainty: finite except where azimuth has no meaning (straight up or
             // down, or the target is the observer).
             let sigma = Cov3::from_std_devs([0.1, 0.1, 10.0]);
@@ -231,6 +239,13 @@ fn nan_and_infinity_in_give_nan_infinity_or_none_out() {
             assert!(!finite(ecef_to_geodetic(e)), "{e:?}");
         }
         assert!(LocalFrame::new(ok).ground_strike(x, -10.0).is_none());
+        let bad = Attitude::new(x, 10.0, 20.0);
+        assert!(!finite3(bad.body_to_ned(Frd::new(1.0, 2.0, 3.0)).into()));
+        let a = Attitude::from_rotation([[x, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]]);
+        assert!(
+            !(a.yaw_deg.is_finite() && a.pitch_deg.is_finite() && a.roll_deg.is_finite()),
+            "{a:?}"
+        );
         assert!(LocalFrame::new(ok).ground_strike(0.0, x).is_none());
     }
 }

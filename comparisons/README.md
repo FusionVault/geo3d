@@ -16,8 +16,10 @@ The crates are [map_3d](https://crates.io/crates/map_3d), [nav-types](https://cr
   that treat the Earth as a ball are 0.7 % to 1.4 % out.
 - 🛡️ **Tricky cases.** geo3d passed all nine. Every other crate that converts positions failed at
   least one.
+- ✈️ **Attitude.** geo3d keeps track of yaw, pitch and roll even pointing straight up. sguaba and
+  jord can lose it there.
 - 🧰 **Features.** Only geo3d has ground strikes, 3D zones, collision checks, uncertainty and datum
-  shifts. Others are ahead on attitude, which is on our roadmap.
+  shifts.
 - ⚡ **Speed.** geo3d was fastest, or level with the fastest, in six of the eleven tests. It's slower
   in the other five, and we explain why below.
 
@@ -208,6 +210,47 @@ of n1 × n2.
 
 </details>
 
+## ✈️ Yaw, pitch and roll
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="charts/attitude-dark.svg">
+  <img alt="Worst attitude error near ±90° pitch, at 1 000 km: geo3d 0.89 nm, sguaba 1900 km, jord via ECEF 2000 km" src="charts/attitude-light.svg">
+</picture>
+
+We turned 30 000 attitudes into rotations and back. Away from the vertical, every crate gets them
+back. Near ±90° pitch, yaw and roll turn about the same axis, so only the orientation they rebuild
+can be checked.
+
+- geo3d rebuilds the same orientation every time, to within a nanometre at 1 000 km. It reads roll
+  first, then yaw from the full-size matrix entries given that roll, and pitch with `atan2`.
+- sguaba (through nalgebra) reads pitch with `asin`, which loses precision near the vertical, and
+  splits yaw and roll from entries that are almost zero. Its orientation can come back pointing
+  1 900 km off at 1 000 km.
+- jord's own round trip is fine. But once the rotation has been through ECEF, as one from an
+  inertial navigation system has, its tiny entries carry ordinary rounding, and its yaw and roll
+  can come back pointing 2 000 km off at 1 000 km.
+
+<details>
+<summary>📋 Show the numbers</summary>
+
+10 000 attitudes in each set: yaw and roll anywhere, pitch anywhere or within 1e-15° to 0.1° of
+±90°. "Via ECEF" turns the attitude into ECEF at a random place and back with plain matrix
+products, then reads the angles out (sguaba has no matrix-to-angles function to call directly). The
+turn error is how far the rebuilt orientation points from the original, at 1 000 km.
+
+| Crate | Attitudes | Failures | Max pitch error (°) | Max turn error at 1 000 km (m) |
+|---|---|---|---|---|
+| geo3d | any pitch | 0 | 1.4e-14 | 6.1e-10 |
+| sguaba | any pitch | 0 | 1.4e-12 | 2.4e-8 |
+| jord | any pitch | 0 | 2.1e-14 | 1.3e-9 |
+| geo3d | within 1e-15° to 0.1° of ±90° pitch | 0 | 0 | 5.6e-10 |
+| sguaba | within 1e-15° to 0.1° of ±90° pitch | 0 | 1.9e-6 | 1.9e6 |
+| jord | within 1e-15° to 0.1° of ±90° pitch | 0 | 1.4e-14 | 1.4e-9 |
+| geo3d | via ECEF, within 1e-15° to 0.1° of ±90° pitch | 0 | 1.4e-14 | 8.9e-10 |
+| jord | via ECEF, within 1e-15° to 0.1° of ±90° pitch | 0 | 1.4e-14 | 2.0e6 |
+
+</details>
+
 ## 📡 Look angles
 
 <picture>
@@ -342,7 +385,7 @@ features, from `cargo tree -e normal`.
 | Covariance through frames | ECEF, ENU, NED, AER, geodetic | no | no | no | no | — | no |
 | n-vector type | no (used inside) | no | yes | no | yes | no | no |
 | Route tools | cross-track, along-track, crossings, centre, interpolation | no | no | no | yes | no | cross-track, interpolation |
-| Attitude (yaw, pitch, roll) | no | no | no | yes | yes | no | no |
+| Attitude (yaw, pitch, roll) | yes, exact at ±90° pitch | no | no | yes | yes | no | no |
 
 </details>
 
