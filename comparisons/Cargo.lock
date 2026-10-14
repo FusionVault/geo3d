@@ -212,6 +212,12 @@ dependencies = [
 [[package]]
 name = "geo3d"
 version = "0.3.0"
+dependencies = [
+ "geo-types",
+ "glam 0.33.12",
+ "nalgebra 0.35.0",
+ "serde",
+]
 
 [[package]]
 name = "geo3d-comparisons"

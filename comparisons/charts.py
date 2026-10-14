@@ -440,6 +440,7 @@ def main():
     feats = [
         ("No dependencies", [Y, Y, N, N, Y, N, N]),
         ("No unsafe code (forbidden)", [Y, N, N, N, Y, N, N]),
+        ("Runs without std (no_std)", [Y, N, N, Y, N, N, N]),
         ("Ellipsoidal geodesics", [Y, N, N, N, N, Y, Y]),
         ("Geodesic polygon area", [Y, N, N, N, "sphere", Y, Y]),
         ("Uncertainty (covariance)", [Y, N, N, N, N, N, N]),

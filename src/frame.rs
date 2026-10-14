@@ -2,6 +2,8 @@
 
 use crate::ellipsoid::{Ellipsoid, WGS84};
 use crate::local::{Aer, Enu, Ned};
+#[cfg(all(feature = "libm", not(feature = "std"), not(test)))]
+use crate::math::Float as _;
 use crate::motion::Course;
 use crate::position::{Ecef, Geodetic};
 use crate::vector::Vec3;

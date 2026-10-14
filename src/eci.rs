@@ -30,6 +30,8 @@
 
 use core::f64::consts::TAU;
 
+#[cfg(all(feature = "libm", not(feature = "std"), not(test)))]
+use crate::math::Float as _;
 use crate::position::{Ecef, Eci};
 
 /// The J2000 epoch, 2000-01-01T12:00:00, as a Julian date.

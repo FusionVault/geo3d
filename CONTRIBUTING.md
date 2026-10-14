@@ -36,6 +36,7 @@ Run the same checks as CI:
 cargo fmt --check
 cargo clippy --all-targets --all-features -- -D warnings
 cargo test --all-features
+cargo test --no-default-features --features libm
 cargo doc --no-deps --all-features
 ```
 
@@ -54,7 +55,8 @@ checks for it. New features also get a README recipe. Every public item gets a d
 gives its units and has an example.
 
 **3. Keep it light.** No new required dependencies, and no `unsafe` code. Integrations with other
-crates go behind an optional feature.
+crates go behind an optional feature. The library must also build without the standard library:
+use `core::`, never `std::`, and don't allocate.
 
 ## 🎨 Style
 

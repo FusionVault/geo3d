@@ -3,6 +3,8 @@
 use crate::ellipsoid::Ellipsoid;
 use crate::frame::LocalFrame;
 use crate::local::{Aer, Enu};
+#[cfg(all(feature = "libm", not(feature = "std"), not(test)))]
+use crate::math::Float as _;
 use crate::position::Geodetic;
 
 const DEG: f64 = core::f64::consts::PI / 180.0;

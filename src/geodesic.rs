@@ -11,6 +11,8 @@ use core::f64::consts::PI;
 
 use crate::ellipsoid::{Ellipsoid, WGS84};
 use crate::local::wrap_360;
+#[cfg(all(feature = "libm", not(feature = "std"), not(test)))]
+use crate::math::Float as _;
 use crate::position::Geodetic;
 use crate::vector::fma;
 

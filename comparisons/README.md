@@ -329,6 +329,7 @@ features, from `cargo tree -e normal`.
 | All crates pulled in | 0 | 0 | 19 | 21 | 0 | 5 | 41 |
 | `unsafe` | `#![forbid(unsafe_code)]` | none, not forbidden | none, not forbidden | marks frame assumptions: users write `unsafe` to build ECEF ↔ ENU/NED transforms; no memory-unsafe code | `#![deny(unsafe_code)]` | none, not forbidden | 2 blocks |
 | MSRV | 1.85 | not declared | not declared | 1.89 | 1.85 | 1.70 | 1.88 |
+| Without std (no_std) | yes, with `libm` | no | no | yes, with `libm` | no | no | no |
 | Ellipsoids | 8 named, or any | 10 named | WGS84 | WGS84 | 4 named, or any; spheres | any | WGS84 (`Geodesic`); spheres |
 | Look angles | yes | yes | no (ENU/NED only) | yes | yes | — | — |
 | Ray–ellipsoid ground strike | yes | no | no | no | no | — | — |

@@ -1,5 +1,6 @@
 # CI for geo3d. Zero-dependency crate: fmt, build (default + all features), clippy, test, the
-# example, docs, a publish dry-run — and a check that the declared rust-version really builds it.
+# examples, docs, a publish dry-run, a no_std build for a microcontroller, and a check that the
+# declared rust-version really builds it.
 name: ci
 
 on:
@@ -36,6 +37,31 @@ jobs:
           RUSTDOCFLAGS: -D warnings
       - name: publish dry-run
         run: cargo publish --dry-run
+
+  # Without an operating system: an Arm Cortex-M4F target has no standard library at all, so this
+  # fails if geo3d, or any optional bridge, needs std. Then the whole test suite with libm doing the
+  # maths (the library builds without std; the tests themselves still use it).
+  no_std:
+    name: no_std · builds for a microcontroller, tests pass with libm
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: thumbv7em-none-eabihf
+      - uses: Swatinem/rust-cache@v2
+      - name: build for thumbv7em-none-eabihf
+        run: |
+          cargo build --target thumbv7em-none-eabihf --no-default-features --features libm
+          cargo build --target thumbv7em-none-eabihf --no-default-features --features libm,serde,mint,glam,nalgebra,geo-types
+      - name: clippy without std
+        run: cargo clippy --lib --no-default-features --features libm,serde,mint,glam,nalgebra,geo-types -- -D warnings
+      - name: test with libm
+        run: cargo test --no-default-features --features libm
+      - name: a helpful error without std or libm
+        run: |
+          if cargo build --no-default-features 2> err.txt; then echo "::error::built with no maths library"; exit 1; fi
+          grep -q "geo3d needs a maths library" err.txt
 
   # Docs are part of every change: a pull request that touches the library must say what changed in
   # CHANGELOG.md (and, by the PR checklist, update the README and API docs where users will see it).
@@ -79,7 +105,9 @@ jobs:
         with:
           toolchain: ${{ steps.msrv.outputs.version }}
       - uses: Swatinem/rust-cache@v2
-      # The zero-dependency core (+ serde) must build on the declared MSRV. The optional interop
-      # bridges (mint/glam/nalgebra/geo-types) track their own, newer, upstream MSRVs, so they are
-      # not part of this check; the stable `rust` job builds them with `--all-features`.
+      # The zero-dependency core (+ serde), with and without std, must build on the declared MSRV.
+      # The optional interop bridges (mint/glam/nalgebra/geo-types) track their own, newer, upstream
+      # MSRVs, so they are not part of this check; the stable `rust` job builds them with
+      # `--all-features`.
       - run: cargo check --all-targets --features serde
+      - run: cargo check --lib --no-default-features --features libm,serde
