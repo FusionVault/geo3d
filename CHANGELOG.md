@@ -5,6 +5,16 @@ release is tagged `vX.Y.Z`.
 
 ## Unreleased
 
+- 🎯 **Faster, more accurate x, y, z → latitude/longitude/height**
+  ([#28](https://github.com/FusionVault/geo3d/issues/28)). `to_geodetic` now uses an exact formula
+  (Vermeille's, refined by Karney for GeographicLib) and one correction step. It no longer
+  iterates.
+  - It is about 40 % faster.
+  - It is at least as accurate at every height: within 3 nm near the Earth and 20 nm at satellite
+    heights. This was measured at 50-digit precision on 5 000 points.
+  - Deep inside the Earth, the old method could be up to 53 m out. The new one stays within 3 nm.
+  - A point exactly on the polar axis now always reports longitude 0.
+
 ## 0.3.0 — 2026-10-14
 
 An accuracy release. Your code keeps compiling: no public type, method or signature has changed.

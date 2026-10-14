@@ -267,9 +267,9 @@ features, from `cargo tree -e normal`.
 geo3d is the fastest, or level with the fastest, in five of the ten tests. It's slower in the other
 five, and we know why:
 
-- **x, y, z back to latitude and longitude** (two tests): geo3d refines its answer until it's exact.
-  A method that is just as exact and faster is next on the list
-  ([#28](https://github.com/FusionVault/geo3d/issues/28)).
+- **x, y, z back to latitude and longitude** (two tests): about 10 % behind map_3d and jord, and
+  further behind nav-types and sguaba. geo3d spends that time on a final check that makes it the
+  most accurate of the five, at every height.
 - **One-off ENU conversions:** a `LocalFrame` costs a little to build, and pays off from the second
   target onwards.
 - **Quick great-circle distance:** geo3d uses a formula that stays exact on the far side of the
@@ -291,8 +291,8 @@ Median nanoseconds per call. In bold: the fastest, and anything within 3 % of it
 | Operation | geo3d | map_3d | nav-types | sguaba | jord | geographiclib-rs | geo |
 |---|---|---|---|---|---|---|---|
 | Geodetic → ECEF | **21** | 30 | 36 | 53 | 28 | — | — |
-| ECEF → geodetic, −500 m to 12 km | 200 | 111 | 86 | **68** | 104 | — | — |
-| ECEF → geodetic, 400 km to 35 786 km | 208 | 111 | **89** | 100 | 107 | — | — |
+| ECEF → geodetic, −500 m to 12 km | 119 | 109 | 87 | **69** | 104 | — | — |
+| ECEF → geodetic, 400 km to 35 786 km | 121 | 108 | **85** | 98 | 102 | — | — |
 | ENU, one observer (frame reused) | **28** | 49 | 146 | 59 | 34 | — | — |
 | ENU, single call (frame built each time) | 53 | **49** | 185 | 132 | 90 | — | — |
 | Look angles, one observer (frame reused) | **67** | 94 | — | 98 | **67** | — | — |

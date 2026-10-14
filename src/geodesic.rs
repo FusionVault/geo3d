@@ -846,7 +846,7 @@ fn sincosd(x: f64) -> (f64, f64) {
 }
 
 /// `atan2(y, x)` in degrees, in `(-180, 180]`, exact for the cardinal directions.
-fn atan2d(mut y: f64, mut x: f64) -> f64 {
+pub(crate) fn atan2d(mut y: f64, mut x: f64) -> f64 {
     let mut q = if y.abs() > x.abs() {
         core::mem::swap(&mut x, &mut y);
         2
