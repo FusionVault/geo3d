@@ -4,12 +4,14 @@
 //! ask for a bridge:
 //!
 //! - **`mint`** — [`From`]/[`Into`] with `mint::Vector3<f64>` (all vector types) and `mint::Point3<f64>`
-//!   (the position types), and [`Cov3`](crate::Cov3) with `mint::RowMatrix3<f64>` and
-//!   `mint::ColumnMatrix3<f64>`. `mint` is the Math-Interoperability-Types lingua franca, so this
+//!   (the position types), [`Cov3`](crate::Cov3) with `mint::RowMatrix3<f64>` and
+//!   `mint::ColumnMatrix3<f64>`, and [`Quaternion`](crate::Quaternion) with `mint::Quaternion<f64>`. `mint` is the Math-Interoperability-Types lingua franca, so this
 //!   one bridge also reaches `glam`, `nalgebra` and `cgmath`, which all speak `mint`.
-//! - **`glam`** — with `glam::DVec3`, and [`Cov3`](crate::Cov3) with `glam::DMat3`.
+//! - **`glam`** — with `glam::DVec3`, [`Cov3`](crate::Cov3) with `glam::DMat3`, and
+//!   [`Quaternion`](crate::Quaternion) with `glam::DQuat`.
 //! - **`nalgebra`** — with `nalgebra::Vector3<f64>` and `nalgebra::Point3<f64>`, and
-//!   [`Cov3`](crate::Cov3) with `nalgebra::Matrix3<f64>`.
+//!   [`Cov3`](crate::Cov3) with `nalgebra::Matrix3<f64>`, and [`Quaternion`](crate::Quaternion)
+//!   with `nalgebra::Quaternion<f64>` (and from `UnitQuaternion<f64>`).
 //! - **`geo-types`** — [`Geodetic`](crate::Geodetic) ↔ `geo_types::Point<f64>` / `Coord<f64>` for 2D
 //!   GIS pipelines. **Longitude is `x`, latitude is `y`** (the `geo` convention) and the ellipsoidal
 //!   height is dropped on the way out and taken as `0` on the way in.
@@ -87,6 +89,19 @@ mod mint_impls {
             }
         }
     }
+    impl From<crate::Quaternion> for mint::Quaternion<f64> {
+        fn from(q: crate::Quaternion) -> Self {
+            mint::Quaternion {
+                s: q.w,
+                v: v([q.x, q.y, q.z]),
+            }
+        }
+    }
+    impl From<mint::Quaternion<f64>> for crate::Quaternion {
+        fn from(q: mint::Quaternion<f64>) -> Self {
+            crate::Quaternion::new(q.s, q.v.x, q.v.y, q.v.z)
+        }
+    }
     impl From<ColumnMatrix3<f64>> for Cov3 {
         fn from(m: ColumnMatrix3<f64>) -> Self {
             Cov3([[m.x.x, m.y.x, m.z.x], [m.x.y, m.y.y, m.z.y], [m.x.z, m.y.z, m.z.z]])
@@ -117,6 +132,17 @@ mod glam_impls {
             Cov3(m.transpose().to_cols_array_2d())
         }
     }
+    // glam stores the scalar last.
+    impl From<crate::Quaternion> for glam::DQuat {
+        fn from(q: crate::Quaternion) -> Self {
+            glam::DQuat::from_xyzw(q.x, q.y, q.z, q.w)
+        }
+    }
+    impl From<glam::DQuat> for crate::Quaternion {
+        fn from(q: glam::DQuat) -> Self {
+            crate::Quaternion::new(q.w, q.x, q.y, q.z)
+        }
+    }
 }
 
 #[cfg(feature = "nalgebra")]
@@ -141,6 +167,21 @@ mod nalgebra_impls {
     impl From<Matrix3<f64>> for Cov3 {
         fn from(m: Matrix3<f64>) -> Self {
             Cov3(core::array::from_fn(|r| core::array::from_fn(|col| m[(r, col)])))
+        }
+    }
+    impl From<crate::Quaternion> for nalgebra::Quaternion<f64> {
+        fn from(q: crate::Quaternion) -> Self {
+            nalgebra::Quaternion::new(q.w, q.x, q.y, q.z)
+        }
+    }
+    impl From<nalgebra::Quaternion<f64>> for crate::Quaternion {
+        fn from(q: nalgebra::Quaternion<f64>) -> Self {
+            crate::Quaternion::new(q.w, q.i, q.j, q.k)
+        }
+    }
+    impl From<nalgebra::UnitQuaternion<f64>> for crate::Quaternion {
+        fn from(q: nalgebra::UnitQuaternion<f64>) -> Self {
+            crate::Quaternion::from(q.into_inner())
         }
     }
 }
@@ -265,6 +306,62 @@ mod tests {
         let n: nalgebra::Matrix3<f64> = M.into();
         assert_eq!(n[(0, 1)], 2.0);
         assert_eq!(crate::Cov3::from(n), M);
+    }
+
+    /// Every quaternion bridge keeps the scalar part as the scalar, and glam's and nalgebra's own
+    /// yaw, pitch and roll give the same quaternion as geo3d's (an independent check of the
+    /// convention: Hamilton, scalar first, body to NED).
+    #[allow(dead_code)]
+    fn same_rotation(a: crate::Quaternion, b: crate::Quaternion) -> bool {
+        let d = |s: f64| {
+            (a.w - s * b.w)
+                .abs()
+                .max((a.x - s * b.x).abs())
+                .max((a.y - s * b.y).abs())
+                .max((a.z - s * b.z).abs())
+        };
+        d(1.0).min(d(-1.0)) < 1e-15
+    }
+
+    #[cfg(feature = "mint")]
+    #[test]
+    fn mint_quaternion_keeps_the_scalar() {
+        let q = crate::Quaternion::new(0.5, 0.1, 0.2, 0.3);
+        let m: mint::Quaternion<f64> = q.into();
+        assert_eq!((m.s, m.v.x, m.v.y, m.v.z), (0.5, 0.1, 0.2, 0.3));
+        assert_eq!(crate::Quaternion::from(m), q);
+    }
+
+    #[cfg(feature = "glam")]
+    #[test]
+    fn glam_quaternion_agrees() {
+        let q = crate::Quaternion::new(0.5, 0.1, 0.2, 0.3);
+        let g: glam::DQuat = q.into();
+        assert_eq!((g.w, g.x, g.y, g.z), (0.5, 0.1, 0.2, 0.3));
+        assert_eq!(crate::Quaternion::from(g), q);
+        for (y, p, r) in [(30.0f64, 10.0f64, -5.0f64), (250.0, -80.0, 170.0), (0.0, 89.9, 45.0)] {
+            let theirs = glam::DQuat::from_euler(glam::EulerRot::ZYX, y.to_radians(), p.to_radians(), r.to_radians());
+            assert!(
+                same_rotation(crate::Attitude::new(y, p, r).to_quaternion(), theirs.into()),
+                "{y} {p} {r}"
+            );
+        }
+    }
+
+    #[cfg(feature = "nalgebra")]
+    #[test]
+    fn nalgebra_quaternion_agrees() {
+        let q = crate::Quaternion::new(0.5, 0.1, 0.2, 0.3);
+        let n: nalgebra::Quaternion<f64> = q.into();
+        assert_eq!((n.w, n.i, n.j, n.k), (0.5, 0.1, 0.2, 0.3));
+        assert_eq!(crate::Quaternion::from(n), q);
+        for (y, p, r) in [(30.0f64, 10.0f64, -5.0f64), (250.0, -80.0, 170.0), (0.0, 89.9, 45.0)] {
+            let theirs = nalgebra::UnitQuaternion::from_euler_angles(r.to_radians(), p.to_radians(), y.to_radians());
+            assert!(
+                same_rotation(crate::Attitude::new(y, p, r).to_quaternion(), theirs.into()),
+                "{y} {p} {r}"
+            );
+        }
     }
 
     #[cfg(feature = "geo-types")]

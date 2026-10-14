@@ -50,6 +50,7 @@
 //! | [`Cov3`] | how uncertain a position is (a covariance) | metres², degrees² |
 //! | [`Attitude`] | which way a vehicle faces: yaw, pitch and roll | degrees |
 //! | [`Frd`] | an offset in a vehicle's own frame: forward, right, down | metres |
+//! | [`Quaternion`] | the same turn as yaw, pitch and roll, as four numbers | none |
 //!
 //! A few rules hold everywhere:
 //!
@@ -87,7 +88,7 @@
 //! | check if something is inside a zone | [`Sphere`], [`Cone`], [`Cylinder`], [`AltitudeBand`] (all are [`Volume`]s) |
 //! | check if two objects will collide | [`Track::conflict`], [`closest_approach`] |
 //! | turn a velocity into heading, speed and climb | [`Course`], [`LocalFrame::course_of_velocity`] |
-//! | work with a vehicle's yaw, pitch and roll | [`Attitude`], [`LocalFrame::geodetic_of_body`], [`LocalFrame::body_to_ecef_rotation`] |
+//! | work with a vehicle's yaw, pitch and roll | [`Attitude`], [`LocalFrame::geodetic_of_body`], [`LocalFrame::body_to_ecef_rotation`], [`Quaternion`] |
 //! | carry measurement uncertainty between frames | [`Cov3`], [`Aer::cov_to_enu`], [`LocalFrame::enu_cov_to_ecef`] |
 //! | check line of sight, or how far I can see | [`Ellipsoid::line_of_sight`], [`Ellipsoid::horizon_distance_m`], and their `_with_refraction` versions for radio |
 //! | track satellites | the [`eci`] module, and `examples/satellite.rs` with the `sgp4` crate |
@@ -107,8 +108,8 @@
 //! | `libm` | runs without the standard library (`no_std`), for microcontrollers |
 //! | `serde` | saving and loading every type |
 //! | `mint` | conversions to `mint` types, and through them to `cgmath` and others |
-//! | `glam` | conversions to `glam::DVec3`, and [`Cov3`] to `glam::DMat3` |
-//! | `nalgebra` | conversions to `nalgebra` vectors and points, and [`Cov3`] to `Matrix3` |
+//! | `glam` | conversions to `glam::DVec3`, [`Cov3`] to `glam::DMat3`, and [`Quaternion`] to `glam::DQuat` |
+//! | `nalgebra` | conversions to `nalgebra` vectors and points, [`Cov3`] to `Matrix3`, and [`Quaternion`] |
 //! | `geo-types` | [`Geodetic`] ↔ `geo_types::Point` (x is longitude, y is latitude) |
 //!
 //! For a microcontroller, `cargo add geo3d --no-default-features --features libm`. With the
@@ -146,6 +147,7 @@ mod local;
 mod motion;
 pub mod navlab;
 mod position;
+mod quaternion;
 mod vector;
 mod visibility;
 mod volume;
@@ -159,6 +161,7 @@ pub use geodesic::{Geodesic, PolygonArea};
 pub use local::{Aer, Enu, Ned};
 pub use motion::{closest_approach, Course, Cpa, Track};
 pub use position::{Ecef, Eci, Geodetic};
+pub use quaternion::Quaternion;
 pub use vector::Vec3;
 pub use visibility::STANDARD_REFRACTION_K;
 pub use volume::{AltitudeBand, Cone, Cylinder, Sphere, Volume};

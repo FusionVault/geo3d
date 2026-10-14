@@ -5,6 +5,13 @@ release is tagged `vX.Y.Z`.
 
 ## Unreleased
 
+- 🔄 **Quaternions.** `Quaternion { w, x, y, z }` in the Hamilton convention, scalar first, turning
+  body vectors into NED, as PX4 and MAVLink store attitude. `Attitude::to_quaternion` and
+  `from_quaternion` (exact pointing straight up), `Quaternion::to_rotation` and `from_rotation`
+  (Shepperd's method, precise for every rotation, half turns included), `*` to combine turns, and
+  `conjugate` to reverse one. Always the same sign for the same turn. Converts to `glam::DQuat`,
+  `nalgebra::Quaternion` and `mint::Quaternion`; glam's and nalgebra's own yaw, pitch and roll agree
+  with it.
 - ✈️ **Yaw, pitch and roll** ([#13](https://github.com/FusionVault/geo3d/issues/13)). `Attitude`
   (aerospace yaw, pitch and roll, from North-East-Down) and `Frd` (forward, right, down in a
   vehicle's own frame):
