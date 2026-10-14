@@ -1,0 +1,179 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="446" viewBox="0 0 900 446" font-family="system-ui, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" role="img" aria-label="Edge-case scorecard: geo3d passes 9 of 9 cases">
+<title>Edge-case scorecard: geo3d passes 9 of 9 cases</title>
+<rect x="0.5" y="0.5" width="899" height="445" rx="10" fill="#1a1a19" stroke="#2c2c2a"/>
+<text x="24.0" y="34.0" font-size="16" font-weight="600" fill="#ffffff" text-anchor="start">Edge cases: what each crate returns</text>
+<text x="24.0" y="56.0" font-size="12.5" font-weight="400" fill="#c3c2b7" text-anchor="start">A correct answer, or for NaN input NaN out or a clean rejection, counts as a pass. A panic, a</text>
+<text x="24.0" y="74.0" font-size="12.5" font-weight="400" fill="#c3c2b7" text-anchor="start">wrong answer, or NaN from valid input is a failure.</text>
+<rect x="229.0" y="102.0" width="92.4" height="300.0" rx="6" fill="#202e3e"/>
+<text x="275.2" y="122.0" font-size="12" font-weight="600" fill="#ffffff" text-anchor="middle">geo3d</text>
+<text x="367.6" y="122.0" font-size="12" font-weight="500" fill="#ffffff" text-anchor="middle">map_3d</text>
+<text x="460.1" y="122.0" font-size="12" font-weight="500" fill="#ffffff" text-anchor="middle">nav-types</text>
+<text x="552.5" y="122.0" font-size="12" font-weight="500" fill="#ffffff" text-anchor="middle">sguaba</text>
+<text x="644.9" y="122.0" font-size="12" font-weight="500" fill="#ffffff" text-anchor="middle">jord</text>
+<text x="737.4" y="122.0" font-size="12" font-weight="500" fill="#ffffff" text-anchor="middle">geographiclib-rs</text>
+<text x="829.8" y="122.0" font-size="12" font-weight="500" fill="#ffffff" text-anchor="middle">geo</text>
+<line x1="24" y1="132.0" x2="876" y2="132.0" stroke="#2c2c2a"/>
+<text x="24.0" y="151.0" font-size="12.5" font-weight="400" fill="#ffffff" text-anchor="start">At the Earth's centre</text>
+<circle cx="250.7" cy="147.0" r="7" fill="#0ca30c"/>
+<path d="M247.5,147.2 L249.8,149.6 L254.1,144.4" stroke="#ffffff" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+<text x="261.7" y="151.0" font-size="11.5" font-weight="400" fill="#c3c2b7" text-anchor="start">correct</text>
+<circle cx="356.0" cy="147.0" r="7" fill="#d03b3b"/>
+<path d="M353.4,144.4 L358.6,149.6 M358.6,144.4 L353.4,149.6" stroke="#ffffff" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+<text x="367.0" y="151.0" font-size="11.5" font-weight="400" fill="#c3c2b7" text-anchor="start">NaN</text>
+<circle cx="448.4" cy="147.0" r="7" fill="#d03b3b"/>
+<path d="M445.8,144.4 L451.0,149.6 M451.0,144.4 L445.8,149.6" stroke="#ffffff" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+<text x="459.4" y="151.0" font-size="11.5" font-weight="400" fill="#c3c2b7" text-anchor="start">NaN</text>
+<circle cx="540.8" cy="147.0" r="7" fill="#d03b3b"/>
+<path d="M538.2,144.4 L543.4,149.6 M543.4,144.4 L538.2,149.6" stroke="#ffffff" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+<text x="551.8" y="151.0" font-size="11.5" font-weight="400" fill="#c3c2b7" text-anchor="start">NaN</text>
+<circle cx="633.3" cy="147.0" r="7" fill="#d03b3b"/>
+<path d="M630.7,144.4 L635.9,149.6 M635.9,144.4 L630.7,149.6" stroke="#ffffff" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+<text x="644.3" y="151.0" font-size="11.5" font-weight="400" fill="#c3c2b7" text-anchor="start">NaN</text>
+<text x="737.4" y="151.0" font-size="12.5" font-weight="400" fill="#9b9a93" text-anchor="middle">—</text>
+<text x="829.8" y="151.0" font-size="12.5" font-weight="400" fill="#9b9a93" text-anchor="middle">—</text>
+<line x1="24" y1="162.0" x2="876" y2="162.0" stroke="#2c2c2a"/>
+<text x="24.0" y="181.0" font-size="12.5" font-weight="400" fill="#ffffff" text-anchor="start">Exactly over the North Pole</text>
+<circle cx="250.7" cy="177.0" r="7" fill="#0ca30c"/>
+<path d="M247.5,177.2 L249.8,179.6 L254.1,174.4" stroke="#ffffff" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+<text x="261.7" y="181.0" font-size="11.5" font-weight="400" fill="#c3c2b7" text-anchor="start">correct</text>
+<circle cx="343.1" cy="177.0" r="7" fill="#0ca30c"/>
+<path d="M339.9,177.2 L342.2,179.6 L346.5,174.4" stroke="#ffffff" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+<text x="354.1" y="181.0" font-size="11.5" font-weight="400" fill="#c3c2b7" text-anchor="start">correct</text>
+<circle cx="448.4" cy="177.0" r="7" fill="#d03b3b"/>
+<path d="M445.8,174.4 L451.0,179.6 M451.0,174.4 L445.8,179.6" stroke="#ffffff" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+<text x="459.4" y="181.0" font-size="11.5" font-weight="400" fill="#c3c2b7" text-anchor="start">NaN</text>
+<circle cx="528.0" cy="177.0" r="7" fill="#0ca30c"/>
+<path d="M524.8,177.2 L527.1,179.6 L531.4,174.4" stroke="#ffffff" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+<text x="539.0" y="181.0" font-size="11.5" font-weight="400" fill="#c3c2b7" text-anchor="start">correct</text>
+<circle cx="620.4" cy="177.0" r="7" fill="#0ca30c"/>
+<path d="M617.2,177.2 L619.5,179.6 L623.8,174.4" stroke="#ffffff" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+<text x="631.4" y="181.0" font-size="11.5" font-weight="400" fill="#c3c2b7" text-anchor="start">correct</text>
+<text x="737.4" y="181.0" font-size="12.5" font-weight="400" fill="#9b9a93" text-anchor="middle">—</text>
+<text x="829.8" y="181.0" font-size="12.5" font-weight="400" fill="#9b9a93" text-anchor="middle">—</text>
+<line x1="24" y1="192.0" x2="876" y2="192.0" stroke="#2c2c2a"/>
+<text x="24.0" y="211.0" font-size="12.5" font-weight="400" fill="#ffffff" text-anchor="start">Exactly at the South Pole</text>
+<circle cx="250.7" cy="207.0" r="7" fill="#0ca30c"/>
+<path d="M247.5,207.2 L249.8,209.6 L254.1,204.4" stroke="#ffffff" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+<text x="261.7" y="211.0" font-size="11.5" font-weight="400" fill="#c3c2b7" text-anchor="start">correct</text>
+<circle cx="343.1" cy="207.0" r="7" fill="#0ca30c"/>
+<path d="M339.9,207.2 L342.2,209.6 L346.5,204.4" stroke="#ffffff" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+<text x="354.1" y="211.0" font-size="11.5" font-weight="400" fill="#c3c2b7" text-anchor="start">correct</text>
+<circle cx="448.4" cy="207.0" r="7" fill="#d03b3b"/>
+<path d="M445.8,204.4 L451.0,209.6 M451.0,204.4 L445.8,209.6" stroke="#ffffff" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+<text x="459.4" y="211.0" font-size="11.5" font-weight="400" fill="#c3c2b7" text-anchor="start">NaN</text>
+<circle cx="528.0" cy="207.0" r="7" fill="#0ca30c"/>
+<path d="M524.8,207.2 L527.1,209.6 L531.4,204.4" stroke="#ffffff" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+<text x="539.0" y="211.0" font-size="11.5" font-weight="400" fill="#c3c2b7" text-anchor="start">correct</text>
+<circle cx="620.4" cy="207.0" r="7" fill="#0ca30c"/>
+<path d="M617.2,207.2 L619.5,209.6 L623.8,204.4" stroke="#ffffff" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+<text x="631.4" y="211.0" font-size="11.5" font-weight="400" fill="#c3c2b7" text-anchor="start">correct</text>
+<text x="737.4" y="211.0" font-size="12.5" font-weight="400" fill="#9b9a93" text-anchor="middle">—</text>
+<text x="829.8" y="211.0" font-size="12.5" font-weight="400" fill="#9b9a93" text-anchor="middle">—</text>
+<line x1="24" y1="222.0" x2="876" y2="222.0" stroke="#2c2c2a"/>
+<text x="24.0" y="241.0" font-size="12.5" font-weight="400" fill="#ffffff" text-anchor="start">Across the antimeridian</text>
+<circle cx="250.7" cy="237.0" r="7" fill="#0ca30c"/>
+<path d="M247.5,237.2 L249.8,239.6 L254.1,234.4" stroke="#ffffff" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+<text x="261.7" y="241.0" font-size="11.5" font-weight="400" fill="#c3c2b7" text-anchor="start">correct</text>
+<circle cx="343.1" cy="237.0" r="7" fill="#0ca30c"/>
+<path d="M339.9,237.2 L342.2,239.6 L346.5,234.4" stroke="#ffffff" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+<text x="354.1" y="241.0" font-size="11.5" font-weight="400" fill="#c3c2b7" text-anchor="start">correct</text>
+<circle cx="435.5" cy="237.0" r="7" fill="#0ca30c"/>
+<path d="M432.3,237.2 L434.6,239.6 L438.9,234.4" stroke="#ffffff" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+<text x="446.5" y="241.0" font-size="11.5" font-weight="400" fill="#c3c2b7" text-anchor="start">correct</text>
+<circle cx="528.0" cy="237.0" r="7" fill="#0ca30c"/>
+<path d="M524.8,237.2 L527.1,239.6 L531.4,234.4" stroke="#ffffff" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+<text x="539.0" y="241.0" font-size="11.5" font-weight="400" fill="#c3c2b7" text-anchor="start">correct</text>
+<circle cx="620.4" cy="237.0" r="7" fill="#0ca30c"/>
+<path d="M617.2,237.2 L619.5,239.6 L623.8,234.4" stroke="#ffffff" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+<text x="631.4" y="241.0" font-size="11.5" font-weight="400" fill="#c3c2b7" text-anchor="start">correct</text>
+<text x="737.4" y="241.0" font-size="12.5" font-weight="400" fill="#9b9a93" text-anchor="middle">—</text>
+<text x="829.8" y="241.0" font-size="12.5" font-weight="400" fill="#9b9a93" text-anchor="middle">—</text>
+<line x1="24" y1="252.0" x2="876" y2="252.0" stroke="#2c2c2a"/>
+<text x="24.0" y="271.0" font-size="12.5" font-weight="400" fill="#ffffff" text-anchor="start">At 100 000 km altitude</text>
+<circle cx="250.7" cy="267.0" r="7" fill="#0ca30c"/>
+<path d="M247.5,267.2 L249.8,269.6 L254.1,264.4" stroke="#ffffff" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+<text x="261.7" y="271.0" font-size="11.5" font-weight="400" fill="#c3c2b7" text-anchor="start">correct</text>
+<circle cx="349.5" cy="267.0" r="7" fill="#d03b3b"/>
+<path d="M346.9,264.4 L352.1,269.6 M352.1,264.4 L346.9,269.6" stroke="#ffffff" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+<text x="360.5" y="271.0" font-size="11.5" font-weight="400" fill="#c3c2b7" text-anchor="start">wrong</text>
+<circle cx="435.5" cy="267.0" r="7" fill="#0ca30c"/>
+<path d="M432.3,267.2 L434.6,269.6 L438.9,264.4" stroke="#ffffff" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+<text x="446.5" y="271.0" font-size="11.5" font-weight="400" fill="#c3c2b7" text-anchor="start">correct</text>
+<circle cx="528.0" cy="267.0" r="7" fill="#0ca30c"/>
+<path d="M524.8,267.2 L527.1,269.6 L531.4,264.4" stroke="#ffffff" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+<text x="539.0" y="271.0" font-size="11.5" font-weight="400" fill="#c3c2b7" text-anchor="start">correct</text>
+<circle cx="620.4" cy="267.0" r="7" fill="#0ca30c"/>
+<path d="M617.2,267.2 L619.5,269.6 L623.8,264.4" stroke="#ffffff" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+<text x="631.4" y="271.0" font-size="11.5" font-weight="400" fill="#c3c2b7" text-anchor="start">correct</text>
+<text x="737.4" y="271.0" font-size="12.5" font-weight="400" fill="#9b9a93" text-anchor="middle">—</text>
+<text x="829.8" y="271.0" font-size="12.5" font-weight="400" fill="#9b9a93" text-anchor="middle">—</text>
+<line x1="24" y1="282.0" x2="876" y2="282.0" stroke="#2c2c2a"/>
+<text x="24.0" y="301.0" font-size="12.5" font-weight="400" fill="#ffffff" text-anchor="start">NaN latitude in</text>
+<circle cx="250.7" cy="297.0" r="7" fill="#0ca30c"/>
+<path d="M247.5,297.2 L249.8,299.6 L254.1,294.4" stroke="#ffffff" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+<text x="261.7" y="301.0" font-size="11.5" font-weight="400" fill="#c3c2b7" text-anchor="start">NaN out</text>
+<circle cx="343.1" cy="297.0" r="7" fill="#0ca30c"/>
+<path d="M339.9,297.2 L342.2,299.6 L346.5,294.4" stroke="#ffffff" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+<text x="354.1" y="301.0" font-size="11.5" font-weight="400" fill="#c3c2b7" text-anchor="start">NaN out</text>
+<circle cx="432.3" cy="297.0" r="7" fill="#0ca30c"/>
+<path d="M429.1,297.2 L431.4,299.6 L435.7,294.4" stroke="#ffffff" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+<text x="443.3" y="301.0" font-size="11.5" font-weight="400" fill="#c3c2b7" text-anchor="start">rejected</text>
+<circle cx="524.7" cy="297.0" r="7" fill="#0ca30c"/>
+<path d="M521.5,297.2 L523.8,299.6 L528.1,294.4" stroke="#ffffff" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+<text x="535.7" y="301.0" font-size="11.5" font-weight="400" fill="#c3c2b7" text-anchor="start">rejected</text>
+<circle cx="620.4" cy="297.0" r="7" fill="#0ca30c"/>
+<path d="M617.2,297.2 L619.5,299.6 L623.8,294.4" stroke="#ffffff" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+<text x="631.4" y="301.0" font-size="11.5" font-weight="400" fill="#c3c2b7" text-anchor="start">NaN out</text>
+<text x="737.4" y="301.0" font-size="12.5" font-weight="400" fill="#9b9a93" text-anchor="middle">—</text>
+<text x="829.8" y="301.0" font-size="12.5" font-weight="400" fill="#9b9a93" text-anchor="middle">—</text>
+<line x1="24" y1="312.0" x2="876" y2="312.0" stroke="#2c2c2a"/>
+<text x="24.0" y="331.0" font-size="12.5" font-weight="400" fill="#ffffff" text-anchor="start">NaN x, y, z in</text>
+<circle cx="250.7" cy="327.0" r="7" fill="#0ca30c"/>
+<path d="M247.5,327.2 L249.8,329.6 L254.1,324.4" stroke="#ffffff" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+<text x="261.7" y="331.0" font-size="11.5" font-weight="400" fill="#c3c2b7" text-anchor="start">NaN out</text>
+<circle cx="343.1" cy="327.0" r="7" fill="#0ca30c"/>
+<path d="M339.9,327.2 L342.2,329.6 L346.5,324.4" stroke="#ffffff" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+<text x="354.1" y="331.0" font-size="11.5" font-weight="400" fill="#c3c2b7" text-anchor="start">NaN out</text>
+<circle cx="435.5" cy="327.0" r="7" fill="#0ca30c"/>
+<path d="M432.3,327.2 L434.6,329.6 L438.9,324.4" stroke="#ffffff" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+<text x="446.5" y="331.0" font-size="11.5" font-weight="400" fill="#c3c2b7" text-anchor="start">NaN out</text>
+<circle cx="534.4" cy="327.0" r="7" fill="#d03b3b"/>
+<path d="M531.8,324.4 L537.0,329.6 M537.0,324.4 L531.8,329.6" stroke="#ffffff" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+<text x="545.4" y="331.0" font-size="11.5" font-weight="400" fill="#c3c2b7" text-anchor="start">panic</text>
+<circle cx="620.4" cy="327.0" r="7" fill="#0ca30c"/>
+<path d="M617.2,327.2 L619.5,329.6 L623.8,324.4" stroke="#ffffff" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+<text x="631.4" y="331.0" font-size="11.5" font-weight="400" fill="#c3c2b7" text-anchor="start">NaN out</text>
+<text x="737.4" y="331.0" font-size="12.5" font-weight="400" fill="#9b9a93" text-anchor="middle">—</text>
+<text x="829.8" y="331.0" font-size="12.5" font-weight="400" fill="#9b9a93" text-anchor="middle">—</text>
+<line x1="24" y1="342.0" x2="876" y2="342.0" stroke="#2c2c2a"/>
+<text x="24.0" y="361.0" font-size="12.5" font-weight="400" fill="#ffffff" text-anchor="start">Geodesic, exact antipodes</text>
+<circle cx="250.7" cy="357.0" r="7" fill="#0ca30c"/>
+<path d="M247.5,357.2 L249.8,359.6 L254.1,354.4" stroke="#ffffff" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+<text x="261.7" y="361.0" font-size="11.5" font-weight="400" fill="#c3c2b7" text-anchor="start">correct</text>
+<text x="367.6" y="361.0" font-size="12.5" font-weight="400" fill="#9b9a93" text-anchor="middle">—</text>
+<text x="460.1" y="361.0" font-size="12.5" font-weight="400" fill="#9b9a93" text-anchor="middle">—</text>
+<text x="552.5" y="361.0" font-size="12.5" font-weight="400" fill="#9b9a93" text-anchor="middle">—</text>
+<text x="644.9" y="361.0" font-size="12.5" font-weight="400" fill="#9b9a93" text-anchor="middle">—</text>
+<circle cx="712.8" cy="357.0" r="7" fill="#0ca30c"/>
+<path d="M709.6,357.2 L711.9,359.6 L716.2,354.4" stroke="#ffffff" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+<text x="723.8" y="361.0" font-size="11.5" font-weight="400" fill="#c3c2b7" text-anchor="start">correct</text>
+<circle cx="805.2" cy="357.0" r="7" fill="#0ca30c"/>
+<path d="M802.0,357.2 L804.3,359.6 L808.6,354.4" stroke="#ffffff" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+<text x="816.2" y="361.0" font-size="11.5" font-weight="400" fill="#c3c2b7" text-anchor="start">correct</text>
+<line x1="24" y1="372.0" x2="876" y2="372.0" stroke="#2c2c2a"/>
+<text x="24.0" y="391.0" font-size="12.5" font-weight="400" fill="#ffffff" text-anchor="start">Geodesic, NaN latitude in</text>
+<circle cx="247.5" cy="387.0" r="7" fill="#0ca30c"/>
+<path d="M244.3,387.2 L246.6,389.6 L250.9,384.4" stroke="#ffffff" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+<text x="258.5" y="391.0" font-size="11.5" font-weight="400" fill="#c3c2b7" text-anchor="start">rejected</text>
+<text x="367.6" y="391.0" font-size="12.5" font-weight="400" fill="#9b9a93" text-anchor="middle">—</text>
+<text x="460.1" y="391.0" font-size="12.5" font-weight="400" fill="#9b9a93" text-anchor="middle">—</text>
+<text x="552.5" y="391.0" font-size="12.5" font-weight="400" fill="#9b9a93" text-anchor="middle">—</text>
+<text x="644.9" y="391.0" font-size="12.5" font-weight="400" fill="#9b9a93" text-anchor="middle">—</text>
+<circle cx="712.8" cy="387.0" r="7" fill="#0ca30c"/>
+<path d="M709.6,387.2 L711.9,389.6 L716.2,384.4" stroke="#ffffff" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+<text x="723.8" y="391.0" font-size="11.5" font-weight="400" fill="#c3c2b7" text-anchor="start">NaN out</text>
+<circle cx="805.2" cy="387.0" r="7" fill="#0ca30c"/>
+<path d="M802.0,387.2 L804.3,389.6 L808.6,384.4" stroke="#ffffff" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+<text x="816.2" y="391.0" font-size="11.5" font-weight="400" fill="#c3c2b7" text-anchor="start">NaN out</text>
+<text x="24.0" y="424.0" font-size="11.5" font-weight="400" fill="#9b9a93" text-anchor="start">— : the crate does not offer the operation.</text>
+</svg>

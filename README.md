@@ -265,6 +265,92 @@ The same operations, by their familiar names. Build the `LocalFrame` once per ob
 
 Angles go in and come out in degrees; there is no `deg` flag to remember.
 
+## How it compares
+
+Measured against map_3d, nav-types, sguaba, jord and geographiclib-rs on the same inputs, with
+accuracy first because that is what geo3d is built for. Every number comes from the
+[comparison suite](comparisons/README.md), which you can run yourself.
+
+### Conversions: exact at every height
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="comparisons/charts/roundtrip-dark.svg">
+  <img alt="Worst round-trip position error up to geostationary height: geo3d 15 nm, map_3d 81 m" src="comparisons/charts/roundtrip-light.svg">
+</picture>
+
+Turning x, y, z back into latitude, longitude and height has no simple exact formula, so libraries
+iterate or approximate. geo3d iterates until the answer stops changing, which keeps it exact to
+rounding from 11 km underground to geostationary orbit. map_3d stops after one fixed correction:
+fine on the ground, but 30 m off at GPS altitude and 81 m off at geostationary height.
+
+### Distance along the surface: nanometres, for every pair of points
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="comparisons/charts/surface-distance-dark.svg">
+  <img alt="Worst surface-distance error: geo3d 3.7 nm, great-circle crates 38 km to 51 km" src="comparisons/charts/surface-distance-light.svg">
+</picture>
+
+geo3d solves the geodesic on the ellipsoid with Karney's algorithm, the method GeographicLib uses.
+The other frame crates only offer great-circle distance on a sphere, which ignores the Earth's
+flattening and is off by up to 38–51 km on long lines. geo3d agrees with GeographicLib to 4 nm on
+110 000 pairs, including the 10 000 nearly opposite pairs where the older Vincenty method fails.
+
+### Look angles: exact straight up and along the horizon
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="comparisons/charts/look-angles-dark.svg">
+  <img alt="Worst look-angle error on hard cases: geo3d 30 nm, jord 13 cm, sguaba 13 cm" src="comparisons/charts/look-angles-light.svg">
+</picture>
+
+Pointing straight up, or along north, east, south or west, is where the choice of formula shows.
+geo3d computes both angles with `atan2`, which keeps full precision everywhere. `asin` and `acos`
+flatten out near 90°, so a target just off vertical comes back as exactly vertical: jord and
+sguaba are 13 cm off at geostationary range. map_3d also uses `atan2` and matches geo3d.
+
+### Edge cases: no NaN from valid input, no panics
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="comparisons/charts/robustness-dark.svg">
+  <img alt="Edge-case scorecard: geo3d passes 9 of 9 cases" src="comparisons/charts/robustness-light.svg">
+</picture>
+
+geo3d handles each singular place on purpose (the polar axis, the Earth's centre, exact antipodes)
+instead of letting a division by zero turn into NaN. Invalid input passes through as NaN or `None`,
+and nothing panics. Elsewhere, the Earth's centre gives NaN in four crates, the exact poles in
+nav-types, 100 000 km altitude a wrong answer in map_3d, and a NaN input a panic in sguaba.
+
+### Features
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="comparisons/charts/features-dark.svg">
+  <img alt="Feature matrix: geo3d is the only crate with ground strike, 3D volumes, closest approach and datum shifts" src="comparisons/charts/features-light.svg">
+</picture>
+
+geo3d covers the whole path from a GPS fix to a decision: where to point, where a line of sight
+lands, whether a target is inside a volume, when two tracks come closest, and how to shift between
+datums. It does this with no dependencies and no `unsafe` code. n-vectors and attitude, where jord,
+nav-types and sguaba are ahead, are on the roadmap ([#7](https://github.com/FusionVault/geo3d/issues/7),
+[#13](https://github.com/FusionVault/geo3d/issues/13)).
+
+### Speed
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="comparisons/charts/speed-dark.svg">
+  <img alt="Time per call for 10 operations; geo3d is fastest in 3 and tied in 2" src="comparisons/charts/speed-light.svg">
+</picture>
+
+A `LocalFrame` does its trigonometry once, so each extra target costs a few multiplications. That
+makes geo3d the fastest for latitude/longitude/height → x, y, z, for ENU from a reused frame and
+for the geodesic direct problem, and level with the fastest for look angles. It is slower in three
+places, each for a reason:
+
+- **x, y, z → latitude/longitude/height:** geo3d iterates to full precision. A closed form that is
+  both faster and accurate to nanometres is planned ([#28](https://github.com/FusionVault/geo3d/issues/28)).
+- **Great-circle distance:** the formula that is exact at every distance costs about 20 ns more than
+  the haversine, which is up to 0.9 m off near the antipode.
+- **Geodesic inverse:** about 4 % behind geographiclib-rs. geo is faster because it returns only the
+  distance, without the azimuths.
+
 ## Accuracy
 
 | Calculation | Method | Accuracy |

@@ -23,6 +23,10 @@ All notable changes to `geo3d`. Plain semver; tags `vX.Y.Z` at the published com
 - Docs corrected against measurements:
   - great-circle helpers are "within 0.6 %" (measured maximum 0.56 %), not "about 0.5 %"
   - only ECEF targets cost "a few multiplications" per point
+- A `comparisons/` suite (not published) measures accuracy, robustness, features and speed against
+  map_3d, nav-types, sguaba, jord, geographiclib-rs and geo. The README gains a "How it compares"
+  section with a chart and a plain explanation for each comparison. The light and dark SVG charts
+  are drawn from the suite's own results by `comparisons/charts.py`.
 - Speed: `geodesic_direct` is slightly faster than before (about 0.22 µs per call) and about 10 %
   faster than geographiclib-rs. `geodesic_inverse` costs about 0.74 µs on a typical pair, roughly
   twice Vincenty's (it does the extra work that makes it exact everywhere) and within a few
