@@ -25,7 +25,8 @@ impl Ellipsoid {
 
     /// The roots `t1 ≤ t2` where the line `origin + t·dir` crosses the ellipsoid surface, or `None`
     /// when it misses, `dir` is zero, or a coordinate is not finite. Scales space so the ellipsoid
-    /// becomes the unit sphere and solves the ray–sphere quadratic.
+    /// becomes the unit sphere and solves the ray–sphere quadratic in its cancellation-free form,
+    /// so the near root stays accurate when the origin is close to the surface.
     pub(crate) fn ray_roots(self, origin: Ecef, dir: Vec3) -> Option<(f64, f64)> {
         let s = Vec3::new(1.0 / self.a(), 1.0 / self.a(), 1.0 / self.b());
         let o = Vec3::new(origin.x * s.x, origin.y * s.y, origin.z * s.z);
@@ -35,8 +36,13 @@ impl Ellipsoid {
         if disc.is_nan() || disc < 0.0 || qa == 0.0 {
             return None;
         }
-        let sq = disc.sqrt();
-        Some(((-qb - sq) / (2.0 * qa), (-qb + sq) / (2.0 * qa)))
+        // q = −(b + sign(b)·√disc)/2 never subtracts nearly equal numbers; the roots are q/a and c/q.
+        let q = -0.5 * (qb + disc.sqrt().copysign(qb));
+        if q == 0.0 {
+            return Some((0.0, 0.0)); // tangent at the origin, which is on the surface
+        }
+        let (r1, r2) = (q / qa, qc / q);
+        Some((r1.min(r2), r1.max(r2)))
     }
 
     /// Whether the straight line between two points clears the ellipsoid — can `a` see `b`? Both
@@ -71,7 +77,27 @@ impl Ellipsoid {
 #[cfg(test)]
 mod tests {
     use crate::test_util::close;
-    use crate::{Ecef, Geodetic, Vec3, WGS84};
+    use crate::{Ecef, Ellipsoid, Geodetic, Vec3, WGS84};
+
+    #[test]
+    fn ray_roots_have_no_cancellation() {
+        // Vieta: the roots' product is c/a. The textbook formula loses the small root to
+        // cancellation when the origin is near the surface; the stable form keeps it.
+        let ell = Ellipsoid::new(1.0, 0.0);
+        let o = Ecef::new(1.0 + 1e-9, 0.0, 0.0);
+        for deg in [10.0f64, 60.0, 89.0, 120.0, 179.0] {
+            let d = Vec3::new(deg.to_radians().cos(), deg.to_radians().sin(), 0.0);
+            let (t1, t2) = ell.ray_roots(o, d).unwrap();
+            let c = o.vec().dot(o.vec()) - 1.0;
+            assert!(close(t1 * t2 / c, 1.0, 1e-13), "{deg}°: product {} vs {c}", t1 * t2);
+            assert!(t1 <= t2);
+        }
+        // Tangent from a point on the surface: a double root at 0.
+        assert_eq!(
+            ell.ray_roots(Ecef::new(1.0, 0.0, 0.0), Vec3::new(0.0, 1.0, 0.0)),
+            Some((0.0, 0.0))
+        );
+    }
 
     #[test]
     fn ray_intersect_finds_the_near_surface_or_misses() {

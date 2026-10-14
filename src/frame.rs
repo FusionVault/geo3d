@@ -11,8 +11,9 @@ use crate::vector::Vec3;
 ///
 /// Use it to find where things are relative to the observer ([`enu_of`](Self::enu_of),
 /// [`ned_of`](Self::ned_of)), where to point ([`look_angles`](Self::look_angles)), and back again.
-/// Building a frame does the trigonometry once; each conversion after that is a few multiplies, so
-/// keep one per observer when converting many targets.
+/// Building a frame does the trigonometry once; after that an ECEF target costs a few
+/// multiplications (a geodetic one adds its conversion to ECEF), so keep one frame per observer
+/// when converting many targets.
 ///
 /// ```
 /// use geo3d::{Geodetic, LocalFrame};

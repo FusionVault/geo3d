@@ -37,8 +37,8 @@ fn geodetic_to_ecef_agrees_to_a_micrometre() {
 #[test]
 fn ecef_to_geodetic_agrees_where_map_3d_is_exact() {
     for g in grid() {
-        // map_3d's inverse is a fixed-count iteration: exact near the surface, but at GNSS-orbit
-        // height it drifts by up to ~4e-5° (ours round-trips to 1e-11° there — see the ellipsoid
+        // map_3d's inverse is a fixed-count iteration: exact near the surface, but it drifts by
+        // ~7e-5° at GNSS-orbit height and ~1e-4° at geostationary (ours round-trips to 1e-11° — see the ellipsoid
         // grid test), so only the terrestrial and LEO points are compared here, tightly.
         if g.height_m > 100_000.0 {
             continue;

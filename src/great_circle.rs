@@ -1,20 +1,20 @@
 //! Quick spherical estimates: great-circle distance, bearing, destination and midpoint on a sphere
-//! of the ellipsoid's mean radius. Within about 0.5 % of the true surface distance.
+//! of the ellipsoid's mean radius. Within 0.6 % of the true surface distance on WGS84.
 
 use crate::ellipsoid::Ellipsoid;
 use crate::position::Geodetic;
 
 impl Ellipsoid {
     /// Great-circle distance between two positions on a sphere of the mean radius, metres, ignoring
-    /// height (the haversine formula). Fast and within about 0.5 % of the true surface distance; use
+    /// height. Fast and within 0.6 % of the true surface distance on WGS84; use
     /// [`geodesic_inverse`](Self::geodesic_inverse) for full accuracy.
+    ///
+    /// Computed as the angle between the two positions' unit vectors, `atan2(|a×b|, a·b)`, which is
+    /// accurate to about a nanometre at every distance. (The haversine formula is off by up to a
+    /// metre near the antipode.)
     #[doc(alias = "haversine")]
     pub fn great_circle_distance_m(self, a: Geodetic, b: Geodetic) -> f64 {
-        let (p1, p2) = (a.lat_rad(), b.lat_rad());
-        let dp = p2 - p1;
-        let dl = b.lon_rad() - a.lon_rad();
-        let h = (dp / 2.0).sin().powi(2) + p1.cos() * p2.cos() * (dl / 2.0).sin().powi(2);
-        2.0 * self.mean_radius() * h.sqrt().asin()
+        self.mean_radius() * self.surface_normal(a).angle_to(self.surface_normal(b))
     }
 
     /// Initial bearing from `a` to `b` along the great circle, degrees clockwise from north in
@@ -58,6 +58,26 @@ impl Ellipsoid {
 mod tests {
     use crate::test_util::close;
     use crate::{Geodetic, WGS84};
+
+    #[test]
+    fn haversine_holds_up_at_and_near_the_antipode() {
+        let half = core::f64::consts::PI * WGS84.mean_radius();
+        // Exactly opposite points: rounding can push the haversine term past 1 (NaN with asin).
+        for i in 0..=180 {
+            let lat = -90.0 + i as f64;
+            let d = WGS84.great_circle_distance_m(Geodetic::new(lat, 10.0, 0.0), Geodetic::new(-lat, -170.0, 0.0));
+            assert!(close(d, half, 1e-6), "lat {lat}: {d}");
+        }
+        // 1 m short of half way round along the equator.
+        let r = WGS84.mean_radius();
+        let lon = 180.0 - (1.0 / r).to_degrees();
+        let d = WGS84.great_circle_distance_m(Geodetic::new(0.0, 0.0, 0.0), Geodetic::new(0.0, lon, 0.0));
+        assert!(close(d, half - 1.0, 1e-6), "{}", d - half);
+        // And a millimetre apart.
+        let mm = (0.001 / r).to_degrees();
+        let d = WGS84.great_circle_distance_m(Geodetic::new(45.0, 7.0, 0.0), Geodetic::new(45.0 + mm, 7.0, 0.0));
+        assert!(close(d, 0.001, 1e-9), "{d}");
+    }
 
     #[test]
     fn great_circle_helpers() {

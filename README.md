@@ -35,8 +35,8 @@ cargo add geo3d
   README runs as a test.
 - **Simple.** Plain, typed coordinates with named fields. Degrees and metres everywhere, latitude
   always first, so nothing gets mixed up.
-- **Fast.** Nothing allocates. A `LocalFrame` does its trigonometry once; after that, each point
-  costs a few multiplications. Rust 1.85+, with optional bridges to `glam`, `nalgebra`, `mint`,
+- **Fast.** Nothing allocates. A `LocalFrame` does its trigonometry once; after that, each ECEF
+  point costs a few multiplications. Rust 1.85+, with optional bridges to `glam`, `nalgebra`, `mint`,
   `geo-types` and `serde`.
 
 ## The coordinate types
@@ -131,7 +131,7 @@ There are three different distances. Pick the one you mean:
 |---|---|---|
 | Straight line through space (slant range) | `distance3d_m(a, b)` | exact |
 | Along the surface | `WGS84.geodesic_inverse(a, b)` | about 15 nm |
-| Along the surface, quick estimate | `WGS84.great_circle_distance_m(a, b)` | about 0.5 % |
+| Along the surface, quick estimate | `WGS84.great_circle_distance_m(a, b)` | within 0.6 % |
 
 ```rust
 use geo3d::{distance3d_m, Geodetic, WGS84};
@@ -269,11 +269,11 @@ Angles go in and come out in degrees; there is no `deg` flag to remember.
 
 | Calculation | Method | Accuracy |
 |---|---|---|
-| latitude/longitude/height → x, y, z | closed form | exact |
+| latitude/longitude/height → x, y, z | closed form | exact (to rounding) |
 | x, y, z → latitude/longitude/height | Bowring, iterated | 1e-11° and 0.01 mm, from 11 km underground to geostationary orbit |
-| local frames, look angles, ground strike, volumes | closed form | exact |
+| local frames, look angles, ground strike, volumes | closed form | exact (to rounding), including straight up |
 | surface distance and destination | Karney (as in GeographicLib) | about 15 nm, for every pair of points |
-| great-circle helpers, horizon distance | sphere of mean radius | about 0.5 % |
+| great-circle helpers, horizon distance | sphere of mean radius | within 0.6 % |
 | closest approach, tracks | constant velocity | exact for straight-line motion |
 | datum shift (`Helmert7`) | small-angle Helmert | exact for the given parameters |
 | inertial frame (`eci`) | sidereal time (TEME) | rotation exact; UTC-as-UT1 up to ~400 m |
