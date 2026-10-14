@@ -33,9 +33,9 @@ geo-types = { version = "0.7", optional = true }
 serde = ["dep:serde"]
 # Math-Interoperability-Types bridge — and, transitively, glam/nalgebra/cgmath, which speak `mint`.
 mint = ["dep:mint"]
-# `glam::DVec3` conversions.
+# `glam::DVec3` conversions (and `Cov3` ↔ `glam::DMat3`).
 glam = ["dep:glam"]
-# `nalgebra::Vector3<f64>` / `Point3<f64>` conversions.
+# `nalgebra::Vector3<f64>` / `Point3<f64>` conversions (and `Cov3` ↔ `Matrix3<f64>`).
 nalgebra = ["dep:nalgebra"]
 # `geo_types::Point<f64>` / `Coord<f64>` conversions for `Geodetic` (2D GIS pipelines).
 geo-types = ["dep:geo-types"]

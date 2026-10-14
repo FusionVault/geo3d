@@ -47,6 +47,7 @@
 //! | [`Aer`] | azimuth, elevation and range: which way to point | degrees, metres |
 //! | [`Eci`] | x, y, z that don't spin with the Earth, for satellites | metres |
 //! | [`Vec3`] | a plain 3D vector, like a velocity | metres, m/s |
+//! | [`Cov3`] | how uncertain a position is (a covariance) | metres², degrees² |
 //!
 //! A few rules hold everywhere:
 //!
@@ -82,6 +83,7 @@
 //! | check if something is inside a zone | [`Sphere`], [`Cone`], [`Cylinder`], [`AltitudeBand`] (all are [`Volume`]s) |
 //! | check if two objects will collide | [`Track::conflict`], [`closest_approach`] |
 //! | turn a velocity into heading, speed and climb | [`Course`], [`LocalFrame::course_of_velocity`] |
+//! | carry measurement uncertainty between frames | [`Cov3`], [`Aer::cov_to_enu`], [`LocalFrame::enu_cov_to_ecef`] |
 //! | check line of sight, or how far I can see | [`Ellipsoid::line_of_sight`], [`Ellipsoid::horizon_distance_m`], and their `_with_refraction` versions for radio |
 //! | track satellites | the [`eci`] module, and `examples/satellite.rs` with the `sgp4` crate |
 //! | shift between datums | [`Helmert7`] |
@@ -97,8 +99,8 @@
 //! |---|---|
 //! | `serde` | saving and loading every type |
 //! | `mint` | conversions to `mint` types, and through them to `cgmath` and others |
-//! | `glam` | conversions to `glam::DVec3` |
-//! | `nalgebra` | conversions to `nalgebra` vectors and points |
+//! | `glam` | conversions to `glam::DVec3`, and [`Cov3`] to `glam::DMat3` |
+//! | `nalgebra` | conversions to `nalgebra` vectors and points, and [`Cov3`] to `Matrix3` |
 //! | `geo-types` | [`Geodetic`] ↔ `geo_types::Point` (x is longitude, y is latitude) |
 
 #![forbid(unsafe_code)]
@@ -109,6 +111,7 @@
 #[doc = include_str!("../README.md")]
 pub struct ReadmeDoctests;
 
+mod covariance;
 mod datum;
 pub mod eci;
 mod ellipsoid;
@@ -123,6 +126,7 @@ mod vector;
 mod visibility;
 mod volume;
 
+pub use covariance::Cov3;
 pub use datum::Helmert7;
 pub use ellipsoid::{Ellipsoid, AIRY_1830, BESSEL_1841, CLARKE_1866, GRS80, INTERNATIONAL_1924, PZ90, WGS72, WGS84};
 pub use frame::LocalFrame;
