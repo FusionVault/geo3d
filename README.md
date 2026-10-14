@@ -68,6 +68,7 @@ A few rules hold everywhere:
 - Bearings go clockwise from north, from 0° to 360°.
 - Heights are above the WGS84 ellipsoid, like GPS. They are not heights above sea level.
 - WGS84 is the default, but any ellipsoid works: `GRS80.to_ecef(p)`.
+- Everything prints: `println!("{p}")` shows `-33.87°, 151.21°, 20 m`.
 
 New to these words? The [glossary](#-glossary) explains them.
 
@@ -88,6 +89,25 @@ assert!((back.lat_deg - sydney.lat_deg).abs() < 1e-11);
 
 let on_grs80 = GRS80.to_ecef(sydney);  // other ellipsoids work the same way
 ```
+
+### Print positions
+
+Every type prints in a readable form, and plain `{}` keeps every digit:
+
+```rust
+use geo3d::{Geodetic, LocalFrame};
+
+let sydney = Geodetic::new(-33.87, 151.21, 20.0);
+assert_eq!(format!("{sydney}"), "-33.87°, 151.21°, 20 m");
+assert_eq!(format!("{sydney:.5}"), "-33.87000°, 151.21000°, 20.0 m");   // fixed decimals
+assert_eq!(format!("{sydney:#}"), "33.87° S, 151.21° E, 20 m");         // N/S/E/W
+
+let look = LocalFrame::new(sydney).look_angles(Geodetic::new(-33.80, 151.30, 2_500.0));
+assert_eq!(format!("{look:.1}"), "az 47.0°, el 12.2°, 11657 m");
+```
+
+💡 With `{:.N}`, angles get N decimals and metres four fewer, since 0.0001° is about 10 m on the
+ground. Grid positions print the way GeographicLib writes them: `56s 334435.706 6250816.398`.
 
 ### Use UTM grid coordinates
 

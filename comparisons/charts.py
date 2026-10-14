@@ -491,6 +491,7 @@ def main():
         ("Path tools (cross-track, crossings, centre)", [Y, N, N, N, Y, N, "some", N]),
         ("Attitude (yaw, pitch, roll)", [Y, N, N, Y, Y, N, N, N]),
         ("UTM/UPS grid", [Y, N, N, N, N, N, N, "UTM only"]),
+        ("Prints positions, with {:.N}", [Y, N, N, "no {:.N}", N, N, N, N]),
     ]
     scorecard(
         "features", "Features",

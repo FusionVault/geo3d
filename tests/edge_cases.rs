@@ -52,6 +52,15 @@ fn conversions_round_trip_at_every_awkward_place() {
             apart(g, back) < 1e-6 * (1.0 + g.height_m.abs() / 6.4e6),
             "{g:?} -> {back:?}"
         );
+        // Printing loses nothing: the plain form reads back as the same numbers.
+        let text = format!("{g}");
+        let back: Vec<f64> = text
+            .split(['°', ',', 'm'])
+            .map(str::trim)
+            .filter(|t| !t.is_empty())
+            .map(|t| t.parse().unwrap())
+            .collect();
+        assert_eq!(back, [g.lat_deg + 0.0, g.lon_deg + 0.0, g.height_m + 0.0], "{text}");
         // The UTM/UPS grid works at every awkward place, poles and antimeridian included.
         let u = WGS84.to_utm_ups(g).expect("every valid position has a grid position");
         let back = WGS84.from_utm_ups(u).unwrap().with_height(g.height_m);
@@ -233,6 +242,9 @@ fn nan_and_infinity_in_give_nan_infinity_or_none_out() {
                 "{g:?}"
             );
             assert!(ground_strike(g, 0.0, -10.0).is_none(), "{g:?}");
+            // Everything still prints.
+            assert!(format!("{g} {g:.3} {g:#}").contains('°'));
+            assert!(!format!("{} {:.2}", geodetic_to_ecef(g), LocalFrame::new(ok).look_angles(g)).is_empty());
             // Height plays no part in the grid, so only a bad latitude or longitude is refused.
             assert_eq!(WGS84.to_utm_ups(g).is_none(), g.height_m.is_finite(), "{g:?}");
             let cov = WGS84.geodetic_cov_to_ecef(g, Cov3::from_std_devs([1e-5, 1e-5, 1.0]));

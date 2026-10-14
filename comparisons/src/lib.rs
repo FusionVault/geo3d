@@ -134,6 +134,15 @@ pub mod with_geo3d {
         WGS84.polygon_area(&v).map(|p| p.area_m2)
     }
 
+    /// The position as geo3d prints it, with an optional number of decimals.
+    pub fn print(g: Lla, decimals: Option<usize>) -> String {
+        let p = geo(g);
+        match decimals {
+            Some(d) => format!("{p:.d$}"),
+            None => format!("{p}"),
+        }
+    }
+
     /// UTM in the standard zone: `[zone, easting, northing]`, `None` where geo3d uses UPS.
     #[inline]
     pub fn utm_forward(lat: f64, lon: f64) -> Option<[f64; 3]> {
@@ -280,6 +289,15 @@ pub mod with_sguaba {
             .build();
         let (y, p, r) = o.to_tait_bryan_angles();
         Some([y.get::<degree>(), p.get::<degree>(), r.get::<degree>()])
+    }
+
+    /// The position as sguaba's `Wgs84` prints it, asked for a number of decimals.
+    pub fn print(g: Lla, decimals: Option<usize>) -> String {
+        let Some(p) = wgs(g) else { return "refused".into() };
+        match decimals {
+            Some(d) => format!("{p:.d$}"),
+            None => format!("{p}"),
+        }
     }
 
     /// The checked builder: `None` for a latitude outside ±90° (or NaN).

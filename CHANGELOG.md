@@ -5,6 +5,13 @@ release is tagged `vX.Y.Z`.
 
 ## Unreleased
 
+- 🖨️ **Printing** ([#15](https://github.com/FusionVault/geo3d/issues/15)). `Display` for `Geodetic`,
+  `Aer`, `Ecef`, `Eci`, `Enu`, `Ned`, `Frd`, `Vec3`, `Attitude`, `Quaternion` and `UtmUps`:
+  - plain `{}` keeps every digit, so a printed position reads back exactly;
+  - `{:.N}` gives N decimals (metres get four fewer where a type mixes them with degrees);
+  - `{:#}` writes a position's hemispheres as letters (`33.87° S, 151.21° E, 20 m`).
+
+  It works without the standard library too.
 - 🗺️ **UTM and UPS** ([#14](https://github.com/FusionVault/geo3d/issues/14)).
   `Ellipsoid::to_utm_ups`, `to_utm_ups_zone` (a chosen zone) and `from_utm_ups`. Standard zones
   include the Norway and Svalbard exceptions, and UPS covers the poles. Built on two new projections

@@ -62,6 +62,22 @@
 //! - A few low-level helpers use radians, and their names say so (`lat_rad`, `gmst_rad`).
 //!   [`Vec3::angle_to`] also returns radians.
 //!
+//! # 🖨️ Printing
+//!
+//! Every coordinate type implements `Display`. Plain `{}` keeps every digit (it reads back as
+//! exactly the same number), `{:.N}` gives N decimals, and `{:#}` writes hemispheres as letters:
+//!
+//! ```
+//! use geo3d::Geodetic;
+//! let sydney = Geodetic::new(-33.87, 151.21, 20.0);
+//! assert_eq!(format!("{sydney}"), "-33.87°, 151.21°, 20 m");
+//! assert_eq!(format!("{sydney:.5}"), "-33.87000°, 151.21000°, 20.0 m");
+//! assert_eq!(format!("{sydney:#}"), "33.87° S, 151.21° E, 20 m");
+//! ```
+//!
+//! Where a type mixes degrees and metres, the metres get four fewer decimals: 0.0001° is about
+//! 10 m on the ground.
+//!
 //! # 🛡️ Tricky inputs
 //!
 //! - The poles, the antimeridian, the Earth's centre and points far out in space all give finite,
@@ -141,6 +157,7 @@ mod attitude;
 mod auxlat;
 mod covariance;
 mod datum;
+mod display;
 pub mod eci;
 mod ellipsoid;
 mod frame;
