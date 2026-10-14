@@ -11,6 +11,18 @@ All notable changes to `geo3d`. Plain semver; tags `vX.Y.Z` at the published com
   for non-finite input or a latitude beyond ±90°. Ported from GeographicLib via geographiclib-rs
   (both MIT; see NOTICE), and cross-checked against geographiclib-rs on 25 000 pairs on four
   ellipsoids, where they agree to within 4 nm.
+- **Precision fixes** ([#5](https://github.com/FusionVault/geo3d/issues/5)). Each one was confirmed by a test that failed before:
+  - `Vec3::angle_to` uses `atan2(|a×b|, a·b)`. It returned 0 for a 1e-10 rad angle.
+  - Elevation in `Aer::from_enu`, and so in every look angle, uses `atan2`. It used to round to
+    exactly 90° within about 1e-6° of straight up, an error of up to 0.6 m at geostationary range.
+  - `great_circle_distance_m` takes the angle between unit vectors, accurate to about a nanometre at
+    every distance. The haversine formula was up to 0.9 m short near the antipode.
+  - Ray–ellipsoid roots (`ray_intersect`, `ground_strike`, `line_of_sight`) use the
+    cancellation-free quadratic. The near root used to lose about 7 digits when the origin was
+    close to the surface.
+- Docs corrected against measurements:
+  - great-circle helpers are "within 0.6 %" (measured maximum 0.56 %), not "about 0.5 %"
+  - only ECEF targets cost "a few multiplications" per point
 - Speed: `geodesic_direct` is slightly faster than before (about 0.22 µs per call) and about 10 %
   faster than geographiclib-rs. `geodesic_inverse` costs about 0.74 µs on a typical pair, roughly
   twice Vincenty's (it does the extra work that makes it exact everywhere) and within a few

@@ -123,21 +123,17 @@ impl Aer {
     }
 
     /// The pointing that reaches an ENU offset; azimuth in `[0, 360)`. A zero offset has azimuth 0
-    /// and elevation 0.
+    /// and elevation 0. Elevation keeps full precision right up to the zenith.
     #[doc(alias = "enu2aer")]
     #[inline]
     pub fn from_enu(v: Enu) -> Aer {
-        let range = v.norm();
         let azimuth_deg = v.east.atan2(v.north).to_degrees().rem_euclid(360.0);
-        let elevation_deg = if range == 0.0 {
-            0.0
-        } else {
-            (v.up / range).clamp(-1.0, 1.0).asin().to_degrees()
-        };
+        // atan2 rather than asin(up / range), which loses precision near ±90°.
+        let elevation_deg = v.up.atan2(v.east.hypot(v.north)).to_degrees();
         Aer {
             azimuth_deg,
             elevation_deg,
-            range_m: range,
+            range_m: v.norm(),
         }
     }
 
@@ -205,6 +201,14 @@ mod tests {
         assert_eq!(n.vec(), Vec3::new(2.0, 1.0, -3.0));
         assert_eq!(n.to_enu(), e);
         assert!(close(n.norm(), e.norm(), 1e-12));
+    }
+
+    #[test]
+    fn elevation_keeps_its_precision_near_the_zenith() {
+        // 1 nm off vertical at 1 m range: asin(up / range) rounds to exactly 90°.
+        let el = Enu::new(1e-9, 0.0, 1.0).to_aer().elevation_deg;
+        assert!(close(el, 90.0 - 1e-9_f64.to_degrees(), 1e-13), "{el}");
+        assert_eq!(Enu::new(0.0, 0.0, -5.0).to_aer().elevation_deg, -90.0);
     }
 
     #[test]

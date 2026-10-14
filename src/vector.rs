@@ -122,12 +122,10 @@ impl Vec3 {
     }
 
     /// The angle between two vectors, **radians** in `[0, π]`; `0` if either is the zero vector.
+    /// Full precision at every angle, including tiny ones (it uses `atan2(|a×b|, a·b)`, not `acos`).
+    #[inline]
     pub fn angle_to(self, o: Vec3) -> f64 {
-        let d = self.norm() * o.norm();
-        if d == 0.0 {
-            return 0.0;
-        }
-        (self.dot(o) / d).clamp(-1.0, 1.0).acos()
+        self.cross(o).norm().atan2(self.dot(o))
     }
 
     /// The projection of this vector onto `onto` (the zero vector if `onto` is zero).
@@ -162,6 +160,20 @@ impl Div<f64> for Vec3 {
 mod tests {
     use super::*;
     use crate::test_util::close;
+
+    #[test]
+    fn small_angles_keep_their_precision() {
+        // acos(cos θ) loses everything below ~1e-8 rad; atan2(|a×b|, a·b) keeps full precision.
+        let a = Vec3::new(1.0, 0.0, 0.0);
+        let b = Vec3::new(1.0, 1e-10, 0.0);
+        assert!(close(a.angle_to(b), 1e-10, 1e-24), "{}", a.angle_to(b));
+        assert!(close(a.angle_to(-b), core::f64::consts::PI - 1e-10, 1e-15));
+        assert!(close(
+            a.angle_to(Vec3::new(0.0, 3.0, 0.0)),
+            core::f64::consts::FRAC_PI_2,
+            1e-16
+        ));
+    }
 
     #[test]
     fn vector_math() {
