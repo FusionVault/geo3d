@@ -3,6 +3,8 @@
 //! steady speed.
 
 use crate::local::{wrap_360, Enu};
+#[cfg(all(feature = "libm", not(feature = "std"), not(test)))]
+use crate::math::Float as _;
 use crate::position::Ecef;
 use crate::vector::Vec3;
 

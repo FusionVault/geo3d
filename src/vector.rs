@@ -1,5 +1,7 @@
 //! [`Vec3`], the plain 3D vector the other types are built on.
 
+#[cfg(all(feature = "libm", not(feature = "std"), not(test)))]
+use crate::math::Float as _;
 use core::ops::Div;
 
 /// Fused multiply-add `a·b + c`, but only where the target has an FMA instruction. Hardware FMA

@@ -1,6 +1,8 @@
 //! Positions: [`Geodetic`] (latitude, longitude, height), [`Ecef`] (x, y, z turning with the Earth)
 //! and [`Eci`] (x, y, z fixed in space).
 
+#[cfg(all(feature = "libm", not(feature = "std"), not(test)))]
+use crate::math::Float as _;
 use crate::vector::Vec3;
 
 /// A position as latitude and longitude in **degrees** and height in **metres** — what a GPS

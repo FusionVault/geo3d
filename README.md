@@ -41,7 +41,7 @@ cargo add geo3d
   without NaN or panics.
 - 🧩 **Easy to use.** Degrees and metres everywhere, with named fields. Latitude always comes first.
 - 🪶 **Light and fast.** No dependencies, no `unsafe` code, and nothing allocates. Works on Rust 1.85
-  and newer.
+  and newer, and on microcontrollers too, without the standard library.
 
 ## 🗺️ The basics
 
@@ -461,10 +461,12 @@ GeographicLib or an independent crate.
 
 ## 🧩 Optional features
 
-They're all off by default, so a plain `cargo add geo3d` pulls in nothing else.
+None of them are needed: a plain `cargo add geo3d` pulls in nothing else.
 
 | Feature | What it adds |
 |---|---|
+| `std` | on by default: the standard library's maths. Nothing to download; it comes with Rust |
+| `libm` | runs without the standard library, for microcontrollers (see below) |
 | `serde` | saving and loading every type |
 | `mint` | conversions to `mint` types, and through them to `cgmath` and others |
 | `glam` | conversions to `glam::DVec3`, and `Cov3` to `glam::DMat3` |
@@ -479,6 +481,22 @@ cargo add geo3d --features glam,serde
 let v: glam::DVec3 = geo3d::Ecef::new(1.0, 2.0, 3.0).into();
 let p: geo_types::Point = geo3d::Geodetic::new(-33.87, 151.21, 20.0).into(); // x = lon, y = lat
 ```
+
+## 🔌 Without an operating system
+
+On a microcontroller or a flight controller there's no standard library, so the maths (sine, cosine,
+square root) has to come from somewhere else. Turn on `libm`, Rust's own maths library written in
+pure Rust:
+
+```bash
+cargo add geo3d --no-default-features --features libm
+```
+
+Everything else stays the same: the same API, nothing allocates, and the other features work too.
+
+💡 If you have the standard library, keep it. Its maths rounds the last digit more carefully. libm
+is 10–20 % faster, and its answers agree with the standard build to within 25 nm for positions
+(out to 40 000 km) and half a square metre on areas the size of a continent.
 
 ## 🚧 Not included (yet)
 
@@ -504,6 +522,7 @@ let p: geo_types::Point = geo3d::Geodetic::new(-33.87, 151.21, 20.0).into(); // 
 - **n-vector:** the unit vector pointing straight up out of the surface at a position. Maths with
   n-vectors has no trouble at the poles or the antimeridian.
 - **Datum:** a reference frame for coordinates. Helmert numbers convert between two of them.
+- **no_std:** Rust without its standard library, for chips with no operating system.
 - **Covariance:** how uncertain a position is in each direction, and how the errors are linked. The
   square roots of its diagonal are the standard deviations.
 

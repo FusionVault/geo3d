@@ -7,6 +7,8 @@
 use crate::ellipsoid::Ellipsoid;
 use crate::geodesic::{ang_diff, atan2d};
 use crate::local::wrap_360;
+#[cfg(all(feature = "libm", not(feature = "std"), not(test)))]
+use crate::math::Float as _;
 use crate::position::Geodetic;
 use crate::vector::Vec3;
 
@@ -90,10 +92,10 @@ impl Ellipsoid {
     pub fn great_circle_midpoint(self, a: Geodetic, b: Geodetic) -> Geodetic {
         let (p1, p2) = (a.lat_rad(), b.lat_rad());
         let dl = b.lon_rad() - a.lon_rad();
-        let bx = p2.cos() * dl.cos();
+        let bx = p1.cos() + p2.cos() * dl.cos();
         let by = p2.cos() * dl.sin();
-        let lat = (p1.sin() + p2.sin()).atan2(((p1.cos() + bx).powi(2) + by * by).sqrt());
-        let lon = a.lon_rad() + by.atan2(p1.cos() + bx);
+        let lat = (p1.sin() + p2.sin()).atan2((bx * bx + by * by).sqrt());
+        let lon = a.lon_rad() + by.atan2(bx);
         Geodetic::new(lat.to_degrees(), lon.to_degrees(), (a.height_m + b.height_m) / 2.0).normalized()
     }
 

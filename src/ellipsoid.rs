@@ -2,6 +2,8 @@
 //! and x/y/z on it.
 
 use crate::geodesic::atan2d;
+#[cfg(all(feature = "libm", not(feature = "std"), not(test)))]
+use crate::math::Float as _;
 use crate::position::{Ecef, Geodetic};
 use crate::vector::{fma, Vec3};
 

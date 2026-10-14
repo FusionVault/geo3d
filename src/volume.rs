@@ -5,6 +5,8 @@
 use crate::ellipsoid::{Ellipsoid, WGS84};
 use crate::frame::LocalFrame;
 use crate::local::Aer;
+#[cfg(all(feature = "libm", not(feature = "std"), not(test)))]
+use crate::math::Float as _;
 use crate::position::{Ecef, Geodetic};
 use crate::vector::Vec3;
 

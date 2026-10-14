@@ -1,6 +1,8 @@
 //! Offsets and pointings from an observer: [`Enu`] (east, north, up), [`Ned`] (north, east, down)
 //! and [`Aer`] (azimuth, elevation, range).
 
+#[cfg(all(feature = "libm", not(feature = "std"), not(test)))]
+use crate::math::Float as _;
 use crate::vector::{vector_ops, Vec3};
 
 /// An angle in degrees, wrapped into `[0, 360)`. `rem_euclid` alone rounds a tiny negative angle

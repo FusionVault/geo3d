@@ -156,6 +156,12 @@ fn polygons() -> Vec<Vec<Geodetic>> {
     v
 }
 
+/// With the standard library, geo3d and geographiclib-rs share the system's sine and cosine, and
+/// agree to a rounding step or two (0.06 m² at worst). With `libm` the maths library differs in the
+/// last digit, and over the edges of an Earth-sized polygon that adds up to about half a square
+/// metre (2e-15 of the area): neither answer is the more accurate one.
+const AREA_TOLERANCE_M2: f64 = if cfg!(feature = "std") { 0.1 } else { 1.0 };
+
 fn check_polygons(ell: Ellipsoid) {
     let reference = Geodesic::new(ell.a(), ell.f());
     let (mut worst_area, mut worst_perimeter) = (0.0f64, 0.0f64);
@@ -169,7 +175,7 @@ fn check_polygons(ell: Ellipsoid) {
         let (da, dp) = ((ours.area_m2 - area).abs(), (ours.perimeter_m - perimeter).abs());
         worst_area = worst_area.max(da);
         worst_perimeter = worst_perimeter.max(dp);
-        assert!(da < 0.1, "{poly:?}: area {} vs {area}", ours.area_m2);
+        assert!(da < AREA_TOLERANCE_M2, "{poly:?}: area {} vs {area}", ours.area_m2);
         assert!(dp < 1e-6, "{poly:?}: perimeter {} vs {perimeter}", ours.perimeter_m);
     }
     eprintln!("{ell:?}: worst area difference {worst_area:e} m², worst perimeter difference {worst_perimeter:e} m");

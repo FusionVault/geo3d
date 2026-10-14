@@ -32,7 +32,7 @@
 //!   without NaN or panics.
 //! - 🧩 **Easy to use.** Degrees and metres everywhere, with named fields. Latitude always comes first.
 //! - 🪶 **Light and fast.** No dependencies, no `unsafe` code, and nothing allocates. Works on Rust
-//!   1.85 and newer.
+//!   1.85 and newer, and on microcontrollers too, without the standard library.
 //!
 //! # 🗺️ The basics
 //!
@@ -96,18 +96,34 @@
 //!
 //! # 🧩 Optional features
 //!
-//! They're all off by default, so a plain `cargo add geo3d` pulls in nothing else.
+//! None of them are needed: a plain `cargo add geo3d` pulls in nothing else.
 //!
 //! | Feature | What it adds |
 //! |---|---|
+//! | `std` | on by default: the standard library's maths. Nothing to download; it comes with Rust |
+//! | `libm` | runs without the standard library (`no_std`), for microcontrollers |
 //! | `serde` | saving and loading every type |
 //! | `mint` | conversions to `mint` types, and through them to `cgmath` and others |
 //! | `glam` | conversions to `glam::DVec3`, and [`Cov3`] to `glam::DMat3` |
 //! | `nalgebra` | conversions to `nalgebra` vectors and points, and [`Cov3`] to `Matrix3` |
 //! | `geo-types` | [`Geodetic`] ↔ `geo_types::Point` (x is longitude, y is latitude) |
+//!
+//! For a microcontroller, `cargo add geo3d --no-default-features --features libm`. With the
+//! standard library, keep `std`: its maths rounds the last digit more carefully.
 
+#![cfg_attr(not(any(feature = "std", test)), no_std)]
 #![forbid(unsafe_code)]
 #![warn(missing_docs)]
+
+#[cfg(not(any(feature = "std", feature = "libm")))]
+compile_error!(
+    "geo3d needs a maths library: keep the default `std` feature, or turn on `libm` to run without the standard library."
+);
+
+// Without the standard library, the floating-point maths comes from `libm`. (Unit tests always
+// have the standard library.)
+#[cfg(all(feature = "libm", not(feature = "std"), not(test)))]
+mod math;
 
 /// Every Rust code block in the README is compiled and run as a doctest.
 #[cfg(doctest)]

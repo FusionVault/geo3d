@@ -7,29 +7,42 @@ name = "geo3d"
 version = "0.3.0"
 edition = "2021"
 # No *required* dependencies; the floor the code itself needs, verified by the CI `msrv` job. The
-# optional interop features (mint/glam/nalgebra/geo-types) pull those crates only when enabled.
+# optional features (libm/serde/mint/glam/nalgebra/geo-types) pull those crates only when enabled.
 rust-version = "1.85"
 license = "Apache-2.0"
-description = "3D positions on Earth, made simple. Convert GPS (geodetic) coordinates to ECEF and local ENU/NED frames, then find look angles, distances, areas and line of sight. Exact, tested, no dependencies."
+description = "3D positions on Earth, made simple. Convert GPS (geodetic) coordinates to ECEF and local ENU/NED frames, then find look angles, distances, areas and line of sight. Exact, tested, no dependencies, and runs on microcontrollers (no_std)."
 repository = "https://github.com/FusionVault/geo3d"
 readme = "README.md"
 documentation = "https://docs.rs/geo3d"
 keywords = ["geodesy", "ecef", "wgs84", "gps", "coordinates"]
-categories = ["science::geo", "mathematics", "aerospace", "science::robotics"]
+categories = ["science::geo", "mathematics", "aerospace", "science::robotics", "no-std::no-alloc"]
 # Repo tooling that has no place in the published crate.
 exclude = [".github/", ".gitignore", "rustfmt.toml"]
 
 [dependencies]
+# Optional: the floating-point maths (sin, cos, sqrt, ...) without the standard library (feature
+# `libm`). Rust's own pure-Rust port of musl's maths library, with no dependencies of its own.
+libm = { version = "0.2", optional = true }
 # Optional: `Serialize`/`Deserialize` on every public type (feature `serde`).
-serde = { version = "1", features = ["derive"], optional = true }
+serde = { version = "1", default-features = false, features = ["derive"], optional = true }
 # Optional interop bridges: `From`/`Into` between the coordinate types and the common math/GIS crates.
-# All default-off, so the default build stays dependency-free.
+# All default-off, so the default build stays dependency-free. Their own `std`/`libm` features
+# follow ours, so every bridge works without the standard library too.
 mint = { version = "0.5", optional = true }
-glam = { version = "0.33", optional = true }
-nalgebra = { version = "0.35", optional = true }
-geo-types = { version = "0.7", optional = true }
+glam = { version = "0.33", default-features = false, features = ["f64"], optional = true }
+nalgebra = { version = "0.35", default-features = false, optional = true }
+# 0.7.9 is the first with a `std` feature to switch off.
+geo-types = { version = "0.7.9", default-features = false, optional = true }
 
 [features]
+default = ["std"]
+# Use the standard library: it supplies the floating-point maths. Nothing to download; it ships with
+# Rust. Turn it off (`default-features = false`) and turn on `libm` to run without an operating
+# system, on microcontrollers and flight controllers.
+std = ["serde?/std", "glam?/std", "nalgebra?/std", "geo-types?/std"]
+# The floating-point maths from the `libm` crate, for builds without the standard library. Used
+# only when `std` is off.
+libm = ["dep:libm", "glam?/libm", "nalgebra?/libm"]
 serde = ["dep:serde"]
 # Math-Interoperability-Types bridge — and, transitively, glam/nalgebra/cgmath, which speak `mint`.
 mint = ["dep:mint"]

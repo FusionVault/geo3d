@@ -5,6 +5,15 @@ release is tagged `vX.Y.Z`.
 
 ## Unreleased
 
+- 🔌 **Runs without the standard library** ([#12](https://github.com/FusionVault/geo3d/issues/12)).
+  On microcontrollers and flight controllers, `default-features = false, features = ["libm"]` takes
+  the maths from `libm`. Everything else is the same, every optional feature works too, and CI
+  builds it for an Arm Cortex-M4F. Nothing changes for anyone else: the new `std` feature is on by
+  default, and the default build still has no dependencies.
+  - ⚠️ If you already set `default-features = false`, add `features = ["std"]` (or `libm`), or
+    the build will stop with a message saying so.
+  - Keep `std` where you have it: its sine, cosine and atan2 round the last digit more carefully
+    than libm's (worst 0.5 against 0.7–1.2 units in the last place). libm is 10–20 % faster.
 - 🧭 **Route tools** ([#7](https://github.com/FusionVault/geo3d/issues/7)), built on n-vectors so
   the poles and the antimeridian need no special care:
   - `cross_track_distance_m` and `along_track_distance_m`: how far off a route, and how far along;
