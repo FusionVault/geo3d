@@ -28,14 +28,16 @@ cargo add geo3d
 
 ## Why geo3d?
 
+- **Accurate.** Exact conversions, and geodesics accurate to 15 nanometres. Every function states
+  its accuracy, and the tests pin it to GeographicLib and two independent implementations.
+- **Reliable.** Geodesics work for every pair of points, including ones on opposite sides of the
+  Earth, where Vincenty-based libraries fail. No `unsafe`, no dependencies, and every example in this
+  README runs as a test.
 - **Simple.** Plain, typed coordinates with named fields. Degrees and metres everywhere, latitude
   always first, so nothing gets mixed up.
-- **Accurate.** Exact conversions, and geodesics accurate to 15 nanometres that work for every pair
-  of points. Tested against GeographicLib and cross-checked against two independent implementations.
 - **Fast.** Nothing allocates. A `LocalFrame` does its trigonometry once; after that, each point
-  costs a few multiplications.
-- **Light.** No dependencies, no `unsafe`, Rust 1.85+. Optional bridges to `glam`, `nalgebra`,
-  `mint`, `geo-types` and `serde`.
+  costs a few multiplications. Rust 1.85+, with optional bridges to `glam`, `nalgebra`, `mint`,
+  `geo-types` and `serde`.
 
 ## The coordinate types
 
