@@ -5,6 +5,9 @@ release is tagged `vX.Y.Z`.
 
 ## Unreleased
 
+- 🧹 CI now runs [cargo-semver-checks](https://github.com/obi1kenobi/cargo-semver-checks) on every
+  pull request, so accidental breaking changes are caught before release
+  ([#11](https://github.com/FusionVault/geo3d/issues/11)).
 - 🎯 **Faster, more accurate x, y, z → latitude/longitude/height**
   ([#28](https://github.com/FusionVault/geo3d/issues/28)). `to_geodetic` now uses an exact formula
   (Vermeille's, refined by Karney for GeographicLib) and one correction step. It no longer

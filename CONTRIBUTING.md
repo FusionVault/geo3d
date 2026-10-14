@@ -39,7 +39,9 @@ cargo test --all-features
 cargo doc --no-deps --all-features
 ```
 
-When you open the pull request, the template has a short checklist. Fill it in, and you're done.
+CI also checks that you haven't accidentally broken the public API, by comparing it with the last
+release on crates.io. When you open the pull request, the template has a short checklist. Fill it
+in, and you're done.
 
 ## 📏 Our three rules
 
