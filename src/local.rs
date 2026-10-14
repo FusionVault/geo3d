@@ -128,8 +128,9 @@ impl Aer {
     #[inline]
     pub fn from_enu(v: Enu) -> Aer {
         let azimuth_deg = v.east.atan2(v.north).to_degrees().rem_euclid(360.0);
-        // atan2 rather than asin(up / range), which loses precision near ±90°.
-        let elevation_deg = v.up.atan2(v.east.hypot(v.north)).to_degrees();
+        // atan2 rather than asin(up / range), which loses precision near ±90°. sqrt(e² + n²) is as
+        // accurate as hypot at any distance in metres (no overflow below 1e154) and much cheaper.
+        let elevation_deg = v.up.atan2((v.east * v.east + v.north * v.north).sqrt()).to_degrees();
         Aer {
             azimuth_deg,
             elevation_deg,
