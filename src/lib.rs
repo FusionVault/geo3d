@@ -10,6 +10,7 @@
 //! - 🗺️ How big is that field?
 //! - 👀 Can they see each other?
 //! - 💥 Are they going to collide?
+//! - 🎯 How fast is it closing, and how soon can we reach it?
 //! - 🌊 How high above sea level is it?
 //!
 //! It's pure Rust, with no dependencies.
@@ -108,11 +109,13 @@
 //! | find the centre of a group, or a point part-way along a route | [`Ellipsoid::mean_position`], [`Ellipsoid::great_circle_interpolate`] |
 //! | check if something is inside a zone | [`Sphere`], [`Cone`], [`Cylinder`], [`AltitudeBand`] (all are [`Volume`]s) |
 //! | check if two objects will collide | [`Track::conflict`], [`closest_approach`] |
+//! | measure how fast something is closing, for radar Doppler | [`Track::range_rate_mps`], [`LocalFrame::range_rate_mps`] |
+//! | plan an intercept: when, where, and the slowest speed that works | [`Track::intercept_from`], [`Track::slowest_intercept_from`] |
 //! | turn a velocity into heading, speed and climb | [`Course`], [`LocalFrame::course_of_velocity`] |
 //! | work with a vehicle's yaw, pitch and roll | [`Attitude`], [`LocalFrame::geodetic_of_body`], [`LocalFrame::body_to_ecef_rotation`], [`Quaternion`] |
 //! | carry measurement uncertainty between frames | [`Cov3`], [`Aer::cov_to_enu`], [`LocalFrame::enu_cov_to_ecef`] |
 //! | check line of sight, or how far I can see | [`Ellipsoid::line_of_sight`], [`Ellipsoid::horizon_distance_m`], and their `_with_refraction` versions for radio |
-//! | track satellites | the [`eci`] module, and `examples/satellite.rs` with the `sgp4` crate |
+//! | track satellites, down to their Doppler shift | the [`eci`] module, [`Track::from_eci`], and `examples/satellite.rs` with the `sgp4` crate |
 //! | shift between datums | [`Helmert7`] |
 //!
 //! The [`navlab`] page solves ten classic navigation problems step by step. More worked examples, a
@@ -186,7 +189,7 @@ pub use frame::LocalFrame;
 pub use geodesic::{Geodesic, PolygonArea};
 pub use geoid::{Geoid, GeoidGrid, GeoidGridError, GeoidInterpolation};
 pub use local::{Aer, Enu, Ned};
-pub use motion::{closest_approach, Course, Cpa, Track};
+pub use motion::{closest_approach, Course, Cpa, Intercept, Track};
 pub use position::{Ecef, Eci, Geodetic};
 pub use projection::{MapPoint, PolarStereographic, TransverseMercator, UtmUps};
 pub use quaternion::Quaternion;

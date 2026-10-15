@@ -4,7 +4,7 @@ use crate::ellipsoid::{Ellipsoid, WGS84};
 use crate::local::{Aer, Enu, Ned};
 #[cfg(all(feature = "libm", not(feature = "std"), not(test)))]
 use crate::math::Float as _;
-use crate::motion::Course;
+use crate::motion::{Course, Track};
 use crate::position::{Ecef, Geodetic};
 use crate::vector::Vec3;
 
@@ -232,6 +232,24 @@ impl LocalFrame {
     #[inline]
     pub fn velocity_of_course(&self, course: Course) -> Vec3 {
         self.dir_to_ecef(course.to_enu_velocity())
+    }
+
+    /// How fast `target` is moving away from the observer, who stands still on the ground, m/s:
+    /// negative while it comes closer. See [`Track::range_rate_mps`] for the Doppler shift.
+    ///
+    /// ```
+    /// use geo3d::{geodetic_to_ecef, Course, Geodetic, LocalFrame, Track};
+    /// let radar = LocalFrame::new(Geodetic::new(-33.95, 151.18, 10.0));
+    /// let plane = Geodetic::new(-33.80, 151.18, 3_000.0); // 17 km north, 3 km up
+    /// // Flying level, due south towards the radar, at 120 m/s.
+    /// let velocity = radar.velocity_of_course(Course::new(180.0, 120.0, 0.0));
+    /// let rate = radar.range_rate_mps(Track::new(geodetic_to_ecef(plane), velocity));
+    /// // Closing at 118 m/s: the line of sight is 10° up, so not all of the speed is towards it.
+    /// assert!((rate + 118.1).abs() < 0.1);
+    /// ```
+    #[doc(alias = "doppler")]
+    pub fn range_rate_mps(&self, target: Track) -> f64 {
+        Track::new(self.origin_ecef, Vec3::ZERO).range_rate_mps(target)
     }
 }
 

@@ -216,6 +216,53 @@ fn bench(c: &mut Criterion) {
     #[cfg(feature = "geoid")]
     geoid(c);
 
+    // Intercepts: a pursuer 1.2× to 5× the target's speed, aircraft 50 km to 500 km apart. geo3d
+    // solves in 3D; jord along great circles on a sphere.
+    let mut rng = Rng::new(19);
+    let ratio = |rng: &mut Rng| rng.range(1.2, 5.0);
+    let in_3d: Vec<(Xyz, Xyz, f64)> = (0..N)
+        .map(|_| {
+            let [lat, lon] = rng.lat_lon();
+            let p = [
+                lat.to_radians().cos() * lon.to_radians().cos(),
+                lat.to_radians().cos() * lon.to_radians().sin(),
+                lat.to_radians().sin(),
+            ]
+            .map(|x| x * rng.range(5e4, 5e5));
+            let [vlat, vlon] = rng.lat_lon();
+            let speed = rng.range(100.0, 300.0);
+            let v = [
+                vlat.to_radians().cos() * vlon.to_radians().cos(),
+                vlat.to_radians().cos() * vlon.to_radians().sin(),
+                vlat.to_radians().sin(),
+            ]
+            .map(|x| x * speed);
+            (p, v, speed * ratio(&mut rng))
+        })
+        .collect();
+    let on_sphere: Vec<(LatLon, f64, LatLon, f64, f64)> = (0..N)
+        .map(|_| {
+            let from = [rng.range(-70.0, 70.0), rng.range(-180.0, 180.0)];
+            let to = with_geographiclib::direct(from, rng.range(0.0, 360.0), rng.range(5e4, 5e5)).unwrap();
+            let speed = rng.range(100.0, 300.0);
+            (
+                from,
+                speed * ratio(&mut rng),
+                [to[0], to[1]],
+                rng.range(0.0, 360.0),
+                speed,
+            )
+        })
+        .collect();
+    let mut g = group(c, "intercept");
+    run(&mut g, "geo3d", &in_3d, |(p, v, s)| {
+        with_geo3d::intercept_s(p, v, [0.0; 3], s)
+    });
+    run(&mut g, "jord", &on_sphere, |(from, s, to, bearing, vt)| {
+        with_jord::sphere_intercept_s(from, s, to, bearing, vt)
+    });
+    g.finish();
+
     let mut g = group(c, "polygon_area");
     run(&mut g, "geo3d", &polygons, with_geo3d::polygon_area_m2);
     run(

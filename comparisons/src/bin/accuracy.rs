@@ -56,6 +56,7 @@ fn main() {
     cross_track();
     attitude();
     utm_grid();
+    intercept();
     printing();
     look_angles();
     robustness();
@@ -733,7 +734,232 @@ fn utm_grid() {
     table("UTM at the edges of its rules", &["Case", "geo3d", "utm"], &edge_rows);
 }
 
-// ── 7. Printing ──────────────────────────────────────────────────────────────────────────────────
+// ── 7. Intercepts ────────────────────────────────────────────────────────────────────────────────
+
+/// The textbook way: (v·v − s²) t² + 2 (d·v) t + d·d = 0 by (−b ± √(b² − 4ac)) / 2a, taking the
+/// smaller positive root.
+fn textbook_intercept_s(p: Xyz, v: Xyz, from: Xyz, speed: f64) -> Option<f64> {
+    let d = [p[0] - from[0], p[1] - from[1], p[2] - from[2]];
+    let dot = |a: [f64; 3], b: [f64; 3]| a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+    let (a, b, c) = (dot(v, v) - speed * speed, 2.0 * dot(d, v), dot(d, d));
+    let disc = b * b - 4.0 * a * c;
+    if disc < 0.0 {
+        return None;
+    }
+    let r = disc.sqrt();
+    [(-b - r) / (2.0 * a), (-b + r) / (2.0 * a)]
+        .into_iter()
+        .filter(|t| t.is_finite() && *t > 0.0)
+        .reduce(f64::min)
+}
+
+// Double-double arithmetic (about 32 digits), for exact answers from rounded inputs.
+type Dd = (f64, f64);
+
+fn two_sum(a: f64, b: f64) -> Dd {
+    let s = a + b;
+    let bb = s - a;
+    (s, (a - (s - bb)) + (b - bb))
+}
+
+fn dd_add(a: Dd, b: Dd) -> Dd {
+    let (s, e) = two_sum(a.0, b.0);
+    let e = e + a.1 + b.1;
+    let hi = s + e;
+    (hi, e - (hi - s))
+}
+
+fn dd_mul(a: Dd, b: Dd) -> Dd {
+    let p = a.0 * b.0;
+    let e = a.0.mul_add(b.0, -p) + a.0 * b.1 + a.1 * b.0;
+    let hi = p + e;
+    (hi, e - (hi - p))
+}
+
+/// The exact intercept time for these (rounded) inputs, from `start` near it: Newton's method on
+/// |d + v·t|² − (s·t)², evaluated in double-double.
+fn exact_intercept_s(d: Xyz, v: Xyz, s: f64, start: f64) -> f64 {
+    let mut t = start;
+    for _ in 0..6 {
+        let mut gap = (0.0, 0.0);
+        let mut slope = 0.0;
+        for i in 0..3 {
+            let x = dd_add((d[i], 0.0), dd_mul((v[i], 0.0), (t, 0.0)));
+            gap = dd_add(gap, dd_mul(x, x));
+            slope += 2.0 * (x.0 * v[i]);
+        }
+        let st = dd_mul((s, 0.0), (t, 0.0));
+        let gap = dd_add(gap, dd_mul((-st.0, -st.1), st));
+        t -= (gap.0 + gap.1) / (slope - 2.0 * s * s * t);
+    }
+    t
+}
+
+/// A direction spread evenly over the sphere.
+fn unit3(rng: &mut Rng) -> [f64; 3] {
+    let [lat, lon] = rng.lat_lon();
+    let (lat, lon) = (lat.to_radians(), lon.to_radians());
+    [lat.cos() * lon.cos(), lat.cos() * lon.sin(), lat.sin()]
+}
+
+fn dot3(a: [f64; 3], b: [f64; 3]) -> f64 {
+    a[0] * b[0] + a[1] * b[1] + a[2] * b[2]
+}
+
+/// The exact intercept time on a sphere of radius `r`, both moving along great circles: the
+/// target from `target` on `bearing_deg` at `vt`, the pursuer from `from` at `s` (faster). The
+/// gap σ(t) − s·t/r only ever shrinks, so bisection finds its one root.
+fn sphere_intercept_truth(from: LatLon, s: f64, target: LatLon, bearing_deg: f64, vt: f64, r: f64) -> f64 {
+    let n = |ll: LatLon| {
+        let (lat, lon) = (ll[0].to_radians(), ll[1].to_radians());
+        [lat.cos() * lon.cos(), lat.cos() * lon.sin(), lat.sin()]
+    };
+    let (n1, n0) = (n(from), n(target));
+    let (lat, lon, b) = (target[0].to_radians(), target[1].to_radians(), bearing_deg.to_radians());
+    let east = [-lon.sin(), lon.cos(), 0.0];
+    let north = [-lat.sin() * lon.cos(), -lat.sin() * lon.sin(), lat.cos()];
+    let c: [f64; 3] = std::array::from_fn(|i| b.cos() * north[i] + b.sin() * east[i]);
+    let gap = |t: f64| {
+        let (sa, ca) = (vt * t / r).sin_cos();
+        let p: [f64; 3] = std::array::from_fn(|i| n0[i] * ca + c[i] * sa);
+        let cross = [
+            n1[1] * p[2] - n1[2] * p[1],
+            n1[2] * p[0] - n1[0] * p[2],
+            n1[0] * p[1] - n1[1] * p[0],
+        ];
+        dot3(cross, cross).sqrt().atan2(dot3(n1, p)) - s * t / r
+    };
+    let (mut lo, mut hi) = (0.0, gap(0.0) * r / (s - vt));
+    for _ in 0..200 {
+        let mid = 0.5 * (lo + hi);
+        if mid <= lo || mid >= hi {
+            break;
+        }
+        if gap(mid) > 0.0 {
+            lo = mid;
+        } else {
+            hi = mid;
+        }
+    }
+    0.5 * (lo + hi)
+}
+
+fn intercept() {
+    let mut rows = Vec::new();
+    // In 3D, straight lines: build each case from where and when they meet, so the answer is known.
+    type Solver = fn(Xyz, Xyz, Xyz, f64) -> Option<f64>;
+    let libs: [(&str, Solver); 2] = [
+        ("geo3d", with_geo3d::intercept_s),
+        ("textbook quadratic formula", textbook_intercept_s),
+    ];
+    let mut rng = Rng::new(0x1d3c_5a7e_9b0f_2468);
+    for (set, lo, hi) in [
+        ("faster, 1.2× to 5× the target's speed", 1.2, 5.0),
+        ("faster by up to 1 %", 1.0, 1.01),
+        ("exactly the target's speed", 1.0, 1.0),
+        ("slower, 0.2× to 0.9× the target's speed", 0.2, 0.9),
+    ] {
+        let count = 10_000;
+        let cases: Vec<(Xyz, Xyz, f64, f64)> = (0..count)
+            .map(|_| {
+                let when = 10f64.powf(rng.range(0.0, 4.0));
+                let v = unit3(&mut rng).map(|x| x * 10f64.powf(rng.range(0.0, 3.5)));
+                let vn = dot3(v, v).sqrt();
+                let s = if lo == hi {
+                    vn
+                } else {
+                    vn * (lo + (hi - lo) * (1.0 - rng.f64()))
+                };
+                // A slower pursuer must be closing in when they meet, or it's the second meeting.
+                let u = loop {
+                    let u = unit3(&mut rng);
+                    if dot3(u, v) < s {
+                        break u;
+                    }
+                };
+                let p = std::array::from_fn(|i| u[i] * s * when - v[i] * when);
+                (p, v, s, exact_intercept_s(p, v, s, when))
+            })
+            .collect();
+        for (name, f) in libs {
+            let (mut failures, mut worst) = (0, 0f64);
+            for &(p, v, s, when) in &cases {
+                match guarded(|| f(p, v, [0.0; 3], s))
+                    .ok()
+                    .flatten()
+                    .filter(|t| t.is_finite())
+                {
+                    // How far from the meeting point the answer puts the target.
+                    Some(t) => worst = worst.max((t - when).abs() * dot3(v, v).sqrt()),
+                    None => failures += 1,
+                }
+            }
+            rows.push(vec![
+                name.to_string(),
+                format!("in 3D, pursuer {set}"),
+                count.to_string(),
+                failures.to_string(),
+                sci(worst),
+            ]);
+        }
+    }
+    // On a sphere, along great circles: jord's model, against the exact answer for it.
+    let radius = 6_371_000.8; // jord's Earth
+    for (set, speeds, km, ratio) in [
+        (
+            "ships: 5 to 15 m/s, 10 to 200 km apart",
+            (5.0, 15.0),
+            (10.0, 200.0),
+            (1.2, 3.0),
+        ),
+        (
+            "aircraft: 100 to 300 m/s, 50 to 2 000 km apart",
+            (100.0, 300.0),
+            (50.0, 2_000.0),
+            (1.2, 3.0),
+        ),
+        (
+            "aircraft, pursuer faster by up to 5 %",
+            (100.0, 300.0),
+            (50.0, 2_000.0),
+            (1.0, 1.05),
+        ),
+    ] {
+        let count = 10_000;
+        let (mut failures, mut worst) = (0, 0f64);
+        for _ in 0..count {
+            let from = [rng.range(-70.0, 70.0), rng.range(-180.0, 180.0)];
+            let start = with_geographiclib::direct(from, rng.range(0.0, 360.0), 1e3 * rng.range(km.0, km.1)).unwrap();
+            let target = [start[0], start[1]];
+            let (vt, bearing) = (rng.range(speeds.0, speeds.1), rng.range(0.0, 360.0));
+            let s = vt * (ratio.0 + (ratio.1 - ratio.0) * (1.0 - rng.f64()));
+            let truth = sphere_intercept_truth(from, s, target, bearing, vt, radius);
+            match guarded(|| with_jord::sphere_intercept_s(from, s, target, bearing, vt))
+                .ok()
+                .flatten()
+            {
+                Some(t) => worst = worst.max((t - truth).abs() * vt),
+                None => failures += 1,
+            }
+        }
+        rows.push(vec![
+            "jord".to_string(),
+            format!("on a sphere, {set}"),
+            count.to_string(),
+            failures.to_string(),
+            sci(worst),
+        ]);
+    }
+    println!("## Intercepts\n");
+    println!("When a pursuer flying straight at a steady speed meets a moving target. In 3D, each case is built backwards from where and when they meet, then the exact answer for the rounded inputs is found in 32-digit arithmetic; the textbook quadratic formula solves the same equation as geo3d. jord moves both along great circles on a sphere, and is checked against that model's exact answer (by bisection). The error is how far the answer puts the target from where they really meet. A failure is no answer where one exists.\n");
+    table(
+        "Intercept against the exact answer",
+        &["Library", "Cases", "Count", "Failures", "Max error (m)"],
+        &rows,
+    );
+}
+
+// ── 8. Printing ──────────────────────────────────────────────────────────────────────────────────
 
 fn printing() {
     // A typed-in position, and the same one after a trip through ECEF (as a computed one would be).
@@ -758,7 +984,7 @@ fn printing() {
     );
 }
 
-// ── 8. Local frames and look angles, compared pairwise ──────────────────────────────────────────
+// ── 9. Local frames and look angles, compared pairwise ──────────────────────────────────────────
 
 fn aer_to_enu(a: AerV) -> EnuV {
     let (sa, ca) = a[0].to_radians().sin_cos();
@@ -897,7 +1123,7 @@ fn look_angles() {
     }
 }
 
-// ── 9. Robustness: edge cases ───────────────────────────────────────────────────────────────────
+// ── 10. Robustness: edge cases ───────────────────────────────────────────────────────────────────
 
 /// What came back, in a word: ok, NaN, rejected, panic, or wrong (with the value).
 fn verdict<const N: usize>(

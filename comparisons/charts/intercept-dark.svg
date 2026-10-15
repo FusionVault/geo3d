@@ -1,0 +1,70 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="820" height="402" viewBox="0 0 820 402" font-family="system-ui, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" role="img" aria-label="Intercept scorecard: geo3d answers every case within 5.3 nm; the textbook formula fails 54 % of cases at equal speeds; jord fails 1 % to 16 % of cases on its sphere">
+<title>Intercept scorecard: geo3d answers every case within 5.3 nm; the textbook formula fails 54 % of cases at equal speeds; jord fails 1 % to 16 % of cases on its sphere</title>
+<rect x="0.5" y="0.5" width="819" height="401" rx="10" fill="#1a1a19" stroke="#2c2c2a"/>
+<text x="24.0" y="34.0" font-size="16" font-weight="600" fill="#ffffff" text-anchor="start">Intercepts: an answer every time?</text>
+<text x="24.0" y="56.0" font-size="12.5" font-weight="400" fill="#c3c2b7" text-anchor="start">10 000 cases each, against the exact answer: in 3D, straight lines (geo3d's model); on a sphere,</text>
+<text x="24.0" y="74.0" font-size="12.5" font-weight="400" fill="#c3c2b7" text-anchor="start">great circles (jord's). A pass is an answer for every case, all within 1 mm of where they meet.</text>
+<rect x="313.0" y="102.0" width="161.0" height="240.0" rx="6" fill="#202e3e"/>
+<text x="393.5" y="122.0" font-size="12" font-weight="600" fill="#ffffff" text-anchor="middle">geo3d</text>
+<text x="554.5" y="122.0" font-size="12" font-weight="500" fill="#ffffff" text-anchor="middle">textbook formula</text>
+<text x="715.5" y="122.0" font-size="12" font-weight="500" fill="#ffffff" text-anchor="middle">jord (sphere)</text>
+<line x1="24" y1="132.0" x2="796" y2="132.0" stroke="#2c2c2a"/>
+<text x="24.0" y="151.0" font-size="12.5" font-weight="400" fill="#ffffff" text-anchor="start">In 3D, pursuer 1.2× to 5× faster</text>
+<circle cx="372.2" cy="147.0" r="7" fill="#0ca30c"/>
+<path d="M369.0,147.2 L371.3,149.6 L375.6,144.4" stroke="#ffffff" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+<text x="383.2" y="151.0" font-size="11.5" font-weight="400" fill="#c3c2b7" text-anchor="start">5.3 nm</text>
+<circle cx="533.2" cy="147.0" r="7" fill="#0ca30c"/>
+<path d="M530.0,147.2 L532.3,149.6 L536.6,144.4" stroke="#ffffff" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+<text x="544.2" y="151.0" font-size="11.5" font-weight="400" fill="#c3c2b7" text-anchor="start">9.5 nm</text>
+<text x="715.5" y="151.0" font-size="12.5" font-weight="400" fill="#9b9a93" text-anchor="middle">—</text>
+<line x1="24" y1="162.0" x2="796" y2="162.0" stroke="#2c2c2a"/>
+<text x="24.0" y="181.0" font-size="12.5" font-weight="400" fill="#ffffff" text-anchor="start">In 3D, pursuer up to 1 % faster</text>
+<circle cx="372.2" cy="177.0" r="7" fill="#0ca30c"/>
+<path d="M369.0,177.2 L371.3,179.6 L375.6,174.4" stroke="#ffffff" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+<text x="383.2" y="181.0" font-size="11.5" font-weight="400" fill="#c3c2b7" text-anchor="start">4.9 nm</text>
+<circle cx="536.4" cy="177.0" r="7" fill="#0ca30c"/>
+<path d="M533.2,177.2 L535.5,179.6 L539.8,174.4" stroke="#ffffff" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+<text x="547.4" y="181.0" font-size="11.5" font-weight="400" fill="#c3c2b7" text-anchor="start">39 µm</text>
+<text x="715.5" y="181.0" font-size="12.5" font-weight="400" fill="#9b9a93" text-anchor="middle">—</text>
+<line x1="24" y1="192.0" x2="796" y2="192.0" stroke="#2c2c2a"/>
+<text x="24.0" y="211.0" font-size="12.5" font-weight="400" fill="#ffffff" text-anchor="start">In 3D, the same speed</text>
+<circle cx="372.2" cy="207.0" r="7" fill="#0ca30c"/>
+<path d="M369.0,207.2 L371.3,209.6 L375.6,204.4" stroke="#ffffff" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+<text x="383.2" y="211.0" font-size="11.5" font-weight="400" fill="#c3c2b7" text-anchor="start">4.3 nm</text>
+<circle cx="520.3" cy="207.0" r="7" fill="#d03b3b"/>
+<path d="M517.7,204.4 L522.9,209.6 M522.9,204.4 L517.7,209.6" stroke="#ffffff" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+<text x="531.3" y="211.0" font-size="11.5" font-weight="400" fill="#c3c2b7" text-anchor="start">fails 54 %</text>
+<text x="715.5" y="211.0" font-size="12.5" font-weight="400" fill="#9b9a93" text-anchor="middle">—</text>
+<line x1="24" y1="222.0" x2="796" y2="222.0" stroke="#2c2c2a"/>
+<text x="24.0" y="241.0" font-size="12.5" font-weight="400" fill="#ffffff" text-anchor="start">In 3D, pursuer 0.2× to 0.9× as fast</text>
+<circle cx="372.2" cy="237.0" r="7" fill="#0ca30c"/>
+<path d="M369.0,237.2 L371.3,239.6 L375.6,234.4" stroke="#ffffff" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+<text x="383.2" y="241.0" font-size="11.5" font-weight="400" fill="#c3c2b7" text-anchor="start">5.0 nm</text>
+<circle cx="533.2" cy="237.0" r="7" fill="#0ca30c"/>
+<path d="M530.0,237.2 L532.3,239.6 L536.6,234.4" stroke="#ffffff" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+<text x="544.2" y="241.0" font-size="11.5" font-weight="400" fill="#c3c2b7" text-anchor="start">1.4 µm</text>
+<text x="715.5" y="241.0" font-size="12.5" font-weight="400" fill="#9b9a93" text-anchor="middle">—</text>
+<line x1="24" y1="252.0" x2="796" y2="252.0" stroke="#2c2c2a"/>
+<text x="24.0" y="271.0" font-size="12.5" font-weight="400" fill="#ffffff" text-anchor="start">On a sphere: ships</text>
+<text x="393.5" y="271.0" font-size="12.5" font-weight="400" fill="#9b9a93" text-anchor="middle">—</text>
+<text x="554.5" y="271.0" font-size="12.5" font-weight="400" fill="#9b9a93" text-anchor="middle">—</text>
+<circle cx="681.3" cy="267.0" r="7" fill="#d03b3b"/>
+<path d="M678.7,264.4 L683.9,269.6 M683.9,264.4 L678.7,269.6" stroke="#ffffff" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+<text x="692.3" y="271.0" font-size="11.5" font-weight="400" fill="#c3c2b7" text-anchor="start">fails 11 %</text>
+<line x1="24" y1="282.0" x2="796" y2="282.0" stroke="#2c2c2a"/>
+<text x="24.0" y="301.0" font-size="12.5" font-weight="400" fill="#ffffff" text-anchor="start">On a sphere: aircraft</text>
+<text x="393.5" y="301.0" font-size="12.5" font-weight="400" fill="#9b9a93" text-anchor="middle">—</text>
+<text x="554.5" y="301.0" font-size="12.5" font-weight="400" fill="#9b9a93" text-anchor="middle">—</text>
+<circle cx="684.5" cy="297.0" r="7" fill="#d03b3b"/>
+<path d="M681.9,294.4 L687.1,299.6 M687.1,294.4 L681.9,299.6" stroke="#ffffff" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+<text x="695.5" y="301.0" font-size="11.5" font-weight="400" fill="#c3c2b7" text-anchor="start">fails 1 %</text>
+<line x1="24" y1="312.0" x2="796" y2="312.0" stroke="#2c2c2a"/>
+<text x="24.0" y="331.0" font-size="12.5" font-weight="400" fill="#ffffff" text-anchor="start">On a sphere: aircraft, up to 5 % faster</text>
+<text x="393.5" y="331.0" font-size="12.5" font-weight="400" fill="#9b9a93" text-anchor="middle">—</text>
+<text x="554.5" y="331.0" font-size="12.5" font-weight="400" fill="#9b9a93" text-anchor="middle">—</text>
+<circle cx="681.3" cy="327.0" r="7" fill="#d03b3b"/>
+<path d="M678.7,324.4 L683.9,329.6 M683.9,324.4 L678.7,329.6" stroke="#ffffff" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+<text x="692.3" y="331.0" font-size="11.5" font-weight="400" fill="#c3c2b7" text-anchor="start">fails 16 %</text>
+<text x="24.0" y="364.0" font-size="11.5" font-weight="400" fill="#9b9a93" text-anchor="start">geo3d's worst is 5.3 nm. At equal speeds the textbook formula divides by zero, and its other answers</text>
+<text x="24.0" y="380.0" font-size="11.5" font-weight="400" fill="#9b9a93" text-anchor="start">can be wildly out. jord iterates (Newton's method), and sometimes gives no answer where one exists.</text>
+</svg>

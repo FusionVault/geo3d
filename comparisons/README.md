@@ -24,7 +24,9 @@ for heights above sea level. We also used
   jord can lose it there.
 - 🧰 **Features.** Only geo3d has ground strikes, 3D zones, collision checks, uncertainty and datum
   shifts.
-- ⚡ **Speed.** geo3d was fastest, or level with the fastest, in six of the fourteen tests. It's slower
+- 🎯 **Intercepts.** geo3d answered all 40 000 cases within a few nanometres, even at equal speeds,
+  where the textbook formula fails in half the cases. jord's solver gave no answer in up to 16 %.
+- ⚡ **Speed.** geo3d was fastest, or level with the fastest, in seven of the fifteen tests. It's slower
   in the other eight, and we explain why below.
 
 ## 🎯 Converting x, y, z back to latitude and longitude
@@ -304,6 +306,49 @@ egm96's harmonics run on every 50th point, as they're slow. Longitudes go in fro
 
 </details>
 
+## 🎯 Intercepts
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="charts/intercept-dark.svg">
+  <img alt="Intercept scorecard: geo3d answers every case within 5.3 nm; the textbook formula fails 54 % of cases at equal speeds; jord fails 1 % to 16 % of cases on its sphere" src="charts/intercept-light.svg">
+</picture>
+
+A pursuer flying straight at a steady speed: when, and where, does it meet a moving target? In 3D
+that's a quadratic equation, so we built 40 000 cases backwards from where and when they meet, then
+found each one's exact answer in 32-digit arithmetic. jord solves a different problem, with both
+moving along great circles on a sphere, so we checked it against that problem's exact answer.
+
+- geo3d works out the equation's terms to 32 digits, then takes each root in the form that doesn't
+  cancel. Every answer is within 5.3 nm, about one rounding of the result, in every set.
+- The textbook quadratic formula, `(−b ± √(b² − 4ac)) / 2a`, divides by zero when the two speeds
+  are equal: it fails in 54 % of those cases, and its other answers there can be wildly out. Up to
+  1 % apart it's 39 µm out, and slower pursuers lose digits too.
+- jord iterates with Newton's method from a fixed starting time. It gives no answer, where there is
+  one, in 11 % of the ship cases, 1 % of the aircraft cases, and 16 % when the speeds are close.
+  When it answers, it's within a micrometre.
+
+<details>
+<summary>📋 Show the numbers</summary>
+
+| Library | Cases | Count | Failures | Max error (m) |
+|---|---|---|---|---|
+| geo3d | in 3D, pursuer faster, 1.2× to 5× the target's speed | 10000 | 0 | 5.3e-9 |
+| textbook quadratic formula | in 3D, pursuer faster, 1.2× to 5× the target's speed | 10000 | 0 | 9.5e-9 |
+| geo3d | in 3D, pursuer faster by up to 1 % | 10000 | 0 | 4.9e-9 |
+| textbook quadratic formula | in 3D, pursuer faster by up to 1 % | 10000 | 0 | 3.9e-5 |
+| geo3d | in 3D, pursuer exactly the target's speed | 10000 | 0 | 4.3e-9 |
+| textbook quadratic formula | in 3D, pursuer exactly the target's speed | 10000 | 5443 | 3.1e23 |
+| geo3d | in 3D, pursuer slower, 0.2× to 0.9× the target's speed | 10000 | 0 | 5.0e-9 |
+| textbook quadratic formula | in 3D, pursuer slower, 0.2× to 0.9× the target's speed | 10000 | 0 | 1.4e-6 |
+| jord | on a sphere, ships: 5 to 15 m/s, 10 to 200 km apart | 10000 | 1086 | 7.5e-9 |
+| jord | on a sphere, aircraft: 100 to 300 m/s, 50 to 2 000 km apart | 10000 | 87 | 1.5e-7 |
+| jord | on a sphere, aircraft, pursuer faster by up to 5 % | 10000 | 1623 | 8.2e-7 |
+
+The error is how far the answer puts the target from where they really meet. A failure is no
+answer where one exists.
+
+</details>
+
 ## ✈️ Yaw, pitch and roll
 
 <picture>
@@ -504,6 +549,8 @@ features, from `cargo tree -e normal`.
 | UTM/UPS grid | UTM and UPS, Krüger to the 8th order | — | — | — | — | — | — | UTM only (USGS series) |
 | Prints positions | yes: lossless, `{:.N}`, `{:#}` for N/S/E/W | no | no | yes, ignoring `{:.N}` | no | no | no | no |
 | Heights above sea level | EGM84, EGM96 and EGM2008 grids, as GeographicLib reads them | no | no | no | no | no | no | no |
+| Range rate (Doppler) | yes, and from TEME for satellites | no | no | no | no | no | no | no |
+| Intercept | 3D, exact: time, place, heading and slowest speed | no | no | no | on a sphere, by iteration (time only) | no | no | no |
 
 </details>
 
@@ -511,10 +558,10 @@ features, from `cargo tree -e normal`.
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="charts/speed-dark.svg">
-  <img alt="Time per call for 14 operations; geo3d is fastest in 3 and tied in 3" src="charts/speed-light.svg">
+  <img alt="Time per call for 15 operations; geo3d is fastest in 4 and tied in 3" src="charts/speed-light.svg">
 </picture>
 
-geo3d is the fastest, or level with the fastest, in six of the fourteen tests. It's slower in the
+geo3d is the fastest, or level with the fastest, in seven of the fifteen tests. It's slower in the
 other eight, and we know why:
 
 - **x, y, z back to latitude and longitude** (two tests): about 10 % behind map_3d and jord, and
@@ -561,6 +608,9 @@ Median nanoseconds per call. In bold: the fastest, and anything within 3 % of it
 
 Geoid height, 1 000 points anywhere, each crate's default: geo3d 45 (cubic, egm96-5), egm96 21,
 **egm2008 13**.
+
+Intercept, 1 000 aircraft 50 km to 500 km away, pursuer 1.2× to 5× faster: **geo3d 62** (in 3D),
+jord 1 159 (on a sphere, by iteration).
 
 Inputs: 1 000 points anywhere on Earth from −500 m to 12 km high (and from 400 km to 35 786 km for
 the second ECEF → geodetic row); a radar near Sydney with 1 000 aircraft within a degree of it, up

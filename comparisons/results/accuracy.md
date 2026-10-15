@@ -155,6 +155,26 @@ geo3d and the `utm` crate, against GeographicLib's GeoConvert at nanometre preci
 | On the 180° meridian (10°, 180°) | zone 1, 171071 E, 1106909 N | zone 61, 171071 E, 1106909 N |
 | Beyond 84° N, where UTM stops (85°, 10°) | UPS (not UTM) | zone 32, 509730 E, 9439817 N |
 
+## Intercepts
+
+When a pursuer flying straight at a steady speed meets a moving target. In 3D, each case is built backwards from where and when they meet, then the exact answer for the rounded inputs is found in 32-digit arithmetic; the textbook quadratic formula solves the same equation as geo3d. jord moves both along great circles on a sphere, and is checked against that model's exact answer (by bisection). The error is how far the answer puts the target from where they really meet. A failure is no answer where one exists.
+
+### Intercept against the exact answer
+
+| Library | Cases | Count | Failures | Max error (m) |
+|---|---|---|---|---|
+| geo3d | in 3D, pursuer faster, 1.2× to 5× the target's speed | 10000 | 0 | 5.3e-9 |
+| textbook quadratic formula | in 3D, pursuer faster, 1.2× to 5× the target's speed | 10000 | 0 | 9.5e-9 |
+| geo3d | in 3D, pursuer faster by up to 1 % | 10000 | 0 | 4.9e-9 |
+| textbook quadratic formula | in 3D, pursuer faster by up to 1 % | 10000 | 0 | 3.9e-5 |
+| geo3d | in 3D, pursuer exactly the target's speed | 10000 | 0 | 4.3e-9 |
+| textbook quadratic formula | in 3D, pursuer exactly the target's speed | 10000 | 5443 | 3.1e23 |
+| geo3d | in 3D, pursuer slower, 0.2× to 0.9× the target's speed | 10000 | 0 | 5.0e-9 |
+| textbook quadratic formula | in 3D, pursuer slower, 0.2× to 0.9× the target's speed | 10000 | 0 | 1.4e-6 |
+| jord | on a sphere, ships: 5 to 15 m/s, 10 to 200 km apart | 10000 | 1086 | 7.5e-9 |
+| jord | on a sphere, aircraft: 100 to 300 m/s, 50 to 2 000 km apart | 10000 | 87 | 1.5e-7 |
+| jord | on a sphere, aircraft, pursuer faster by up to 5 % | 10000 | 1623 | 8.2e-7 |
+
 ## Printing a position
 
 The same position printed by each crate that can print one, plainly and asking for three decimals. The others have no `Display` for positions.

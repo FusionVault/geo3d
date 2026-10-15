@@ -2,7 +2,9 @@
 
 #[cfg(all(feature = "libm", not(feature = "std"), not(test)))]
 use crate::math::Float as _;
-use core::ops::Div;
+use core::ops::{Add, Div, Mul, Sub};
+
+use crate::angle::two_sum;
 
 /// Fused multiply-add `a·b + c`, but only where the target has an FMA instruction. Hardware FMA
 /// rounds once and is a single instruction; without it `f64::mul_add` becomes a slow software call,
@@ -14,6 +16,80 @@ pub(crate) fn fma(a: f64, b: f64, c: f64) -> f64 {
         a.mul_add(b, c)
     } else {
         a * b + c
+    }
+}
+
+/// The exact product `a·b` as `hi + lo`: one fused multiply–add where the CPU has it, Dekker's
+/// split otherwise.
+#[inline]
+pub(crate) fn two_prod(a: f64, b: f64) -> (f64, f64) {
+    let p = a * b;
+    if cfg!(target_feature = "fma") {
+        (p, a.mul_add(b, -p))
+    } else {
+        let split = |x: f64| {
+            let c = 134_217_729.0 * x; // 2²⁷ + 1
+            let hi = c - (c - x);
+            (hi, x - hi)
+        };
+        let ((ah, al), (bh, bl)) = (split(a), split(b));
+        (p, ((ah * bh - p) + ah * bl + al * bh) + al * bl)
+    }
+}
+
+/// A double-double number, `hi + lo`: about 32 significant digits, for sums that would otherwise
+/// cancel.
+#[derive(Clone, Copy, Debug)]
+pub(crate) struct Dd(pub f64, pub f64);
+
+impl Dd {
+    /// `a·b`, exactly.
+    #[inline]
+    pub fn prod(a: f64, b: f64) -> Dd {
+        let (hi, lo) = two_prod(a, b);
+        Dd(hi, lo)
+    }
+
+    /// `x·y`, exactly (three products, summed in double-double).
+    #[inline]
+    pub fn dot(x: Vec3, y: Vec3) -> Dd {
+        Dd::prod(x.x, y.x) + Dd::prod(x.y, y.y) + Dd::prod(x.z, y.z)
+    }
+
+    /// Rounded to the nearest `f64`.
+    #[inline]
+    pub fn f64(self) -> f64 {
+        self.0 + self.1
+    }
+}
+
+impl Add for Dd {
+    type Output = Dd;
+    #[inline]
+    fn add(self, o: Dd) -> Dd {
+        let (s, e) = two_sum(self.0, o.0);
+        let e = e + self.1 + o.1;
+        let hi = s + e;
+        Dd(hi, e - (hi - s))
+    }
+}
+
+impl Sub for Dd {
+    type Output = Dd;
+    #[inline]
+    fn sub(self, o: Dd) -> Dd {
+        self + Dd(-o.0, -o.1)
+    }
+}
+
+impl Mul for Dd {
+    type Output = Dd;
+    #[inline]
+    fn mul(self, o: Dd) -> Dd {
+        let (p, e) = two_prod(self.0, o.0);
+        let e = e + self.0 * o.1 + self.1 * o.0;
+        let hi = p + e;
+        Dd(hi, e - (hi - p))
     }
 }
 
@@ -160,6 +236,35 @@ impl Div<f64> for Vec3 {
 
 #[cfg(test)]
 mod tests {
+    /// `two_prod` is exact: its two parts add up to the true product (checked against a fused
+    /// multiply–add), and double-double sums keep what plain `f64` loses.
+    #[test]
+    fn exact_products_and_double_doubles() {
+        let mut s: u64 = 0x2545_f491_4f6c_dd1d;
+        for _ in 0..100_000 {
+            let mut r = || {
+                s ^= s << 13;
+                s ^= s >> 7;
+                s ^= s << 17;
+                let m = (s >> 11) as f64 / (1u64 << 53) as f64 - 0.5;
+                m * 10f64.powi((s % 61) as i32 - 30)
+            };
+            let (a, b) = (r(), r());
+            let (hi, lo) = two_prod(a, b);
+            assert_eq!(hi, a * b);
+            assert_eq!(lo, a.mul_add(b, -hi), "{a} × {b}");
+        }
+        // (1 + 2⁻³⁰)² − 1 − 2⁻²⁹ = 2⁻⁶⁰: lost in f64, kept in double-double.
+        let x = 1.0 + 2f64.powi(-30);
+        assert_eq!(x * x - 1.0 - 2f64.powi(-29), 0.0);
+        let dd = Dd::prod(x, x) - Dd(1.0, 0.0) - Dd(2f64.powi(-29), 0.0);
+        assert_eq!(dd.f64(), 2f64.powi(-60));
+        assert_eq!((Dd(3.0, 0.0) * Dd(5.0, 0.0)).f64(), 15.0);
+        let v = Vec3::new(1e8, 1.0, 1e-8);
+        let d = Dd::dot(v, v); // 10¹⁶ + 1 + 10⁻¹⁶: f64 alone keeps only the 10¹⁶
+        assert_eq!((d.0, d.1), (1e16, 1.0));
+    }
+
     use super::*;
     use crate::test_util::close;
 

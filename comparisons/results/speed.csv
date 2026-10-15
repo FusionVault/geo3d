@@ -47,6 +47,8 @@ great_circle_distance,nav-types,38.4
 great_circle_distance,sguaba,53.1
 great_circle_distance,jord,67.3
 great_circle_distance,geo,37.8
+intercept,geo3d,62.0
+intercept,jord,1158.0
 polygon_area,geo3d,4984.7
 polygon_area,geographiclib-rs,4959.6
 polygon_area,geo,5173.8

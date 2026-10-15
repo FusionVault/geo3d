@@ -315,3 +315,50 @@ fn geoid_heights_at_every_awkward_place() {
         assert!((geoid.undulation_m(10.0, 1e300) - geoid.undulation_m(10.0, 1e300 % 360.0)).abs() < 1e-9);
     }
 }
+
+#[test]
+fn range_rate_and_intercepts_never_panic() {
+    let places: Vec<Ecef> = awkward().into_iter().map(geodetic_to_ecef).collect();
+    let velocities = [
+        Vec3::ZERO,
+        Vec3::new(250.0, 0.0, 0.0),
+        Vec3::new(0.0, -7_600.0, 100.0),
+        Vec3::new(1e-12, 0.0, 0.0),
+    ];
+    for &a in &places {
+        let frame = LocalFrame::new(ecef_to_geodetic(a));
+        for &b in &places {
+            for v in velocities {
+                let target = Track::new(b, v);
+                let rate = Track::new(a, Vec3::ZERO).range_rate_mps(target);
+                assert!(rate.is_finite() && rate.abs() <= v.norm() * (1.0 + 1e-12), "{rate}");
+                assert!(frame.range_rate_mps(target).is_finite());
+                for speed in [0.0, 1.0, 250.0, 1e4] {
+                    if let Some(hit) = target.intercept_from(a, speed) {
+                        assert!(hit.time_s >= 0.0 && hit.time_s.is_finite(), "{hit:?}");
+                        assert!(hit.position.to_array().iter().all(|x| x.is_finite()));
+                    }
+                }
+                if let Some(hit) = target.slowest_intercept_from(a) {
+                    assert!(hit.time_s.is_finite() && hit.speed_mps() <= v.norm() * (1.0 + 1e-12));
+                }
+            }
+        }
+    }
+    for x in [f64::NAN, f64::INFINITY, f64::NEG_INFINITY] {
+        let ok = Track::new(Ecef::new(7e6, 0.0, 0.0), Vec3::new(0.0, 10.0, 0.0));
+        let bad = Track::new(Ecef::new(x, 0.0, 0.0), Vec3::ZERO);
+        let bad_v = Track::new(Ecef::new(0.0, 0.0, 0.0), Vec3::new(x, 0.0, 0.0));
+        assert!(!ok.range_rate_mps(bad).is_finite());
+        assert!(!ok.range_rate_mps(bad_v).is_finite());
+        assert!(bad.intercept_from(ok.position, 100.0).is_none());
+        assert!(bad_v.intercept_from(ok.position, 100.0).is_none());
+        assert!(ok.intercept_from(Ecef::new(x, 0.0, 0.0), 100.0).is_none());
+        assert!(bad.slowest_intercept_from(ok.position).is_none());
+        assert!(ok
+            .intercept_from(Ecef::new(0.0, 0.0, 0.0), x)
+            .is_none_or(|h| h.time_s == 0.0));
+        let t = Track::from_eci(Eci::new(x, 0.0, 0.0), Vec3::ZERO, 0.0);
+        assert!(!t.position.x.is_finite());
+    }
+}
