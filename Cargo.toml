@@ -10,7 +10,7 @@ edition = "2021"
 # optional features (libm/serde/mint/glam/nalgebra/geo-types) pull those crates only when enabled.
 rust-version = "1.85"
 license = "Apache-2.0"
-description = "3D positions on Earth, made simple. Convert GPS (geodetic) coordinates to ECEF and local ENU/NED frames, then find look angles, distances, areas and line of sight. Exact, tested, no dependencies, and runs on microcontrollers (no_std)."
+description = "3D positions on Earth, made simple. Convert GPS (geodetic) coordinates to ECEF, local ENU/NED frames, UTM and heights above sea level, then find look angles, distances, areas and line of sight. Exact, tested, no dependencies, and runs on microcontrollers (no_std)."
 repository = "https://github.com/FusionVault/geo3d"
 readme = "README.md"
 documentation = "https://docs.rs/geo3d"

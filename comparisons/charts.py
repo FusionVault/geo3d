@@ -68,13 +68,17 @@ def speed_rows():
     root = os.path.join(HERE, "target", "criterion")
     path = os.path.join(RESULTS, "speed.csv")
     if os.path.isdir(root):
-        rows = []
+        # Keep earlier rows that weren't benchmarked this time (the geoid ones need --features geoid).
+        with open(path) as f:
+            rows = [(r["operation"], r["crate"], float(r["ns_per_call"])) for r in csv.DictReader(f)]
         for op in sorted(os.listdir(root)):
             for crate in WIDE + GEOIDS:
                 est = os.path.join(root, op, crate, "new", "estimates.json")
                 if os.path.exists(est):
                     with open(est) as f:
-                        rows.append((op, crate, json.load(f)["median"]["point_estimate"] / 1000.0))
+                        ns = json.load(f)["median"]["point_estimate"] / 1000.0
+                    rows = [r for r in rows if r[:2] != (op, crate)] + [(op, crate, ns)]
+        rows.sort(key=lambda r: (r[0], (WIDE + GEOIDS).index(r[1])))
         with open(path, "w", newline="") as f:
             w = csv.writer(f)
             w.writerow(["operation", "crate", "ns_per_call"])
@@ -288,6 +292,8 @@ def main():
     os.makedirs(CHARTS, exist_ok=True)
     with open(os.path.join(RESULTS, "accuracy.md")) as f:
         tabs = tables(f.read())
+    with open(os.path.join(RESULTS, "geoid.md")) as f:  # from the `geoid` binary
+        tabs.update(tables(f.read()))
 
     # 1. Round trip: worst position error over every height, as metres along the surface/orbit.
     lat, lon, hgt = (find(tabs, p) for p in ("Max latitude", "Max longitude", "Max height"))
