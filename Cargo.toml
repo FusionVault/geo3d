@@ -67,11 +67,8 @@ criterion = { version = "0.5", default-features = false }
 # docs.rs: build with every feature so the serde and interop impls show up in the docs.
 [package.metadata.docs.rs]
 all-features = true
-
-[[example]]
-name = "tracking"
-# Lets docs.rs show this example's calls on the items it uses.
-doc-scrape-examples = true
+# Lets docs.rs show the examples' calls on the items they use.
+cargo-args = ["-Zunstable-options", "-Zrustdoc-scrape-examples"]
 
 [[bench]]
 name = "geo3d"

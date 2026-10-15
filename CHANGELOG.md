@@ -5,6 +5,9 @@ release is tagged `vX.Y.Z`.
 
 ## Unreleased
 
+- 🚀 **Examples, rewritten.** Eight short programs, one real job each: `radar`, `air_traffic`,
+  `satellite`, `drone_camera`, `field_survey`, `search_and_rescue`, `flight_route` and `sea_level`.
+  They replace `tracking`, and CI runs them all. The README lists them.
 - 🎯 **Range rate and intercepts** ([#17](https://github.com/FusionVault/geo3d/issues/17)):
   - `Track::range_rate_mps` and `LocalFrame::range_rate_mps`: how fast the distance is changing,
     negative while closing, for radar Doppler. The docs give the Doppler shift for radar and
