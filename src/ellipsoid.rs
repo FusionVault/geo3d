@@ -118,8 +118,9 @@ impl Ellipsoid {
     /// Second eccentricity squared.
     #[inline]
     pub const fn ep2(self) -> f64 {
-        let b = self.b();
-        (self.a * self.a - b * b) / (b * b)
+        // e²/(1 − e²): (a² − b²)/b² loses about 300 times more to rounding.
+        let e2 = self.e2();
+        e2 / (1.0 - e2)
     }
 
     /// Latitude, longitude and height → x, y, z. Exact.
@@ -133,6 +134,8 @@ impl Ellipsoid {
     #[doc(alias = "lla2ecef")]
     #[inline]
     pub fn to_ecef(self, g: Geodetic) -> Ecef {
+        // Radians, not the degree-exact `sincosd`: that would make the poles give x = 0 exactly
+        // rather than 0.4 nm, which is under one rounding step of the result, at 40 % more time.
         let (slat, clat) = g.lat_rad().sin_cos();
         let (slon, clon) = g.lon_rad().sin_cos();
         let e2 = self.e2();
@@ -302,7 +305,7 @@ impl Ellipsoid {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::test_util::close;
+    use crate::test_util::{angle_close, close};
 
     #[test]
     fn derived_constants() {
@@ -364,7 +367,9 @@ mod tests {
                     let g = Geodetic::new(lat, lon, h);
                     let r = WGS84.to_geodetic(WGS84.to_ecef(g));
                     assert!(
-                        close(r.lat_deg, lat, 1e-11) && close(r.lon_deg, lon, 1e-11) && close(r.height_m, h, 1e-5),
+                        close(r.lat_deg, lat, 1e-11)
+                            && angle_close(r.lon_deg, lon, 1e-11)
+                            && close(r.height_m, h, 1e-5),
                         "{g:?} -> {r:?}"
                     );
                 }

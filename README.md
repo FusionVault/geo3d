@@ -343,12 +343,13 @@ let p = Geodetic::new(0.0, 0.02, 500.0);  // 2.2 km east, 500 m up
 
 let bubble = Sphere::new(site, 10_000.0);                              // within 10 km
 let camera = Cone::new(site, 90.0, 0.0, 20.0, 5_000.0);                // facing east, ±20°, 5 km reach
-let zone = Cylinder::new(site, 8_000.0, AltitudeBand::below(2_000.0)); // 8 km wide, up to 2 km high
+let zone = Cylinder::new(site, 8_000.0, AltitudeBand::below(2_000.0)); // 8 km around, up to 2 km high
 
 assert!(bubble.contains(p) && camera.contains(p) && zone.contains(p));
 ```
 
-💡 `AltitudeBand` adds a height range to any 2D shape: `band.within_prism(inside_polygon, height)`.
+💡 A `Cylinder`'s radius is measured along the ground, as airspace is defined, at any height.
+`AltitudeBand` adds a height range to any 2D shape: `band.within_prism(inside_polygon, height)`.
 
 ### Check if two objects will collide
 
@@ -413,7 +414,8 @@ let horizon = WGS84.horizon_distance_m(10_000.0); // you can see about 357 km
 
 💡 For radar and radio, use `line_of_sight_with_refraction` and `horizon_distance_with_refraction_m`
 with `STANDARD_REFRACTION_K`. The air bends radio waves around the Earth, so they reach about 15 %
-further. geo3d treats the Earth as smooth, so hills aren't included.
+further. Only the lower air does the bending, so a satellite shows only about 0.8° below the
+horizon. geo3d treats the Earth as smooth, so hills aren't included.
 
 ### Track satellites
 

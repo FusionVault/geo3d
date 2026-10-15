@@ -40,6 +40,11 @@ pub struct PolygonArea {
     pub perimeter_m: f64,
 }
 
+/// A real latitude (within ±90°) and longitude.
+fn on_the_map(g: Geodetic) -> bool {
+    g.lat_deg.abs() <= 90.0 && g.lon_deg.is_finite()
+}
+
 impl Ellipsoid {
     /// The surface distance and bearings between two positions, accurate to about 15 nm. Heights
     /// are ignored (the path is on the surface). Works for every pair of points, including ones on
@@ -64,6 +69,10 @@ impl Ellipsoid {
     #[doc(alias = "vdist")]
     #[doc(alias = "distance")]
     pub fn geodesic_inverse(self, from: Geodetic, to: Geodetic) -> Option<Geodesic> {
+        // Checked here: the solver itself can report a distance of 0 for some NaN latitudes.
+        if !(on_the_map(from) && on_the_map(to)) {
+            return None;
+        }
         if from.lat_deg == to.lat_deg && from.lon_deg == to.lon_deg {
             return Some(Geodesic::default());
         }
@@ -94,6 +103,9 @@ impl Ellipsoid {
     #[doc(alias = "reckon")]
     #[doc(alias = "destination")]
     pub fn geodesic_direct(self, from: Geodetic, bearing_deg: f64, distance_m: f64) -> (Geodetic, f64) {
+        if !on_the_map(from) {
+            return (Geodetic::new(f64::NAN, f64::NAN, from.height_m), f64::NAN);
+        }
         let (lat2, lon2, azi2) = Karney::with(self, |k| k.direct(from.lat_deg, from.lon_deg, bearing_deg, distance_m));
         (Geodetic::new(lat2, lon2, from.height_m), wrap_360(azi2))
     }

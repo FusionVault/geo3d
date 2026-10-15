@@ -260,6 +260,22 @@ fn nan_and_infinity_in_give_nan_infinity_or_none_out() {
             assert!(!finite(ecef_to_geodetic(e)), "{e:?}");
         }
         assert!(LocalFrame::new(ok).ground_strike(x, -10.0).is_none());
+        // From every awkward place, including the equator at 0°, where the geodesic solver alone
+        // gives 0 m for a NaN latitude.
+        let bads = [
+            Geodetic::new(x, 0.0, 0.0),
+            Geodetic::new(0.0, x, 0.0),
+            Geodetic::new(90.5, 0.0, 0.0),
+        ];
+        for (origin, bad) in awkward().into_iter().flat_map(|o| bads.map(|b| (o, b))) {
+            assert!(WGS84.geodesic_inverse(origin, bad).is_none(), "{origin:?} → {bad:?}");
+            assert!(WGS84.geodesic_inverse(bad, origin).is_none(), "{bad:?} → {origin:?}");
+            let (end, bearing) = WGS84.geodesic_direct(bad, 10.0, 1_000.0);
+            assert!(
+                end.lat_deg.is_nan() && end.lon_deg.is_nan() && bearing.is_nan(),
+                "{bad:?}"
+            );
+        }
         assert!(WGS84.from_utm_ups(UtmUps::new(31, true, x, 1e6)).is_none());
         let q = Attitude::from_quaternion(Quaternion::new(x, 0.1, 0.2, 0.3));
         assert!(

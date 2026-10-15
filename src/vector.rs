@@ -63,6 +63,13 @@ impl Dd {
     }
 }
 
+impl From<f64> for Dd {
+    #[inline]
+    fn from(x: f64) -> Dd {
+        Dd(x, 0.0)
+    }
+}
+
 impl Add for Dd {
     type Output = Dd;
     #[inline]

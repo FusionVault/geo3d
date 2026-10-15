@@ -6,7 +6,7 @@ use crate::ellipsoid::Ellipsoid;
 #[cfg(all(feature = "libm", not(feature = "std"), not(test)))]
 use crate::math::Float as _;
 use crate::position::Ecef;
-use crate::vector::Vec3;
+use crate::vector::{Dd, Vec3};
 
 /// The refraction factor for radio waves (radar, radio links) in a standard atmosphere: the
 /// effective Earth radius is 4/3 of the true one (ITU-R P.834). For visible light use about 7/6,
@@ -39,8 +39,11 @@ impl Ellipsoid {
         let s = Vec3::new(1.0 / self.a(), 1.0 / self.a(), 1.0 / self.b());
         let o = Vec3::new(origin.x * s.x, origin.y * s.y, origin.z * s.z);
         let d = Vec3::new(dir.x * s.x, dir.y * s.y, dir.z * s.z);
-        let (qa, qb, qc) = (d.dot(d), 2.0 * o.dot(d), o.dot(o) - 1.0);
-        let disc = qb * qb - 4.0 * qa * qc;
+        // The terms to 32 digits: o·o − 1 cancels near the surface, and the discriminant cancels
+        // for rays that graze it.
+        let (dd, od, oo1) = (Dd::dot(d, d), Dd::dot(o, d), Dd::dot(o, o) - Dd(1.0, 0.0));
+        let disc = 4.0 * (od * od - dd * oo1).f64();
+        let (qa, qb, qc) = (dd.f64(), 2.0 * od.f64(), oo1.f64());
         if disc.is_nan() || disc < 0.0 || qa == 0.0 {
             return None;
         }
@@ -82,7 +85,8 @@ impl Ellipsoid {
     /// lets the air bend it.
     #[inline]
     pub fn horizon_distance_m(self, height_m: f64) -> f64 {
-        self.horizon_distance_with_refraction_m(height_m, 1.0)
+        let (r, h) = (self.mean_radius(), height_m.max(0.0));
+        (2.0 * r * h + h * h).sqrt()
     }
 
     /// Like [`horizon_distance_m`](Self::horizon_distance_m), but with the air bending the line of
@@ -90,26 +94,45 @@ impl Ellipsoid {
     /// [`STANDARD_REFRACTION_K`] (4/3) for radio and radar, about 7/6 for visible light, and 1 for
     /// none.
     ///
+    /// The bending happens in the lower atmosphere, as in
+    /// [`line_of_sight_with_refraction`](Self::line_of_sight_with_refraction): from heights above
+    /// 7.35 km the line of sight runs straight down to that layer, then bends through it.
+    ///
     /// ```
     /// use geo3d::{STANDARD_REFRACTION_K, WGS84};
     /// let straight = WGS84.horizon_distance_m(100.0);                                    // 35.7 km
     /// let radio = WGS84.horizon_distance_with_refraction_m(100.0, STANDARD_REFRACTION_K); // 41.2 km
     /// assert!(radio > straight * 1.15);
     /// ```
-    #[inline]
     pub fn horizon_distance_with_refraction_m(self, height_m: f64, k: f64) -> f64 {
-        let r = k * self.mean_radius();
-        let h = height_m.max(0.0);
-        (2.0 * r * h + h * h).sqrt()
+        let (r, h, c) = (self.mean_radius(), height_m.max(0.0), REFRACTION_CEILING_M);
+        let kr = k * r;
+        if h <= c {
+            return (2.0 * kr * h + h * h).sqrt();
+        }
+        // Through the air, straight on an Earth k times larger, up to the top of the layer...
+        let through_air = (2.0 * kr * c + c * c).sqrt();
+        // ...where the path climbs at an angle θ, sin θ = through_air / (kr + c). From there it's
+        // straight: the distance u from radius r + c to r + h, solved without cancelling.
+        let rc = r + c;
+        let rise = rc * through_air / (kr + c);
+        let span = (h - c) * (2.0 * r + h + c);
+        through_air + span / (rise + (rise * rise + span).sqrt())
     }
 
     /// Like [`line_of_sight`](Self::line_of_sight), but with the air bending the line of sight
     /// around the Earth, so radar and radio links see further. `k` is the effective-Earth-radius
     /// factor: [`STANDARD_REFRACTION_K`] for radio, about 7/6 for visible light, and 1 for none.
     ///
-    /// It uses the standard effective-Earth model: at distances d₁ and d₂ from the two ends, the
-    /// path's clearance above the surface gains `d₁·d₂·(1 − 1/k) / 2R`. The path is clear if its
-    /// lowest point stays above the surface (to within a micrometre).
+    /// It uses the standard effective-Earth model: the path curves around the Earth with curvature
+    /// `(1 − 1/k)/R`, so between two points in the air its clearance gains `d₁·d₂·(1 − 1/k) / 2R` at
+    /// distances d₁ and d₂ from the ends. The path is clear if its lowest point stays above the
+    /// surface (to within a micrometre).
+    ///
+    /// The air bends the path only where there is enough of it: below 7.35 km, the refractivity
+    /// scale height of ITU-R P.453's reference atmosphere. A path that rises above it, to a
+    /// satellite say, bends only along its lower part. A distant satellite is then seen down to
+    /// 0.8° below the horizon for radio; ITU-R P.834 gives 0.76° there.
     ///
     /// ```
     /// use geo3d::{Geodetic, STANDARD_REFRACTION_K, WGS84};
@@ -118,18 +141,79 @@ impl Ellipsoid {
     /// let b = WGS84.to_ecef(Geodetic::new(0.0, 0.683, 100.0));
     /// assert!(!WGS84.line_of_sight(a, b));
     /// assert!(WGS84.line_of_sight_with_refraction(a, b, STANDARD_REFRACTION_K));
+    ///
+    /// // A geostationary satellite 18° below the horizon stays out of sight.
+    /// let ground = WGS84.to_ecef(Geodetic::new(0.0, 0.0, 0.0));
+    /// let satellite = WGS84.to_ecef(Geodetic::new(0.0, 100.0, 35_786_000.0));
+    /// assert!(!WGS84.line_of_sight_with_refraction(ground, satellite, STANDARD_REFRACTION_K));
     /// ```
     pub fn line_of_sight_with_refraction(self, a: Ecef, b: Ecef, k: f64) -> bool {
         let d = b.vec() - a.vec();
-        let bend = (1.0 - 1.0 / k) * d.dot(d) / (2.0 * self.mean_radius());
-        let clearance = |t: f64| self.to_geodetic(a.offset(d * t)).height_m + bend * t * (1.0 - t);
-        // The clearance along the path has a single low point, so a golden-section search finds
-        // it. Sixty-four steps narrow it to 1e-13 of the path's length.
+        let height = |t: f64| self.to_geodetic(a.offset(d * t)).height_m;
+        // The path is pinned at both ends and curves with κ = (1 − 1/k)/R along the stretch [p, q]
+        // that is inside the bending layer, so its rise above the straight line is
+        // κ·L²·∫ G(t, u) du over [p, q], with G(t, u) = u(1 − t) for u ≤ t and t(1 − u) for u ≥ t.
+        // Over the whole path that is the classic κ·L²·t(1 − t)/2.
+        let kl2 = (1.0 - 1.0 / k) * d.dot(d) / self.mean_radius();
+        let rise = |t: f64, (p, q): (f64, f64)| {
+            if p >= q {
+                return 0.0;
+            }
+            let m = t.clamp(p, q);
+            kl2 * ((1.0 - t) * (m * m - p * p) / 2.0 + t * ((q - m) - (q * q - m * m) / 2.0))
+        };
+        // Where the straight line is in the layer...
+        let layer = Ellipsoid::from_axes(self.a() + REFRACTION_CEILING_M, self.b() + REFRACTION_CEILING_M);
+        let mut span = match layer.ray_roots(a, d) {
+            Some((t1, t2)) => (t1.max(0.0), t2.min(1.0)),
+            None => (1.0, 0.0),
+        };
+        // ...then where the bent path is, which leaves the layer sooner. A path that stays in the
+        // air throughout (the usual radio link) is done already.
+        if span.0 < span.1 && (span.0 > 0.0 || span.1 < 1.0) {
+            for _ in 0..4 {
+                let above = |t: f64| height(t) + rise(t, span) >= REFRACTION_CEILING_M;
+                let edge = |inside: f64, outside: f64| {
+                    let (mut i, mut o) = (inside, outside);
+                    for _ in 0..40 {
+                        let mid = 0.5 * (i + o);
+                        if above(mid) {
+                            o = mid;
+                        } else {
+                            i = mid;
+                        }
+                    }
+                    0.5 * (i + o)
+                };
+                let mid = 0.5 * (span.0 + span.1);
+                let p = if span.0 > 0.0 { edge(mid, 0.0) } else { 0.0 };
+                let q = if span.1 < 1.0 { edge(mid, 1.0) } else { 1.0 };
+                span = (p, q);
+            }
+        }
+        let clearance = |t: f64| height(t) + rise(t, span);
+        // The clearance can have low points both near the ends and in the middle, so sample the
+        // path first, then close in on the lowest sample with a golden-section search.
+        const SAMPLES: usize = 32;
+        let mut lowest = f64::INFINITY;
+        let mut at = 0;
+        for i in 0..=SAMPLES {
+            let f = clearance(i as f64 / SAMPLES as f64);
+            if f.is_nan() {
+                return false;
+            }
+            if f < lowest {
+                (lowest, at) = (f, i);
+            }
+        }
         const G: f64 = 0.618_033_988_749_894_8; // (√5 − 1) / 2
-        let (mut lo, mut hi) = (0.0, 1.0);
-        let (mut x1, mut x2) = (1.0 - G, G);
+        let (mut lo, mut hi) = (
+            at.saturating_sub(1) as f64 / SAMPLES as f64,
+            ((at + 1).min(SAMPLES)) as f64 / SAMPLES as f64,
+        );
+        let (mut x1, mut x2) = (hi - G * (hi - lo), lo + G * (hi - lo));
         let (mut f1, mut f2) = (clearance(x1), clearance(x2));
-        for _ in 0..64 {
+        for _ in 0..48 {
             if f1 <= f2 {
                 (hi, x2, f2) = (x2, x1, f1);
                 x1 = hi - G * (hi - lo);
@@ -140,18 +224,13 @@ impl Ellipsoid {
                 f2 = clearance(x2);
             }
         }
-        let lowest = [f1, f2, clearance(0.0), clearance(1.0)]
-            .into_iter()
-            .fold(f64::INFINITY, |m, f| {
-                if f.is_nan() || m.is_nan() {
-                    f64::NAN
-                } else {
-                    m.min(f)
-                }
-            });
-        lowest >= -1e-6
+        lowest.min(f1).min(f2) >= -1e-6
     }
 }
+
+/// Where the air stops bending radio and light: the refractivity scale height of ITU-R P.453's
+/// reference atmosphere, metres.
+const REFRACTION_CEILING_M: f64 = 7_350.0;
 
 #[cfg(test)]
 mod tests {
@@ -159,16 +238,50 @@ mod tests {
     use crate::test_util::close;
     use crate::{Ecef, Ellipsoid, Geodetic, Vec3, WGS84};
 
+    /// Rays from geostationary distance that skim the Earth: the near root matches one refined in
+    /// 32-digit arithmetic to a few micrometres along the ray. (In plain f64 it was 0.5 mm out
+    /// skimming by 1e-9, and 7.5 mm by 1e-12.)
+    #[test]
+    fn grazing_rays_from_far_away_keep_their_precision() {
+        use crate::vector::Dd;
+        let ell = Ellipsoid::new(1.0, 0.0); // the unit sphere: the roots solve |o + t·d|² = 1
+        let o = Vec3::new(6.6, 0.0, 0.0); // 42 000 km out, in Earth radii
+        for skim in [1e-3, 1e-6, 1e-9, 1e-12] {
+            // Aim so the ray passes 1 − skim from the centre: just inside the surface.
+            let miss = 1.0 - skim;
+            let d = Vec3::new(-(o.x * o.x - miss * miss).sqrt(), miss, 0.0) * (1.0 / o.x);
+            let (t, _) = ell.ray_roots(Ecef::new(o.x, o.y, o.z), d).unwrap();
+            // Newton on |o + t·d|² − 1, evaluated in double-double.
+            let mut exact = t;
+            for _ in 0..3 {
+                let p =
+                    [o.x, o.y, o.z]
+                        .map(Dd::from)
+                        .iter()
+                        .zip([d.x, d.y, d.z])
+                        .fold(Dd(-1.0, 0.0), |acc, (&oi, di)| {
+                            let x = oi + Dd::prod(exact, di);
+                            acc + x * x
+                        });
+                let slope = 2.0 * (o + d * exact).dot(d);
+                exact -= p.f64() / slope;
+            }
+            // 1e-13 of the distance is about 4 µm.
+            assert!((t - exact).abs() < 1e-13 * exact, "skim {skim}: {t} vs {exact}");
+        }
+    }
+
     #[test]
     fn ray_roots_have_no_cancellation() {
         // Vieta: the roots' product is c/a. The textbook formula loses the small root to
-        // cancellation when the origin is near the surface; the stable form keeps it.
+        // cancellation when the origin is near the surface; the stable form keeps it, and c is
+        // worked out without cancelling too.
         let ell = Ellipsoid::new(1.0, 0.0);
         let o = Ecef::new(1.0 + 1e-9, 0.0, 0.0);
         for deg in [10.0f64, 60.0, 89.0, 120.0, 179.0] {
             let d = Vec3::new(deg.to_radians().cos(), deg.to_radians().sin(), 0.0);
             let (t1, t2) = ell.ray_roots(o, d).unwrap();
-            let c = o.vec().dot(o.vec()) - 1.0;
+            let c = (o.x - 1.0) * (o.x + 1.0); // |o|² − 1, without cancelling
             assert!(close(t1 * t2 / c, 1.0, 1e-13), "{deg}°: product {} vs {c}", t1 * t2);
             assert!(t1 <= t2);
         }
@@ -193,6 +306,83 @@ mod tests {
             .is_none());
         // Zero direction: no ray.
         assert!(WGS84.ray_intersect(o, Vec3::ZERO).is_none());
+    }
+
+    /// Masts in the air keep the classic effective-Earth answer: visible just inside the radio
+    /// horizon, not just beyond it.
+    #[test]
+    fn links_through_the_air_keep_the_classic_model() {
+        let r = WGS84.a(); // along the equator the curvature radius is a
+        for (h1, h2) in [(10.0, 10.0), (100.0, 50.0), (30.0, 3_000.0), (500.0, 7_000.0)] {
+            let reach = (2.0 * STANDARD_REFRACTION_K * r * h1).sqrt() + (2.0 * STANDARD_REFRACTION_K * r * h2).sqrt();
+            for (factor, visible) in [(0.995, true), (1.005, false)] {
+                let lon = (reach * factor / r).to_degrees();
+                let a = WGS84.to_ecef(Geodetic::new(0.0, 0.0, h1));
+                let b = WGS84.to_ecef(Geodetic::new(0.0, lon, h2));
+                assert_eq!(
+                    WGS84.line_of_sight_with_refraction(a, b, STANDARD_REFRACTION_K),
+                    visible,
+                    "{h1}, {h2}, {factor}"
+                );
+            }
+        }
+    }
+
+    /// Satellites: radio refraction lets a ground station see a distant satellite about 0.8° below
+    /// the horizon, near ITU-R P.834's 0.76°.
+    #[test]
+    fn satellites_are_seen_a_little_below_the_horizon() {
+        let station = crate::LocalFrame::new(Geodetic::new(-27.5, 153.0, 0.0));
+        for range_m in [2.0e6, 4.0e6, 4.0e7] {
+            // (Nearer than this, part of the path is above the air, and the bending is less.)
+            let visible = |el: f64| {
+                let sat = station.ecef_of_aer(crate::Aer::new(40.0, el, range_m));
+                WGS84.line_of_sight_with_refraction(station.origin_ecef(), sat, STANDARD_REFRACTION_K)
+            };
+            // Find where it stops being visible, to a hundredth of a degree.
+            let (mut lo, mut hi) = (-3.0, 0.0);
+            while hi - lo > 0.01 {
+                let mid = 0.5 * (lo + hi);
+                if visible(mid) {
+                    hi = mid;
+                } else {
+                    lo = mid;
+                }
+            }
+            assert!((-0.85..=-0.7).contains(&hi), "{range_m} m: seen down to {hi}°");
+            assert!(!visible(-5.0) && visible(0.5));
+        }
+    }
+
+    #[test]
+    fn refraction_horizon_is_consistent() {
+        let k = STANDARD_REFRACTION_K;
+        let r = WGS84.mean_radius();
+        // Classic below the bending layer, continuous at its top, straight with k = 1.
+        for h in [1.0, 100.0, 7_000.0, 7_350.0] {
+            let classic = (2.0 * k * r * h + h * h).sqrt();
+            assert!(close(WGS84.horizon_distance_with_refraction_m(h, k), classic, 1e-6));
+        }
+        let (below, above) = (
+            WGS84.horizon_distance_with_refraction_m(7_350.0 - 1e-6, k),
+            WGS84.horizon_distance_with_refraction_m(7_350.0 + 1e-6, k),
+        );
+        assert!((above - below).abs() < 1e-3);
+        for h in [10.0, 1e4, 4e5, 3.6e7] {
+            let straight = WGS84.horizon_distance_m(h);
+            assert!(close(
+                WGS84.horizon_distance_with_refraction_m(h, 1.0),
+                straight,
+                1e-6 * straight
+            ));
+            // Refraction helps, but above the air only by the bending's worth: about 0.8° of arc,
+            // under 100 km.
+            let bent = WGS84.horizon_distance_with_refraction_m(h, k);
+            assert!(
+                bent > straight && (h < 7_350.0 || bent - straight < 100_000.0),
+                "{h}: {bent} vs {straight}"
+            );
+        }
     }
 
     #[test]
