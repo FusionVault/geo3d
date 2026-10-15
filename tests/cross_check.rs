@@ -46,9 +46,11 @@ fn ecef_to_geodetic_agrees_where_map_3d_is_exact() {
         let e = WGS84.to_ecef(g);
         let ours = WGS84.to_geodetic(e);
         let (lat, lon, h) = map_3d::ecef2geodetic(e.x, e.y, e.z, M::WGS84);
+        // Longitudes compare on the circle: on the 180° meridian, one says 180° and the other −180°.
+        let dlon = (ours.lon_deg - lon.to_degrees()).rem_euclid(360.0);
         assert!(
             (ours.lat_deg - lat.to_degrees()).abs() < 1e-8
-                && (ours.lon_deg - lon.to_degrees()).abs() < 1e-8
+                && dlon.min(360.0 - dlon) < 1e-8
                 && (ours.height_m - h).abs() < 1e-3,
             "{g:?}: {ours:?} vs ({},{},{h})",
             lat.to_degrees(),
@@ -95,7 +97,13 @@ fn enu_and_look_angles_agree() {
             let az = az.to_degrees().rem_euclid(360.0);
             let d = (aer.azimuth_deg - az).rem_euclid(360.0);
             let daz = d.min(360.0 - d);
-            assert!(daz < 1e-9 || r < 1.0, "{obs:?}->{g:?}: az {} vs {az}", aer.azimuth_deg);
+            // Straight up or down (or no distance) there's no azimuth to compare.
+            let vertical = el.to_degrees().abs() > 90.0 - 1e-9;
+            assert!(
+                daz < 1e-9 || r < 1.0 || vertical,
+                "{obs:?}->{g:?}: az {} vs {az}",
+                aer.azimuth_deg
+            );
             assert!(
                 (aer.elevation_deg - el.to_degrees()).abs() < 1e-9 && (aer.range_m - r).abs() < 1e-5 * r.max(1.0),
                 "{obs:?}->{g:?}: {aer:?} vs ({az},{},{r})",

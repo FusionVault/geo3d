@@ -143,7 +143,7 @@ impl Volume for Sphere {
 pub struct Cone {
     frame: LocalFrame,
     axis_enu: Vec3,
-    cos_half_angle: f64,
+    half_angle_rad: f64,
     azimuth_deg: f64,
     elevation_deg: f64,
     half_angle_deg: f64,
@@ -169,7 +169,7 @@ impl Cone {
         Cone {
             frame: LocalFrame::on(ellipsoid, apex),
             axis_enu: Aer::new(azimuth_deg, elevation_deg, 1.0).direction_enu().vec(),
-            cos_half_angle: half_angle_deg.to_radians().cos(),
+            half_angle_rad: half_angle_deg.to_radians(),
             azimuth_deg,
             elevation_deg,
             half_angle_deg,
@@ -205,7 +205,8 @@ impl Cone {
         if r == 0.0 {
             return true; // the apex itself
         }
-        v.dot(self.axis_enu) / r >= self.cos_half_angle
+        // The angle itself (by atan2), not its cosine, which can't tell tiny angles apart.
+        v.angle_to(self.axis_enu) <= self.half_angle_rad
     }
 }
 
@@ -217,8 +218,9 @@ impl Volume for Cone {
 }
 
 /// A circle on the ground extruded through an [`AltitudeBand`] — circular airspace, or a geofence
-/// with a height range. Distance from the centre is measured flat in the centre's local frame, which
-/// is accurate for radii up to a few hundred km.
+/// with a height range. The radius is a distance along the ground, as airspace is defined: a point
+/// is inside if the geodesic from the centre to the ground below it is no longer than the radius,
+/// whatever its height.
 ///
 /// ```
 /// use geo3d::{AltitudeBand, Cylinder, Geodetic, Volume};
@@ -274,14 +276,70 @@ impl Volume for Cylinder {
         if !self.band.contains_height(point.height_m) {
             return false;
         }
-        let v = self.frame.enu_of(point);
-        v.east * v.east + v.north * v.north <= self.radius_m * self.radius_m
+        // The ground below the point, seen flat from the centre: the straight line to it, and so
+        // the distance along the ground, is at least this long.
+        let ground = Geodetic::new(point.lat_deg, point.lon_deg, 0.0);
+        let v = self.frame.enu_of(ground);
+        let flat = v.east.hypot(v.north);
+        if flat > self.radius_m {
+            return false;
+        }
+        // And at most this long: the arc over the most sharply curved part of the ellipsoid
+        // (radius b²/a) whose chord has that span. Only points near the edge need the geodesic.
+        let ellipsoid = self.frame.ellipsoid();
+        let tightest = ellipsoid.b() * ellipsoid.b() / ellipsoid.a();
+        if flat < 0.5 * tightest && tightest * (flat / tightest).asin() * (1.0 + 1e-6) < self.radius_m {
+            return true;
+        }
+        let centre = self.frame.origin();
+        ellipsoid
+            .geodesic_inverse(Geodetic::new(centre.lat_deg, centre.lon_deg, 0.0), ground)
+            .is_some_and(|g| g.distance_m <= self.radius_m)
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// The radius is along the ground at any height, matching the geodesic exactly, including
+    /// near the edge where the quick checks hand over.
+    #[test]
+    fn cylinder_radius_is_along_the_ground() {
+        let mut seed: u64 = 0x2545_f491_4f6c_dd1d;
+        let mut rnd = || {
+            seed ^= seed << 13;
+            seed ^= seed >> 7;
+            seed ^= seed << 17;
+            (seed >> 11) as f64 / (1u64 << 53) as f64
+        };
+        for _ in 0..20_000 {
+            let centre = Geodetic::new(170.0 * rnd() - 85.0, 360.0 * rnd() - 180.0, 50.0);
+            let radius = 10f64.powf(2.0 + 4.0 * rnd()); // 100 m to 1 000 km
+            let zone = Cylinder::new(centre, radius, AltitudeBand::default());
+            // Points from well inside to well outside, many right at the edge, up to 20 km high.
+            let s = radius * (0.9 + 0.2 * rnd()) * if rnd() < 0.5 { 1.0 } else { 1.0 + 1e-7 * (rnd() - 0.5) };
+            let (p, _) = WGS84.geodesic_direct(centre, 360.0 * rnd(), s);
+            let p = p.with_height(20_000.0 * rnd());
+            let exact = WGS84.geodesic_inverse(centre, p).unwrap().distance_m <= radius;
+            assert_eq!(zone.contains(p), exact, "{centre:?} r {radius}: {p:?}");
+        }
+        // At airliner height, 50 km out is still inside a 50 km zone (the old flat measure lost 107 m).
+        let zone = Cylinder::new(Geodetic::new(0.0, 0.0, 0.0), 50_000.0, AltitudeBand::default());
+        let (p, _) = WGS84.geodesic_direct(Geodetic::new(0.0, 0.0, 0.0), 0.0, 49_990.0);
+        assert!(zone.contains(p.with_height(13_700.0)));
+        assert!(!zone.contains(Geodetic::new(f64::NAN, 0.0, 0.0)));
+    }
+
+    #[test]
+    fn tiny_cones_keep_their_shape() {
+        // A 1 microdegree beam: cosines can't tell its edge apart, angles can.
+        let apex = Geodetic::new(0.0, 0.0, 0.0);
+        let cone = Cone::new(apex, 90.0, 10.0, 1e-6, 1e9);
+        let frame = LocalFrame::new(apex);
+        assert!(cone.contains_ecef(frame.ecef_of_aer(Aer::new(90.0, 10.0 + 0.9e-6, 1e8))));
+        assert!(!cone.contains_ecef(frame.ecef_of_aer(Aer::new(90.0, 10.0 + 1.1e-6, 1e8))));
+    }
 
     #[test]
     fn altitude_band() {

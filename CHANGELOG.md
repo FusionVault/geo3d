@@ -5,6 +5,30 @@ release is tagged `vX.Y.Z`.
 
 ## Unreleased
 
+- 🔍 **Accuracy pass.** A review of every formula for precision traps, with each finding checked
+  against exact answers. Fixed:
+  - `line_of_sight_with_refraction` bent the whole path, even far above the air, so it called a
+    geostationary satellite 18° below the horizon visible. The air now bends only the part of the
+    path below 7.35 km (ITU-R P.453's refractivity scale height). Links through the air are
+    unchanged, and a distant satellite shows down to 0.8° below the horizon (ITU-R P.834: 0.76°).
+    `horizon_distance_with_refraction_m` uses the same model above 7.35 km;
+  - `Cylinder` measured its radius flat in the centre's frame, which shrank it with height: 107 m
+    short at 13.7 km up on a 50 km zone. The radius is now along the ground (the geodesic), at any
+    height;
+  - `geodesic_inverse` gave a distance of 0 m, not `None`, for a NaN or out-of-range latitude from
+    some starting points (the equator at 0°, for one), and `geodesic_direct` gave a finite latitude
+    with a NaN longitude. Both now check their input;
+  - `initial_bearing_deg` lost precision on short paths: 8e-5° out at 1 mm, and 0.02° at 1 µm. It
+    now keeps it at any length;
+  - `ray_intersect`, `ground_strike` and `line_of_sight` work their terms to 32 digits, so rays that
+    graze the Earth from far away, and points just above the surface, keep full precision;
+  - `Cone` compares angles, not cosines, so beams narrower than about a microradian keep their
+    shape;
+  - `Geodetic::normalized` left a longitude already in range very slightly changed (−0.1° became
+    −0.10000000000002274°); it's now exact;
+  - `Ellipsoid::ep2` is 300 times more precise.
+
+  The comparison results are unchanged.
 - 🌐 **WebAssembly** ([#19](https://github.com/FusionVault/geo3d/issues/19)). CI builds for the
   browser (`wasm32-unknown-unknown`, with and without std, and with every feature), and runs the
   whole test suite under WebAssembly (`wasm32-wasip1`, in wasmtime). A geoid test that assumed a

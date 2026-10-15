@@ -12,6 +12,7 @@ pub(crate) trait Float {
     fn cos(self) -> f64;
     fn tan(self) -> f64;
     fn sin_cos(self) -> (f64, f64);
+    fn asin(self) -> f64;
     fn atan(self) -> f64;
     fn atan2(self, other: f64) -> f64;
     fn atanh(self) -> f64;
@@ -52,6 +53,10 @@ impl Float for f64 {
     #[inline]
     fn sin_cos(self) -> (f64, f64) {
         libm::sincos(self)
+    }
+    #[inline]
+    fn asin(self) -> f64 {
+        libm::asin(self)
     }
     #[inline]
     fn atan(self) -> f64 {

@@ -4,7 +4,7 @@
 //! paths cross, the centre of a set of positions, and moving along a path. Like the n-vector
 //! method (Gade 2010), they have no special cases at the poles or the antimeridian.
 
-use crate::angle::{ang_diff, atan2d};
+use crate::angle::{ang_diff, atan2d, sincosd};
 use crate::ellipsoid::Ellipsoid;
 use crate::local::wrap_360;
 #[cfg(all(feature = "libm", not(feature = "std"), not(test)))]
@@ -62,11 +62,14 @@ impl Ellipsoid {
     #[doc(alias = "azimuth")]
     #[doc(alias = "heading")]
     pub fn initial_bearing_deg(self, a: Geodetic, b: Geodetic) -> f64 {
-        let (p1, p2) = (a.lat_rad(), b.lat_rad());
-        let dl = b.lon_rad() - a.lon_rad();
-        let y = dl.sin() * p2.cos();
-        let x = p1.cos() * p2.sin() - p1.sin() * p2.cos() * dl.cos();
-        wrap_360(y.atan2(x).to_degrees())
+        // The way from a to b is n(b) − n(a), seen in a's east and north. Built from the
+        // differences, so it keeps full precision on paths of any length.
+        let d = normal_difference(a, b);
+        let (slat, clat) = sincosd(a.lat_deg);
+        let (slon, clon) = sincosd(a.lon_deg);
+        let east = -slon * d.x + clon * d.y;
+        let north = -slat * (clon * d.x + slon * d.y) + clat * d.z;
+        wrap_360(atan2d(east, north))
     }
 
     /// The position `distance_m` along the great circle from `from` on an initial `bearing_deg`;
@@ -228,6 +231,41 @@ impl Ellipsoid {
 mod tests {
     use crate::test_util::close;
     use crate::{Geodetic, WGS84};
+
+    /// On short paths the bearing keeps its precision: from 1 µm to 1 m it matches the small-path
+    /// limit to 1e-9°. (The textbook formula was 8e-5° out at 1 mm, and 0.08° at 1 µm.)
+    #[test]
+    fn bearings_stay_precise_on_short_paths() {
+        for (lat, lon) in [(40.0, 10.0), (-70.0, 179.999), (0.0, -45.0), (85.0, 0.5)] {
+            let a = Geodetic::new(lat, lon, 0.0);
+            for bearing in [0.0f64, 30.0, 135.0, 271.0] {
+                for s in [1e-6, 1e-3, 1.0] {
+                    // A tiny step in latitude and longitude, on the sphere of the n-vectors.
+                    let (sb, cb) = bearing.to_radians().sin_cos();
+                    let r = 6_371_000.0;
+                    let dlat = s * cb / r;
+                    let dlon = s * sb / (r * lat.to_radians().cos());
+                    let b = Geodetic::new(lat + dlat.to_degrees(), lon + dlon.to_degrees(), 0.0);
+                    // The limit for these (rounded) inputs, to second order: the bearing at the
+                    // middle latitude, less half the meridians' convergence over the path.
+                    let (dphi, dlam) = (
+                        (b.lat_deg - a.lat_deg).to_radians(),
+                        (b.lon_deg - a.lon_deg).to_radians(),
+                    );
+                    let mid = a.lat_rad() + dphi / 2.0;
+                    let want = ((mid.cos() * dlam).atan2(dphi) - dlam / 2.0 * mid.sin())
+                        .to_degrees()
+                        .rem_euclid(360.0);
+                    let got = WGS84.initial_bearing_deg(a, b);
+                    let d = (got - want).rem_euclid(360.0);
+                    assert!(
+                        d.min(360.0 - d) < 1e-9,
+                        "{lat}, {lon} at {bearing}° over {s} m: {got} vs {want}"
+                    );
+                }
+            }
+        }
+    }
 
     #[test]
     fn haversine_holds_up_at_and_near_the_antipode() {

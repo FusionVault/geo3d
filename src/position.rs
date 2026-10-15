@@ -1,8 +1,6 @@
 //! Positions: [`Geodetic`] (latitude, longitude, height), [`Ecef`] (x, y, z turning with the Earth)
 //! and [`Eci`] (x, y, z fixed in space).
 
-#[cfg(all(feature = "libm", not(feature = "std"), not(test)))]
-use crate::math::Float as _;
 use crate::vector::Vec3;
 
 /// A position as latitude and longitude in **degrees** and height in **metres** — what a GPS
@@ -52,10 +50,8 @@ impl Geodetic {
 
     /// Longitude wrapped into `(-180, 180]` and latitude clamped into `[-90, 90]`; height unchanged.
     pub fn normalized(self) -> Geodetic {
-        let mut lon = self.lon_deg.rem_euclid(360.0);
-        if lon > 180.0 {
-            lon -= 360.0;
-        }
+        // Exact: a longitude already in range comes back unchanged.
+        let lon = crate::angle::ang_normalize(self.lon_deg);
         Geodetic::new(self.lat_deg.clamp(-90.0, 90.0), lon, self.height_m)
     }
 
