@@ -435,6 +435,22 @@ assert!(back.distance_to(p) < 1e-6);
 💡 Datums are published with one of two sign conventions. For the other one, use
 `Helmert7::coordinate_frame` with the same numbers.
 
+## 🚀 Examples
+
+Complete programs for real jobs, in [`examples/`](examples). Run one with
+`cargo run --example radar`.
+
+| Example | What it does |
+|---|---|
+| [`radar`](examples/radar.rs) | An airport radar: where to point, the plane's Doppler shift, and how sure the fix is |
+| [`air_traffic`](examples/air_traffic.rs) | Which flights are in controlled airspace, and will two come too close? |
+| [`satellite`](examples/satellite.rs) | The Space Station passing over Brisbane: where to point, and the radio's Doppler shift |
+| [`drone_camera`](examples/drone_camera.rs) | Where a drone's camera is looking, and the position of what its laser hits |
+| [`field_survey`](examples/field_survey.rs) | A paddock from its GPS corners: area, fence lengths and map grid references |
+| [`search_and_rescue`](examples/search_and_rescue.rs) | Reaching a drifting yacht: how soon, which way to steer, when you'll see it |
+| [`flight_route`](examples/flight_route.rs) | Sydney to Los Angeles: distance, waypoints, and how far a plane has strayed |
+| [`sea_level`](examples/sea_level.rs) | GPS heights to heights above sea level, with a geoid grid |
+
 ## 🔁 Coming from MATLAB, pymap3d or map_3d?
 
 Most functions have a familiar twin. Make a frame once with `let frame = LocalFrame::new(observer);`

@@ -30,7 +30,7 @@ jobs:
       - name: test
         run: cargo test && cargo test --all-features
       - name: example
-        run: cargo run --example tracking && cargo run --example satellite
+        run: for e in examples/*.rs; do cargo run --example "$(basename "$e" .rs)" || exit 1; done
       - name: doc
         run: cargo doc --no-deps --all-features
         env:

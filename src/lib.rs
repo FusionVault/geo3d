@@ -118,7 +118,9 @@
 //! | track satellites, down to their Doppler shift | the [`eci`] module, [`Track::from_eci`], and `examples/satellite.rs` with the `sgp4` crate |
 //! | shift between datums | [`Helmert7`] |
 //!
-//! The [`navlab`] page solves ten classic navigation problems step by step. More worked examples, a
+//! The [`navlab`] page solves ten classic navigation problems step by step. The
+//! [`examples`](https://github.com/FusionVault/geo3d/tree/main/examples) folder has eight complete
+//! programs for real jobs, from an airport radar to a search and rescue. More worked examples, a
 //! comparison with other crates and an accuracy table are in the
 //! [README](https://github.com/FusionVault/geo3d#readme).
 //!
