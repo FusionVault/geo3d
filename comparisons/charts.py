@@ -480,7 +480,43 @@ def main():
         f"{metres(worst('geo3d', 'grid and back'))} grid and back; utm crate {metres(worst('utm', 'GeographicLib'))} "
         f"and {metres(worst('utm', 'grid and back'))}")
 
-    # 9. Geoid heights against the gravity models themselves.
+    # 9. Intercepts: an answer every time? A scorecard, since failures are the story.
+    icpt = find(tabs, "Intercept against the exact answer")
+    icpt_rows = [("in 3D, pursuer faster, 1.2", "In 3D, pursuer 1.2× to 5× faster"),
+                 ("in 3D, pursuer faster by up to 1", "In 3D, pursuer up to 1 % faster"),
+                 ("in 3D, pursuer exactly", "In 3D, the same speed"),
+                 ("in 3D, pursuer slower", "In 3D, pursuer 0.2× to 0.9× as fast"),
+                 ("on a sphere, ships", "On a sphere: ships"),
+                 ("on a sphere, aircraft: 100", "On a sphere: aircraft"),
+                 ("on a sphere, aircraft, pursuer", "On a sphere: aircraft, up to 5 % faster")]
+    icpt_cols = [("geo3d", "geo3d"), ("textbook quadratic formula", "textbook formula"), ("jord", "jord (sphere)")]
+
+    def icpt_cell(lib, key):
+        r = next((r for r in icpt if r["Library"] == lib and r["Cases"].startswith(key)), None)
+        if r is None:
+            return None
+        fails = int(r["Failures"])
+        if fails:
+            return (False, f"fails {round(100 * fails / int(r['Count']))} %")
+        err = num(r["Max error (m)"])
+        return (err <= 1e-3, metres(err))
+
+    rows = [(label, [icpt_cell(lib, key) for lib, _ in icpt_cols]) for key, label in icpt_rows]
+    g3 = max(num(r["Max error (m)"]) for r in icpt if r["Library"] == "geo3d")
+    tb_same = next(r for r in icpt if r["Library"].startswith("textbook") and r["Cases"].startswith("in 3D, pursuer exactly"))
+    jord_fail = [round(100 * int(r["Failures"]) / int(r["Count"])) for r in icpt if r["Library"] == "jord"]
+    scorecard(
+        "intercept", "Intercepts: an answer every time?",
+        ["10 000 cases each, against the exact answer: in 3D, straight lines (geo3d's model); on a sphere,",
+         "great circles (jord's). A pass is an answer for every case, all within 1 mm of where they meet."],
+        [c for _, c in icpt_cols], rows,
+        [f"geo3d's worst is {metres(g3)}. At equal speeds the textbook formula divides by zero, and its other answers",
+         "can be wildly out. jord iterates (Newton's method), and sometimes gives no answer where one exists."],
+        f"Intercept scorecard: geo3d answers every case within {metres(g3)}; the textbook formula fails "
+        f"{round(100 * int(tb_same['Failures']) / int(tb_same['Count']))} % of cases at equal speeds; jord fails "
+        f"{min(jord_fail)} % to {max(jord_fail)} % of cases on its sphere", "status", width=820)
+
+    # 10. Geoid heights against the gravity models themselves.
     geo = find(tabs, "Geoid height against the model")
     gcell = lambda lib, part, col="Max error (m)": num(next(r[col] for r in geo if r["Library"] == lib
                                                             and part in r["Model and method"]))
@@ -502,7 +538,7 @@ def main():
         f"{metres(gcell('geo3d', 'egm2008-1'))} (EGM2008); egm96 crate {metres(gcell('egm96', 'default'))}, "
         f"egm2008 crate {metres(gcell('egm2008', '3°'))}")
 
-    # 10. Features (from comparisons/README.md, "Features and footprint").
+    # 11. Features (from comparisons/README.md, "Features and footprint").
     Y, N = "✓", None
     feats = [
         ("No dependencies", [Y, Y, N, N, Y, N, N, Y]),
@@ -522,6 +558,8 @@ def main():
         ("Attitude (yaw, pitch, roll)", [Y, N, N, Y, Y, N, N, N]),
         ("UTM/UPS grid", [Y, N, N, N, N, N, N, "UTM only"]),
         ("Heights above sea level (geoid)", [Y, N, N, N, N, N, N, N]),
+        ("Range rate (Doppler)", [Y, N, N, N, N, N, N, N]),
+        ("Intercept: when, where, slowest speed", [Y, N, N, N, "sphere", N, N, N]),
         ("Prints positions, with {:.N}", [Y, N, N, "no {:.N}", N, N, N, N]),
     ]
     scorecard(
@@ -532,7 +570,7 @@ def main():
         "datum shifts",
         "text")
 
-    # 11. Speed: small multiples, one panel per operation, fixed crate order.
+    # 12. Speed: small multiples, one panel per operation, fixed crate order.
     sp = speed_rows()
     ops = [
         ("geodetic_to_ecef", "Latitude/longitude/height → x, y, z"),
@@ -549,6 +587,7 @@ def main():
         ("utm_forward", "Latitude/longitude → UTM"),
         ("utm_reverse", "UTM → latitude/longitude"),
         ("geoid", "Geoid height (geo3d: cubic, egm96-5)"),
+        ("intercept", "Intercept (jord: on a sphere)"),
     ]
     panels = []
     for op, ptitle in ops:

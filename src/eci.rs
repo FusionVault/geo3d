@@ -14,6 +14,10 @@
 //! [`gmst_from_unix_with_dut1`], with DUT1 from the IERS Bulletin A. Polar motion (about 10 m at
 //! the surface) is ignored.
 //!
+//! **Velocities.** [`Track::from_eci`] brings a TEME position and velocity (as SGP4 gives them) into
+//! the Earth-fixed frame, taking off the Earth's spin, ready for
+//! [`LocalFrame::range_rate_mps`](crate::LocalFrame::range_rate_mps) and Doppler shifts.
+//!
 //! [`era_rad`] gives the Earth Rotation Angle, the modern (IAU 2000) measure of the Earth's turn,
 //! for use with the CIO-based frames.
 //!
@@ -32,7 +36,9 @@ use core::f64::consts::TAU;
 
 #[cfg(all(feature = "libm", not(feature = "std"), not(test)))]
 use crate::math::Float as _;
+use crate::motion::Track;
 use crate::position::{Ecef, Eci};
+use crate::vector::Vec3;
 
 /// The J2000 epoch, 2000-01-01T12:00:00, as a Julian date.
 const J2000_JD: f64 = 2_451_545.0;
@@ -133,6 +139,33 @@ pub fn eci_to_ecef(p: Eci, gmst_rad: f64) -> Ecef {
     Ecef::new(p.x * c + p.y * s, -p.x * s + p.y * c, p.z)
 }
 
+/// How fast the sidereal angle turns (IAU 1982), radians per second: 360.985 647 366 29° a day.
+/// It's the exact rate of the rotation [`eci_to_ecef`] applies, so velocities stay consistent with
+/// positions.
+const GMST_RATE_RAD_S: f64 = (360.0 + 8_640_184.812_866 / 36_525.0 / 240.0) / 360.0 * TAU / 86_400.0;
+
+impl Track {
+    /// A track in the Earth-fixed frame from an inertial (TEME) position (metres) and velocity
+    /// (m/s), such as SGP4 gives, at the given sidereal angle. The velocity is turned into the
+    /// Earth-fixed frame, and the Earth's spin under it taken off.
+    ///
+    /// ```
+    /// use geo3d::{eci, Eci, Track, Vec3};
+    /// // On the equator 7 000 km out, moving east at 7.5 km/s in space: the Earth turns under it
+    /// // at 7 000 km × 7.292 × 10⁻⁵ rad/s = 510 m/s, so it moves east at 6 990 m/s over the ground.
+    /// let t = Track::from_eci(Eci::new(7.0e6, 0.0, 0.0), Vec3::new(0.0, 7_500.0, 0.0), 0.0);
+    /// assert!((t.velocity.y - 6_989.55).abs() < 0.01);
+    /// ```
+    #[doc(alias = "teme")]
+    pub fn from_eci(position: Eci, velocity: Vec3, gmst_rad: f64) -> Track {
+        let p = eci_to_ecef(position, gmst_rad);
+        let v = eci_to_ecef(Eci::new(velocity.x, velocity.y, velocity.z), gmst_rad);
+        // v − ω × r, with ω along z.
+        let w = GMST_RATE_RAD_S;
+        Track::new(p, Vec3::new(v.x + w * p.y, v.y - w * p.x, v.z))
+    }
+}
+
 impl Eci {
     /// Earth-fixed position at the given sidereal angle.
     #[inline]
@@ -153,6 +186,35 @@ impl Ecef {
 mod tests {
     use super::*;
     use crate::test_util::close;
+
+    #[test]
+    fn track_from_eci_is_the_rate_of_change_of_the_ecef_position() {
+        // The rotation rate is the slope of GMST itself, over ±100 s near J2000 (where the times
+        // are exact).
+        let t0 = J2000_UNIX + 5_000.0;
+        let slope = (gmst_from_unix(t0 + 100.0) - gmst_from_unix(t0 - 100.0)) / 200.0;
+        assert!(close(slope, GMST_RATE_RAD_S, 1e-17), "{slope} vs {GMST_RATE_RAD_S}");
+        // A satellite moving in space: difference its Earth-fixed position over ±10 ms.
+        let p = Eci::new(-4_400_594.0, 1_932_870.0, 4_760_712.0);
+        let v = Vec3::new(-5_316.6, -3_969.5, -3_303.5);
+        let gmst = 1.234;
+        let track = Track::from_eci(p, v, gmst);
+        let at = |dt: f64| {
+            let q = Eci::new(p.x + v.x * dt, p.y + v.y * dt, p.z + v.z * dt);
+            eci_to_ecef(q, gmst + GMST_RATE_RAD_S * dt).vec()
+        };
+        let dt = 1e-2;
+        let numeric = (at(dt) - at(-dt)) / (2.0 * dt);
+        assert!(
+            (track.velocity - numeric).norm() < 1e-5,
+            "{:?} vs {numeric:?}",
+            track.velocity
+        );
+        assert_eq!(track.position, eci_to_ecef(p, gmst));
+        // Still in space means moving west over the ground, at ω·r.
+        let still = Track::from_eci(Eci::new(7e6, 0.0, 0.0), Vec3::ZERO, 0.0);
+        assert!(close(still.velocity.y, -7e6 * GMST_RATE_RAD_S, 1e-9));
+    }
 
     #[test]
     fn julian_dates() {

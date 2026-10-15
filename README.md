@@ -15,6 +15,7 @@ Give geo3d a GPS position, then ask everyday questions:
 - 🗺️ How big is that field?
 - 👀 Can they see each other?
 - 💥 Are they going to collide?
+- 🎯 How fast is it closing, and how soon can we reach it?
 - 🌊 How high above sea level is it?
 
 It's pure Rust, with no dependencies.
@@ -349,6 +350,31 @@ let soon = a.at(60.0);                // where `a` will be in a minute
 assert!(alert.is_some());
 ```
 
+### Measure closing speed and plan an intercept
+
+```rust
+use geo3d::{Course, Geodetic, LocalFrame, Track, WGS84};
+
+let radar = LocalFrame::new(Geodetic::new(-33.95, 151.18, 10.0));
+let plane = Track::new(
+    WGS84.to_ecef(Geodetic::new(-33.80, 151.18, 3_000.0)),     // 17 km north, 3 km up
+    radar.velocity_of_course(Course::new(180.0, 120.0, 0.0)),  // flying south at 120 m/s
+);
+
+let rate = radar.range_rate_mps(plane);             // −118 m/s: it's closing
+let doppler_hz = -2.0 * rate * 3e9 / 299_792_458.0; // +2.4 kHz on a 3 GHz radar
+
+// A drone at the radar, flying straight at 70 m/s: when, where, and which way?
+let meet = plane.intercept_from(radar.origin_ecef(), 70.0).unwrap();      // in 91 s
+let way = radar.course_of_velocity(meet.velocity);                        // north, climbing
+let slowest = plane.slowest_intercept_from(radar.origin_ecef()).unwrap(); // 21 m/s would do
+assert!(rate < 0.0 && (meet.time_s - 91.45).abs() < 0.01);
+```
+
+💡 Range rate is negative while things close. The Doppler shift is `−2 × range rate × f / c` for a
+radar, and `−range rate × f / c` one way. Intercepts are exact, like `closest_approach`, for
+straight lines at a steady speed.
+
 ### Check if two points can see each other
 
 ```rust
@@ -386,8 +412,11 @@ not J2000. Unix time is UTC, which can be up to 0.9 s away from the Earth's true
 up to 400 m at the equator. For full accuracy, use `eci::gmst_from_unix_with_dut1(t, dut1)` with
 DUT1 from the IERS Bulletin A.
 
+💡 `Track::from_eci(position, velocity, angle)` brings in SGP4's velocity too, with the Earth's spin
+taken off, so `LocalFrame::range_rate_mps` gives the Doppler shift to tune for.
+
 💡 `cargo run --example satellite` tracks the International Space Station from Brisbane, using the
-[`sgp4`](https://crates.io/crates/sgp4) crate.
+[`sgp4`](https://crates.io/crates/sgp4) crate, down to the Doppler shift on its radio.
 
 ### Shift between datums
 
@@ -507,6 +536,17 @@ within 3 mm of the EGM96 and EGM2008 models everywhere. The egm96 crate uses the
 reads it half a grid cell off, so it can be 1.9 m out. The egm2008 crate's built-in grid has
 points 3° apart, and is up to 24 m out.
 
+### 🎯 Intercepts
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="comparisons/charts/intercept-dark.svg">
+  <img alt="Intercept scorecard: geo3d answers every case within 5.3 nm; the textbook formula fails 54 % of cases at equal speeds; jord fails 1 % to 16 % of cases on its sphere" src="comparisons/charts/intercept-light.svg">
+</picture>
+
+geo3d finds the intercept within a few nanometres every time, even at equal speeds. The textbook
+quadratic formula divides by zero there, and fails in half the cases. jord moves along great circles
+on a sphere and solves by iteration, which sometimes gives no answer where one exists.
+
 ### ✈️ Yaw, pitch and roll near straight up
 
 <picture>
@@ -553,10 +593,10 @@ it with no dependencies.
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="comparisons/charts/speed-dark.svg">
-  <img alt="Time per call for 14 operations; geo3d is fastest in 3 and tied in 3" src="comparisons/charts/speed-light.svg">
+  <img alt="Time per call for 15 operations; geo3d is fastest in 4 and tied in 3" src="comparisons/charts/speed-light.svg">
 </picture>
 
-geo3d is the fastest, or level with the fastest, in six of the fourteen tests. It's slower in the
+geo3d is the fastest, or level with the fastest, in seven of the fifteen tests. It's slower in the
 other eight, and we know why:
 
 - **x, y, z back to latitude and longitude** (two of the tests). geo3d is about 10 % behind map_3d
@@ -587,7 +627,7 @@ other eight, and we know why:
 | Yaw, pitch and roll | exact, even pointing straight up or down |
 | Uncertainty between frames | exact for ENU, NED and x, y, z; first order for pointing and latitude/longitude |
 | Great-circle tools (distance, route, crossings, centre) and horizon distance | within 0.6 %; exact on a sphere |
-| Closest approach | exact for objects moving in straight lines |
+| Closest approach, range rate and intercepts | exact for objects moving in straight lines (intercepts to a few nanometres, even at equal speeds) |
 | Datum shifts | exact for the published numbers |
 | Satellite frame (`eci`) | exact rotation; up to 400 m from treating UTC as UT1 |
 
@@ -673,6 +713,9 @@ is 10–20 % faster, and its answers agree with the standard build to within 25 
   wing, down out of the belly.
 - **Quaternion:** four numbers that describe a turn. Flight controllers use them because, unlike
   yaw, pitch and roll, they have no trouble pointing straight up.
+- **Range rate:** how fast the distance to something is changing. Negative while it comes closer.
+  A radar measures it from the **Doppler shift**: the change in frequency of the echo.
+- **Intercept:** where and when a pursuer flying straight at a steady speed meets a moving target.
 - **Covariance:** how uncertain a position is in each direction, and how the errors are linked. The
   square roots of its diagonal are the standard deviations.
 

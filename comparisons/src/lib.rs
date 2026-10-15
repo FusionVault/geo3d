@@ -157,6 +157,15 @@ pub mod with_geo3d {
         Some([g.lat_deg, g.lon_deg])
     }
 
+    /// Seconds until a pursuer at `from` flying straight at `speed` (m/s) meets a target at `p`
+    /// moving at `v` (metres, m/s).
+    #[inline]
+    pub fn intercept_s(p: Xyz, v: Xyz, from: Xyz, speed: f64) -> Option<f64> {
+        geo3d::Track::new(Ecef::from(p), geo3d::Vec3::from(v))
+            .intercept_from(Ecef::from(from), speed)
+            .map(|i| i.time_s)
+    }
+
     /// Yaw, pitch and roll (degrees) → rotation → yaw, pitch and roll.
     #[inline]
     pub fn attitude_round_trip(ypr: [f64; 3]) -> Option<[f64; 3]> {
@@ -488,7 +497,9 @@ pub mod with_jord {
     use jord::ellipsoidal::Ellipsoid;
     use jord::local::EnuFrame;
     use jord::spherical::{GreatCircle, Loop, Sphere};
-    use jord::{GeocentricPosition, GeodeticPosition, LatLong, Length, NVector, PositionVector, Surface};
+    use jord::{
+        Angle, GeocentricPosition, GeodeticPosition, LatLong, Length, NVector, PositionVector, Speed, Surface, Vehicle,
+    };
 
     #[inline]
     fn geo(g: Lla) -> GeodeticPosition {
@@ -582,6 +593,30 @@ pub mod with_jord {
             .collect();
         let r = Sphere::EARTH.radius().as_metres();
         Some(Loop::new(&vs).spherical_excess().as_radians() * r * r)
+    }
+
+    /// Seconds until a pursuer at `from` flying at `speed` (m/s) meets a target at `target` heading
+    /// `bearing_deg` at `target_speed` (m/s), both following great circles on jord's sphere.
+    #[inline]
+    pub fn sphere_intercept_s(
+        from: LatLon,
+        speed: f64,
+        target: LatLon,
+        bearing_deg: f64,
+        target_speed: f64,
+    ) -> Option<f64> {
+        let intruder = Vehicle::new(
+            NVector::from_lat_long_degrees(target[0], target[1]),
+            Angle::from_degrees(bearing_deg),
+            Speed::from_metres_per_second(target_speed),
+        );
+        Sphere::EARTH
+            .time_to_intercept(
+                NVector::from_lat_long_degrees(from[0], from[1]),
+                Speed::from_metres_per_second(speed),
+                intruder,
+            )
+            .map(|d| d.as_secs_f64())
     }
 }
 

@@ -5,6 +5,18 @@ release is tagged `vX.Y.Z`.
 
 ## Unreleased
 
+- 🎯 **Range rate and intercepts** ([#17](https://github.com/FusionVault/geo3d/issues/17)):
+  - `Track::range_rate_mps` and `LocalFrame::range_rate_mps`: how fast the distance is changing,
+    negative while closing, for radar Doppler. The docs give the Doppler shift for radar and
+    one-way signals;
+  - `Track::intercept_from` and `Track::slowest_intercept_from`: when and where a pursuer flying
+    straight at a steady speed meets a target, which way to fly, and the slowest speed that works,
+    as an `Intercept`. The equation's terms are worked out to 32 digits, so the answer is within a
+    few nanometres even at equal speeds, where the textbook formula divides by zero (it fails in
+    half of those cases). jord's sphere solver fails in 1 % to 16 % of its cases;
+  - `Track::from_eci`: an Earth-fixed track from an inertial (TEME) position and velocity, as SGP4
+    gives them. It takes the Earth's spin off at the exact rate of geo3d's sidereal time.
+    `examples/satellite.rs` now prints the Doppler shift on the ISS's radio.
 - 🌊 **Heights above sea level** ([#16](https://github.com/FusionVault/geo3d/issues/16)):
   - the `Geoid` trait: `undulation_m`, the geoid's height above the ellipsoid, then
     `sea_level_height_m` and `geodetic_from_sea_level` to convert. Any `Fn(lat, lon) -> metres` is
