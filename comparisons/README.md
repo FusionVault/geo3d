@@ -617,7 +617,6 @@ That conversion work is part of every timing. Inputs and results go through `std
 
 ```bash
 cd comparisons
-./fetch-geoids.sh                    # once: GeographicLib's geoid grids and test set (230 MB)
 cargo run --release --bin accuracy   # accuracy and tricky cases, as tables
 cargo bench                          # speed
 cargo test                           # checks every crate's adapter gives the same simple answer
@@ -631,7 +630,18 @@ cargo bench
 python3 charts.py
 ```
 
+The geoid comparison needs GeographicLib's grids and test set, so it's a feature of its own:
+
+```bash
+./fetch-geoids.sh                    # downloads 230 MB into data/ (600 MB unpacked)
+cargo run --release --features geoid --bin geoid > results/geoid.md
+cargo bench --features geoid -- geoid
+python3 charts.py
+rm -r data                           # when you're done
+```
+
 The inputs come from a fixed random seed, so every run tests the same points. The charts are drawn
-by [`charts.py`](charts.py) from [`results/accuracy.md`](results/accuracy.md) and
+by [`charts.py`](charts.py) from [`results/accuracy.md`](results/accuracy.md),
+[`results/geoid.md`](results/geoid.md) and
 [`results/speed.csv`](results/speed.csv). This folder is its own Rust project and isn't published,
 so none of these crates become dependencies of geo3d.

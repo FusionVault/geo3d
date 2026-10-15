@@ -173,6 +173,35 @@ pub mod with_geo3d {
     }
 }
 
+/// Formatting for the results tables.
+pub mod report {
+    /// A longitude into `[-180, 180)`.
+    pub fn wrap(lon: f64) -> f64 {
+        (lon + 180.0).rem_euclid(360.0) - 180.0
+    }
+
+    /// A positive number in short scientific notation, like `2.6e-3`.
+    pub fn sci(x: f64) -> String {
+        if x == 0.0 {
+            "0".into()
+        } else {
+            format!("{x:.1e}")
+        }
+    }
+
+    /// A Markdown table under a `###` title.
+    pub fn table(title: &str, header: &[&str], rows: &[Vec<String>]) {
+        println!("### {title}\n");
+        println!("| {} |", header.join(" | "));
+        println!("|{}", "---|".repeat(header.len()));
+        for r in rows {
+            println!("| {} |", r.join(" | "));
+        }
+        println!();
+    }
+}
+
+#[cfg(feature = "geoid")]
 /// geo3d's geoid grids, read once from `data/geoids` (see `fetch-geoids.sh`), as a user would.
 pub mod geo3d_geoids {
     use super::*;
@@ -226,6 +255,7 @@ pub mod geo3d_geoids {
     }
 }
 
+#[cfg(feature = "geoid")]
 /// The `egm96` crate.
 pub mod with_egm96 {
     /// Its default: bilinear interpolation in its 5′ raster.
@@ -241,6 +271,7 @@ pub mod with_egm96 {
     }
 }
 
+#[cfg(feature = "geoid")]
 /// The `egm2008` crate: a 3° grid of `f32` built in, bilinear.
 pub mod with_egm2008 {
     #[inline]
@@ -663,6 +694,7 @@ pub mod with_utm {
 mod tests {
     use super::*;
 
+    #[cfg(feature = "geoid")]
     /// The geoid adapters, at Sydney: geo3d gives GeographicLib's GeoidEval answers (22.4595 m for
     /// EGM96, 22.3526 m for EGM2008), and the other crates land near them.
     #[test]
