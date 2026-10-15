@@ -33,6 +33,8 @@ FONT = "system-ui, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif"
 CRATES = ["geo3d", "map_3d", "nav-types", "sguaba", "jord", "geographiclib-rs", "geo"]
 # The `utm` crate appears only where it has something to compare: features and speed.
 WIDE = CRATES + ["utm"]
+# The geoid crates appear only in the geoid charts.
+GEOIDS = ["egm96", "egm2008"]
 
 
 # ── Reading the results ────────────────────────────────────────────────────────────────────────
@@ -68,7 +70,7 @@ def speed_rows():
     if os.path.isdir(root):
         rows = []
         for op in sorted(os.listdir(root)):
-            for crate in WIDE:
+            for crate in WIDE + GEOIDS:
                 est = os.path.join(root, op, crate, "new", "estimates.json")
                 if os.path.exists(est):
                     with open(est) as f:
@@ -472,7 +474,29 @@ def main():
         f"{metres(worst('geo3d', 'grid and back'))} grid and back; utm crate {metres(worst('utm', 'GeographicLib'))} "
         f"and {metres(worst('utm', 'grid and back'))}")
 
-    # 9. Features (from comparisons/README.md, "Features and footprint").
+    # 9. Geoid heights against the gravity models themselves.
+    geo = find(tabs, "Geoid height against the model")
+    gcell = lambda lib, part, col="Max error (m)": num(next(r[col] for r in geo if r["Library"] == lib
+                                                            and part in r["Model and method"]))
+    bars_log(
+        "geoid", "Height above sea level: the geoid",
+        ["Worst error over 500 000 random points, against the gravity model each crate implements (NGA's",
+         "own synthesis, from GeographicLib's test set). Log scale; shorter is better."],
+        [("geo3d", "EGM96, from the egm96-5 grid (19 MB)", gcell("geo3d", "egm96-5 grid (19 MB)"), True),
+         ("geo3d", "EGM2008, from the egm2008-1 grid (470 MB)", gcell("geo3d", "egm2008-1"), True),
+         ("geo3d", "EGM96, from the small egm96-15 grid (2 MB)", gcell("geo3d", "egm96-15"), True),
+         ("egm96", "its default: the same egm96-5 grid", gcell("egm96", "default"), False),
+         ("egm96", "spherical harmonics: the model itself, but slow", gcell("egm96", "harmonics"), False),
+         ("egm2008", "its built-in 3° grid", gcell("egm2008", "3°"), False)],
+        ["geo3d reads GeographicLib's grids, and gives the same answers as its GeoidEval. egm96's default reads the",
+         "same egm96-5 grid half a cell (2.5′) off, and doesn't wrap round at 0°. Its harmonics take about 0.5 ms a call.",
+         f"RMS errors: geo3d {metres(gcell('geo3d', 'egm96-5 grid (19 MB)', 'RMS error (m)'))}, egm96 "
+         f"{metres(gcell('egm96', 'default', 'RMS error (m)'))}, egm2008 {metres(gcell('egm2008', '3°', 'RMS error (m)'))}."],
+        f"Worst geoid height error: geo3d {metres(gcell('geo3d', 'egm96-5 grid (19 MB)'))} (EGM96) and "
+        f"{metres(gcell('geo3d', 'egm2008-1'))} (EGM2008); egm96 crate {metres(gcell('egm96', 'default'))}, "
+        f"egm2008 crate {metres(gcell('egm2008', '3°'))}")
+
+    # 10. Features (from comparisons/README.md, "Features and footprint").
     Y, N = "✓", None
     feats = [
         ("No dependencies", [Y, Y, N, N, Y, N, N, Y]),
@@ -491,6 +515,7 @@ def main():
         ("Path tools (cross-track, crossings, centre)", [Y, N, N, N, Y, N, "some", N]),
         ("Attitude (yaw, pitch, roll)", [Y, N, N, Y, Y, N, N, N]),
         ("UTM/UPS grid", [Y, N, N, N, N, N, N, "UTM only"]),
+        ("Heights above sea level (geoid)", [Y, N, N, N, N, N, N, N]),
         ("Prints positions, with {:.N}", [Y, N, N, "no {:.N}", N, N, N, N]),
     ]
     scorecard(
@@ -501,7 +526,7 @@ def main():
         "datum shifts",
         "text")
 
-    # 9. Speed: small multiples, one panel per operation, fixed crate order.
+    # 11. Speed: small multiples, one panel per operation, fixed crate order.
     sp = speed_rows()
     ops = [
         ("geodetic_to_ecef", "Latitude/longitude/height → x, y, z"),
@@ -517,11 +542,12 @@ def main():
         ("polygon_area", "Polygon area, 10 vertices"),
         ("utm_forward", "Latitude/longitude → UTM"),
         ("utm_reverse", "UTM → latitude/longitude"),
+        ("geoid", "Geoid height (geo3d: cubic, egm96-5)"),
     ]
     panels = []
     for op, ptitle in ops:
         rows = [(c + ("*" if c == "geo" and op.startswith("geodesic") else ""), ns, c == "geo3d")
-                for c in WIDE for o, cc, ns in sp if o == op and cc == c]
+                for c in WIDE + GEOIDS for o, cc, ns in sp if o == op and cc == c]
         if rows:
             panels.append((ptitle, rows))
     # Within 3 % of the fastest is a tie: closer than run-to-run noise.

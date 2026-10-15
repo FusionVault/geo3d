@@ -1,9 +1,9 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="900" height="668" viewBox="0 0 900 668" font-family="system-ui, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" role="img" aria-label="Feature matrix: geo3d is the only crate with ground strike, 3D volumes, closest approach, covariance and datum shifts">
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="698" viewBox="0 0 900 698" font-family="system-ui, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" role="img" aria-label="Feature matrix: geo3d is the only crate with ground strike, 3D volumes, closest approach, covariance and datum shifts">
 <title>Feature matrix: geo3d is the only crate with ground strike, 3D volumes, closest approach, covariance and datum shifts</title>
-<rect x="0.5" y="0.5" width="899" height="667" rx="10" fill="#1a1a19" stroke="#2c2c2a"/>
+<rect x="0.5" y="0.5" width="899" height="697" rx="10" fill="#1a1a19" stroke="#2c2c2a"/>
 <text x="24.0" y="34.0" font-size="16" font-weight="600" fill="#ffffff" text-anchor="start">Features</text>
 <text x="24.0" y="56.0" font-size="12.5" font-weight="400" fill="#c3c2b7" text-anchor="start">What each crate offers, checked in its source at the versions compared.</text>
-<rect x="341.0" y="84.0" width="66.9" height="540.0" rx="6" fill="#202e3e"/>
+<rect x="341.0" y="84.0" width="66.9" height="570.0" rx="6" fill="#202e3e"/>
 <text x="374.4" y="104.0" font-size="12" font-weight="600" fill="#ffffff" text-anchor="middle">geo3d</text>
 <text x="441.3" y="104.0" font-size="12" font-weight="500" fill="#ffffff" text-anchor="middle">map_3d</text>
 <text x="508.2" y="104.0" font-size="12" font-weight="500" fill="#ffffff" text-anchor="middle">nav-types</text>
@@ -173,14 +173,24 @@
 <text x="775.7" y="583.0" font-size="12.5" font-weight="400" fill="#9b9a93" text-anchor="middle">—</text>
 <text x="842.6" y="583.0" font-size="12" font-weight="500" fill="#c3c2b7" text-anchor="middle">UTM only</text>
 <line x1="24" y1="594.0" x2="876" y2="594.0" stroke="#2c2c2a"/>
-<text x="24.0" y="613.0" font-size="12.5" font-weight="400" fill="#ffffff" text-anchor="start">Prints positions, with {:.N}</text>
+<text x="24.0" y="613.0" font-size="12.5" font-weight="400" fill="#ffffff" text-anchor="start">Heights above sea level (geoid)</text>
 <path d="M369.4,609.0 L372.9,612.5 L379.9,604.5" stroke="#ffffff" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
 <text x="441.3" y="613.0" font-size="12.5" font-weight="400" fill="#9b9a93" text-anchor="middle">—</text>
 <text x="508.2" y="613.0" font-size="12.5" font-weight="400" fill="#9b9a93" text-anchor="middle">—</text>
-<text x="575.1" y="613.0" font-size="12" font-weight="500" fill="#c3c2b7" text-anchor="middle">no {:.N}</text>
+<text x="575.1" y="613.0" font-size="12.5" font-weight="400" fill="#9b9a93" text-anchor="middle">—</text>
 <text x="641.9" y="613.0" font-size="12.5" font-weight="400" fill="#9b9a93" text-anchor="middle">—</text>
 <text x="708.8" y="613.0" font-size="12.5" font-weight="400" fill="#9b9a93" text-anchor="middle">—</text>
 <text x="775.7" y="613.0" font-size="12.5" font-weight="400" fill="#9b9a93" text-anchor="middle">—</text>
 <text x="842.6" y="613.0" font-size="12.5" font-weight="400" fill="#9b9a93" text-anchor="middle">—</text>
-<text x="24.0" y="646.0" font-size="11.5" font-weight="400" fill="#9b9a93" text-anchor="start">— : not offered.</text>
+<line x1="24" y1="624.0" x2="876" y2="624.0" stroke="#2c2c2a"/>
+<text x="24.0" y="643.0" font-size="12.5" font-weight="400" fill="#ffffff" text-anchor="start">Prints positions, with {:.N}</text>
+<path d="M369.4,639.0 L372.9,642.5 L379.9,634.5" stroke="#ffffff" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+<text x="441.3" y="643.0" font-size="12.5" font-weight="400" fill="#9b9a93" text-anchor="middle">—</text>
+<text x="508.2" y="643.0" font-size="12.5" font-weight="400" fill="#9b9a93" text-anchor="middle">—</text>
+<text x="575.1" y="643.0" font-size="12" font-weight="500" fill="#c3c2b7" text-anchor="middle">no {:.N}</text>
+<text x="641.9" y="643.0" font-size="12.5" font-weight="400" fill="#9b9a93" text-anchor="middle">—</text>
+<text x="708.8" y="643.0" font-size="12.5" font-weight="400" fill="#9b9a93" text-anchor="middle">—</text>
+<text x="775.7" y="643.0" font-size="12.5" font-weight="400" fill="#9b9a93" text-anchor="middle">—</text>
+<text x="842.6" y="643.0" font-size="12.5" font-weight="400" fill="#9b9a93" text-anchor="middle">—</text>
+<text x="24.0" y="676.0" font-size="11.5" font-weight="400" fill="#9b9a93" text-anchor="start">— : not offered.</text>
 </svg>

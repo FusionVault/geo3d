@@ -5,6 +5,18 @@ release is tagged `vX.Y.Z`.
 
 ## Unreleased
 
+- 🌊 **Heights above sea level** ([#16](https://github.com/FusionVault/geo3d/issues/16)):
+  - the `Geoid` trait: `undulation_m`, the geoid's height above the ellipsoid, then
+    `sea_level_height_m` and `geodetic_from_sea_level` to convert. Any `Fn(lat, lon) -> metres` is
+    a `Geoid`, so national models plug straight in;
+  - `GeoidGrid`, which reads GeographicLib's EGM84, EGM96 and EGM2008 grids (`.pgm`) straight from
+    their bytes: from a file, from `include_bytes!`, or memory-mapped. It never copies or allocates,
+    and works without the standard library.
+
+  It interpolates as GeographicLib does (a cubic on 12 points by default, or bilinear), and gives
+  the same answers as GeographicLib's GeoidEval. Against the gravity models themselves, at
+  GeographicLib's 500 000 test points, it is within 2.6 mm of EGM96 and 2.2 mm of EGM2008. The
+  egm96 crate's default is up to 1.9 m out, and egm2008's up to 24 m.
 - 🖨️ **Printing** ([#15](https://github.com/FusionVault/geo3d/issues/15)). `Display` for `Geodetic`,
   `Aer`, `Ecef`, `Eci`, `Enu`, `Ned`, `Frd`, `Vec3`, `Attitude`, `Quaternion` and `UtmUps`:
   - plain `{}` keeps every digit, so a printed position reads back exactly;

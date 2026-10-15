@@ -212,6 +212,15 @@ fn bench(c: &mut Criterion) {
     });
     g.finish();
 
+    // Geoid heights at 1 000 points anywhere: each crate's default way (geo3d: egm96-5, cubic).
+    let mut rng = Rng::new(17);
+    let geoid_points: Vec<LatLon> = (0..N).map(|_| rng.lat_lon()).collect();
+    let mut g = group(c, "geoid");
+    run(&mut g, "geo3d", &geoid_points, |p| geo3d_geoids::egm96_m(p[0], p[1]));
+    run(&mut g, "egm96", &geoid_points, |p| with_egm96::geoid_m(p[0], p[1]));
+    run(&mut g, "egm2008", &geoid_points, |p| with_egm2008::geoid_m(p[0], p[1]));
+    g.finish();
+
     let mut g = group(c, "polygon_area");
     run(&mut g, "geo3d", &polygons, with_geo3d::polygon_area_m2);
     run(

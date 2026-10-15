@@ -1,12 +1,13 @@
 # 📊 How geo3d compares
 
-We tested geo3d against six other Rust crates that work with positions on Earth. Every crate got
+We tested geo3d against nine other Rust crates that work with positions on Earth. Every crate got
 exactly the same inputs. This page shows what we found, and how you can check it yourself.
 
 The crates are [map_3d](https://crates.io/crates/map_3d), [nav-types](https://crates.io/crates/nav-types),
 [sguaba](https://crates.io/crates/sguaba), [jord](https://crates.io/crates/jord) and
-[geographiclib-rs](https://crates.io/crates/geographiclib-rs), and [utm](https://crates.io/crates/utm) for
-grid coordinates. We also used
+[geographiclib-rs](https://crates.io/crates/geographiclib-rs), [utm](https://crates.io/crates/utm) for
+grid coordinates, and [egm96](https://crates.io/crates/egm96) and [egm2008](https://crates.io/crates/egm2008)
+for heights above sea level. We also used
 [geo](https://crates.io/crates/geo) for its distance, area and route functions.
 
 ## 🏁 The short version
@@ -15,14 +16,16 @@ grid coordinates. We also used
   and on opposite sides of the Earth.
 - 🗺️ **Area.** geo3d's polygon areas match GeographicLib everywhere, even around the poles. Methods
   that treat the Earth as a ball are 0.7 % to 1.4 % out.
+- 🌊 **Sea level.** geo3d's geoid heights are within 3 mm of the EGM96 and EGM2008 models. The
+  egm96 crate's default is up to 1.9 m out, and egm2008's up to 24 m.
 - 🛡️ **Tricky cases.** geo3d passed all nine. Every other crate that converts positions failed at
   least one.
 - ✈️ **Attitude.** geo3d keeps track of yaw, pitch and roll even pointing straight up. sguaba and
   jord can lose it there.
 - 🧰 **Features.** Only geo3d has ground strikes, 3D zones, collision checks, uncertainty and datum
   shifts.
-- ⚡ **Speed.** geo3d was fastest, or level with the fastest, in six of the thirteen tests. It's slower
-  in the other five, and we explain why below.
+- ⚡ **Speed.** geo3d was fastest, or level with the fastest, in six of the fourteen tests. It's slower
+  in the other eight, and we explain why below.
 
 ## 🎯 Converting x, y, z back to latitude and longitude
 
@@ -260,6 +263,47 @@ At the edges of its rules:
 
 </details>
 
+## 🌊 Height above sea level
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="charts/geoid-dark.svg">
+  <img alt="Worst geoid height error: geo3d 2.6 mm (EGM96) and 2.2 mm (EGM2008); egm96 crate 1.9 m, egm2008 crate 24 m" src="charts/geoid-light.svg">
+</picture>
+
+GPS heights are above the ellipsoid; sea level is the geoid, up to 106 m below it or 85 m above.
+Every crate here gets the geoid's height from a model, EGM96 or EGM2008. We checked each against the
+model itself, at the 500 000 random points of GeographicLib's test set, whose answers come from the
+official NGA programs to 1 µm.
+
+- geo3d reads GeographicLib's grids and fits a cubic to 12 grid points, exactly as GeographicLib
+  does. It's within 2.6 mm of EGM96 (egm96-5 grid) and 2.2 mm of EGM2008 (egm2008-1 grid). It also
+  matches GeographicLib's online GeoidEval, to the 0.1 mm it prints, at 26 hard places: the poles,
+  0° and 180°, Everest, the Mariana Trench, and the geoid's high over New Guinea and low south of
+  India.
+- egm96's default uses the very same egm96-5 grid (pixel for pixel), but reads every point half a
+  grid cell (2.5′, about 4.6 km) off, and doesn't wrap round at 0°. That puts it up to 1.9 m out,
+  14 cm RMS. Its other mode sums EGM96's spherical harmonics: the model itself, to 0.13 mm, but at
+  about 0.5 ms a call.
+- egm2008 has a grid with points 3° apart built in, stored as `f32`: up to 24 m out, 1.5 m RMS. It
+  also refuses longitudes written from 180° to 360°.
+
+<details>
+<summary>📋 Show the numbers</summary>
+
+| Library | Model and method | Points | Failures | Max error (m) | RMS error (m) |
+|---|---|---|---|---|---|
+| geo3d | EGM96, egm96-5 grid (19 MB), cubic | 500000 | 0 | 2.6e-3 | 6.6e-4 |
+| geo3d | EGM96, egm96-5 grid, bilinear | 500000 | 0 | 1.2e-1 | 4.6e-3 |
+| geo3d | EGM96, egm96-15 grid (2 MB), cubic | 500000 | 0 | 1.7e-1 | 7.0e-3 |
+| geo3d | EGM2008, egm2008-1 grid (470 MB), cubic | 500000 | 0 | 2.2e-3 | 6.5e-4 |
+| egm96 | EGM96, its 5′ raster (the same egm96-5 grid), bilinear: its default | 500000 | 0 | 1.9e0 | 1.4e-1 |
+| egm96 | EGM96, spherical harmonics to degree 360 | 10000 | 0 | 1.3e-4 | 4.1e-5 |
+| egm2008 | EGM2008, its built-in 3° grid | 500000 | 0 | 2.4e1 | 1.5e0 |
+
+egm96's harmonics run on every 50th point, as they're slow. Longitudes go in from −180° to 180°.
+
+</details>
+
 ## ✈️ Yaw, pitch and roll
 
 <picture>
@@ -459,6 +503,7 @@ features, from `cargo tree -e normal`.
 | Attitude (yaw, pitch, roll) | yes, exact at ±90° pitch | no | no | yes | yes | no | no | — |
 | UTM/UPS grid | UTM and UPS, Krüger to the 8th order | — | — | — | — | — | — | UTM only (USGS series) |
 | Prints positions | yes: lossless, `{:.N}`, `{:#}` for N/S/E/W | no | no | yes, ignoring `{:.N}` | no | no | no | no |
+| Heights above sea level | EGM84, EGM96 and EGM2008 grids, as GeographicLib reads them | no | no | no | no | no | no | no |
 
 </details>
 
@@ -466,11 +511,11 @@ features, from `cargo tree -e normal`.
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="charts/speed-dark.svg">
-  <img alt="Time per call for 13 operations; geo3d is fastest in 3 and tied in 3" src="charts/speed-light.svg">
+  <img alt="Time per call for 14 operations; geo3d is fastest in 3 and tied in 3" src="charts/speed-light.svg">
 </picture>
 
-geo3d is the fastest, or level with the fastest, in six of the thirteen tests. It's slower in the
-other seven, and we know why:
+geo3d is the fastest, or level with the fastest, in six of the fourteen tests. It's slower in the
+other eight, and we know why:
 
 - **x, y, z back to latitude and longitude** (two tests): about 10 % behind map_3d and jord, and
   further behind nav-types and sguaba. geo3d spends that time on a final check that makes it the
@@ -483,6 +528,9 @@ other seven, and we know why:
   skips the compass bearings.
 - **UTM, both ways:** the utm crate is quicker (1.5× to the grid, 4× back). geo3d finds the
   latitude exactly on the way back, where the utm crate's formulas can be 77 cm out.
+- **Geoid height:** egm96 and egm2008 are 2–3× quicker. geo3d reads 12 grid points and fits a cubic,
+  which keeps it within 3 mm. egm96 reads 4 points, half a cell off, and egm2008 4 points of a
+  coarse grid.
 
 <details>
 <summary>📋 Show the numbers</summary>
@@ -511,6 +559,9 @@ Median nanoseconds per call. In bold: the fastest, and anything within 3 % of it
 | Latitude/longitude → UTM | 198 | — | — | — | — | — | — | **129** |
 | UTM → latitude/longitude | 300 | — | — | — | — | — | — | **75** |
 
+Geoid height, 1 000 points anywhere, each crate's default: geo3d 45 (cubic, egm96-5), egm96 21,
+**egm2008 13**.
+
 Inputs: 1 000 points anywhere on Earth from −500 m to 12 km high (and from 400 km to 35 786 km for
 the second ECEF → geodetic row); a radar near Sydney with 1 000 aircraft within a degree of it, up
 to 12 km high; 1 000 random point pairs; 1 000 lines on random bearings up to 20 000 km long; 1 000
@@ -535,6 +586,8 @@ distances use different sphere radii; see [Distance along the ground](#-distance
 | [jord](https://crates.io/crates/jord) | 0.20.0 | n-vector positions, local frames, spherical navigation |
 | [geographiclib-rs](https://crates.io/crates/geographiclib-rs) | 0.2.7 | Karney's geodesics; the reference for geodesics |
 | [utm](https://crates.io/crates/utm) | 0.1.6 | UTM coordinates on WGS84, by the USGS series |
+| [egm96](https://crates.io/crates/egm96) | 0.3.1 | EGM96 geoid heights, from a 5′ raster or by spherical harmonics |
+| [egm2008](https://crates.io/crates/egm2008) | 0.1.0 | EGM2008 geoid heights, from a built-in 3° grid |
 | [geo](https://crates.io/crates/geo) | 0.33.1 | 2D geometry; only its `Haversine` and `Geodesic` distances and its `GeodesicArea` and `ChamberlainDuquetteArea` areas and its `CrossTrackDistance` are used |
 
 All crates get the same inputs, in degrees and metres. Each one is called through a small adapter
@@ -554,6 +607,9 @@ That conversion work is part of every timing. Inputs and results go through `std
 - **Release builds** for both speed and accuracy. In debug builds sguaba also checks every
   conversion with a round trip and panics outside its supported altitude range.
 - **No `target-cpu=native`**. geo3d's fused multiply-add paths are not used.
+- **Geoid data** comes from GeographicLib: its grids, and its test set `GeoidHeights.dat`, which
+  `fetch-geoids.sh` downloads. egm96 builds from the same egm96-5 grid saved as a PNG, which is
+  identical, pixel for pixel, to the one its build script would download.
 
 </details>
 
@@ -561,6 +617,7 @@ That conversion work is part of every timing. Inputs and results go through `std
 
 ```bash
 cd comparisons
+./fetch-geoids.sh                    # once: GeographicLib's geoid grids and test set (230 MB)
 cargo run --release --bin accuracy   # accuracy and tricky cases, as tables
 cargo bench                          # speed
 cargo test                           # checks every crate's adapter gives the same simple answer

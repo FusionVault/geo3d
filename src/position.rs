@@ -9,7 +9,7 @@ use crate::vector::Vec3;
 /// receiver reports.
 ///
 /// The height is above the ellipsoid, not above mean sea level; the two differ by up to about
-/// 100 m depending on where you are.
+/// 100 m depending on where you are. A [`Geoid`](crate::Geoid) converts between them.
 #[derive(Clone, Copy, Debug, Default, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Geodetic {

@@ -1,0 +1,49 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="760" height="440" viewBox="0 0 760 440" font-family="system-ui, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" role="img" aria-label="Worst geoid height error: geo3d 2.6 mm (EGM96) and 2.2 mm (EGM2008); egm96 crate 1.9 m, egm2008 crate 24 m">
+<title>Worst geoid height error: geo3d 2.6 mm (EGM96) and 2.2 mm (EGM2008); egm96 crate 1.9 m, egm2008 crate 24 m</title>
+<rect x="0.5" y="0.5" width="759" height="439" rx="10" fill="#1a1a19" stroke="#2c2c2a"/>
+<text x="24.0" y="34.0" font-size="16" font-weight="600" fill="#ffffff" text-anchor="start">Height above sea level: the geoid</text>
+<text x="24.0" y="56.0" font-size="12.5" font-weight="400" fill="#c3c2b7" text-anchor="start">Worst error over 500 000 random points, against the gravity model each crate implements (NGA's</text>
+<text x="24.0" y="74.0" font-size="12.5" font-weight="400" fill="#c3c2b7" text-anchor="start">own synthesis, from GeographicLib's test set). Log scale; shorter is better.</text>
+<line x1="338.7" y1="106" x2="338.7" y2="346" stroke="#2c2c2a"/>
+<text x="338.7" y="362.0" font-size="11" font-weight="400" fill="#9b9a93" text-anchor="middle">100 µm</text>
+<line x1="392.9" y1="106" x2="392.9" y2="346" stroke="#2c2c2a"/>
+<text x="392.9" y="362.0" font-size="11" font-weight="400" fill="#9b9a93" text-anchor="middle">1 mm</text>
+<line x1="447.1" y1="106" x2="447.1" y2="346" stroke="#2c2c2a"/>
+<text x="447.1" y="362.0" font-size="11" font-weight="400" fill="#9b9a93" text-anchor="middle">10 mm</text>
+<line x1="501.3" y1="106" x2="501.3" y2="346" stroke="#2c2c2a"/>
+<text x="501.3" y="362.0" font-size="11" font-weight="400" fill="#9b9a93" text-anchor="middle">100 mm</text>
+<line x1="555.6" y1="106" x2="555.6" y2="346" stroke="#2c2c2a"/>
+<text x="555.6" y="362.0" font-size="11" font-weight="400" fill="#9b9a93" text-anchor="middle">1 m</text>
+<line x1="609.8" y1="106" x2="609.8" y2="346" stroke="#2c2c2a"/>
+<text x="609.8" y="362.0" font-size="11" font-weight="400" fill="#9b9a93" text-anchor="middle">10 m</text>
+<line x1="664.0" y1="106" x2="664.0" y2="346" stroke="#2c2c2a"/>
+<text x="664.0" y="362.0" font-size="11" font-weight="400" fill="#9b9a93" text-anchor="middle">100 m</text>
+<line x1="338.68" y1="106" x2="338.68" y2="346" stroke="#383835"/>
+<text x="24.0" y="125.0" font-size="13" font-weight="600" fill="#ffffff" text-anchor="start">geo3d</text>
+<text x="24.0" y="139.0" font-size="11.5" font-weight="400" fill="#9b9a93" text-anchor="start">EGM96, from the egm96-5 grid (19 MB)</text>
+<path d="M338.7,117.0 H411.4 A4.0,4.0 0 0 1 415.4,121.0 V131.0 A4.0,4.0 0 0 1 411.4,135.0 H338.7 Z" fill="#3987e5"/>
+<text x="422.4" y="130.5" font-size="12.5" font-weight="600" fill="#ffffff" text-anchor="start">2.6 mm</text>
+<text x="24.0" y="165.0" font-size="13" font-weight="600" fill="#ffffff" text-anchor="start">geo3d</text>
+<text x="24.0" y="179.0" font-size="11.5" font-weight="400" fill="#9b9a93" text-anchor="start">EGM2008, from the egm2008-1 grid (470 MB)</text>
+<path d="M338.7,157.0 H407.5 A4.0,4.0 0 0 1 411.5,161.0 V171.0 A4.0,4.0 0 0 1 407.5,175.0 H338.7 Z" fill="#3987e5"/>
+<text x="418.5" y="170.5" font-size="12.5" font-weight="600" fill="#ffffff" text-anchor="start">2.2 mm</text>
+<text x="24.0" y="205.0" font-size="13" font-weight="600" fill="#ffffff" text-anchor="start">geo3d</text>
+<text x="24.0" y="219.0" font-size="11.5" font-weight="400" fill="#9b9a93" text-anchor="start">EGM96, from the small egm96-15 grid (2 MB)</text>
+<path d="M338.7,197.0 H509.8 A4.0,4.0 0 0 1 513.8,201.0 V211.0 A4.0,4.0 0 0 1 509.8,215.0 H338.7 Z" fill="#3987e5"/>
+<text x="520.8" y="210.5" font-size="12.5" font-weight="600" fill="#ffffff" text-anchor="start">17 cm</text>
+<text x="24.0" y="245.0" font-size="13" font-weight="400" fill="#ffffff" text-anchor="start">egm96</text>
+<text x="24.0" y="259.0" font-size="11.5" font-weight="400" fill="#9b9a93" text-anchor="start">its default: the same egm96-5 grid</text>
+<path d="M338.7,237.0 H566.7 A4.0,4.0 0 0 1 570.7,241.0 V251.0 A4.0,4.0 0 0 1 566.7,255.0 H338.7 Z" fill="#75746d"/>
+<text x="577.7" y="250.5" font-size="12.5" font-weight="400" fill="#ffffff" text-anchor="start">1.9 m</text>
+<text x="24.0" y="285.0" font-size="13" font-weight="400" fill="#ffffff" text-anchor="start">egm96</text>
+<text x="24.0" y="299.0" font-size="11.5" font-weight="400" fill="#9b9a93" text-anchor="start">spherical harmonics: the model itself, but slow</text>
+<path d="M338.7,277.0 H341.8 A3.089004281038342,3.089004281038342 0 0 1 344.9,280.1 V291.9 A3.089004281038342,3.089004281038342 0 0 1 341.8,295.0 H338.7 Z" fill="#75746d"/>
+<text x="351.9" y="290.5" font-size="12.5" font-weight="400" fill="#ffffff" text-anchor="start">130 µm</text>
+<text x="24.0" y="325.0" font-size="13" font-weight="400" fill="#ffffff" text-anchor="start">egm2008</text>
+<text x="24.0" y="339.0" font-size="11.5" font-weight="400" fill="#9b9a93" text-anchor="start">its built-in 3° grid</text>
+<path d="M338.7,317.0 H626.4 A4.0,4.0 0 0 1 630.4,321.0 V331.0 A4.0,4.0 0 0 1 626.4,335.0 H338.7 Z" fill="#75746d"/>
+<text x="637.4" y="330.5" font-size="12.5" font-weight="400" fill="#ffffff" text-anchor="start">24 m</text>
+<text x="24.0" y="386.0" font-size="11.5" font-weight="400" fill="#9b9a93" text-anchor="start">geo3d reads GeographicLib's grids, and gives the same answers as its GeoidEval. egm96's default reads the</text>
+<text x="24.0" y="402.0" font-size="11.5" font-weight="400" fill="#9b9a93" text-anchor="start">same egm96-5 grid half a cell (2.5′) off, and doesn't wrap round at 0°. Its harmonics take about 0.5 ms a call.</text>
+<text x="24.0" y="418.0" font-size="11.5" font-weight="400" fill="#9b9a93" text-anchor="start">RMS errors: geo3d 660 µm, egm96 14 cm, egm2008 1.5 m.</text>
+</svg>

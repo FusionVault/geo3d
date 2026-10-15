@@ -23,6 +23,10 @@ geographiclib-rs = "=0.2.7"
 # `CrossTrackDistance` are used; the default features add nothing to them.
 geo = { version = "=0.33.1", default-features = false }
 utm = "=0.1.6"
+# Geoid heights. egm96's default 5′ raster is GeographicLib's egm96-5 grid as a PNG, which its build
+# script downloads; here it builds from data/egm96-5.png instead (fetch-geoids.sh, .cargo/config.toml).
+egm96 = { version = "=0.3.1", default-features = false, features = ["raster_5_min"] }
+egm2008 = "=0.1.0"
 
 [dev-dependencies]
 criterion = { version = "=0.5.1", default-features = false }
