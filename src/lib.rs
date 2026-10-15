@@ -61,7 +61,8 @@
 //! - Bearings go clockwise from north, from 0° to 360°.
 //! - Heights are above the WGS84 ellipsoid, like GPS, not above sea level. A [`Geoid`] converts
 //!   between the two.
-//! - [`WGS84`] is the default, but any [`Ellipsoid`] works: `GRS80.to_ecef(p)`.
+//! - [`WGS84`] is the default, but any [`Ellipsoid`] works: `GRS80.to_ecef(p)`. All 50 in the EPSG
+//!   registry are built in: [`Ellipsoid::from_epsg`].
 //! - A few low-level helpers use radians, and their names say so (`lat_rad`, `gmst_rad`).
 //!   [`Vec3::angle_to`] also returns radians.
 //!
@@ -116,6 +117,7 @@
 //! | carry measurement uncertainty between frames | [`Cov3`], [`Aer::cov_to_enu`], [`LocalFrame::enu_cov_to_ecef`] |
 //! | check line of sight, or how far I can see | [`Ellipsoid::line_of_sight`], [`Ellipsoid::horizon_distance_m`], and their `_with_refraction` versions for radio |
 //! | track satellites, down to their Doppler shift | the [`eci`] module, [`Track::from_eci`], and `examples/satellite.rs` with the `sgp4` crate |
+//! | use another country's ellipsoid | [`CGCS2000`], [`KRASSOVSKY_1940`], [`EVEREST_1830`], …, or any EPSG code with [`Ellipsoid::from_epsg`] |
 //! | shift between datums | [`Helmert7`] |
 //!
 //! The [`navlab`] page solves ten classic navigation problems step by step. The
@@ -168,6 +170,7 @@ mod datum;
 mod display;
 pub mod eci;
 mod ellipsoid;
+mod epsg;
 mod frame;
 mod geodesic;
 mod geoid;
@@ -186,7 +189,10 @@ mod volume;
 pub use attitude::{Attitude, Frd};
 pub use covariance::Cov3;
 pub use datum::Helmert7;
-pub use ellipsoid::{Ellipsoid, AIRY_1830, BESSEL_1841, CLARKE_1866, GRS80, INTERNATIONAL_1924, PZ90, WGS72, WGS84};
+pub use ellipsoid::{
+    Ellipsoid, AIRY_1830, AUSTRALIAN_NATIONAL, BESSEL_1841, CGCS2000, CLARKE_1866, EVEREST_1830, EVEREST_1830_MODIFIED,
+    GRS67, GRS80, GSK_2011, IAG_1975, INTERNATIONAL_1924, KRASSOVSKY_1940, PZ90, WGS60, WGS66, WGS72, WGS84,
+};
 pub use frame::LocalFrame;
 pub use geodesic::{Geodesic, PolygonArea};
 pub use geoid::{Geoid, GeoidGrid, GeoidGridError, GeoidInterpolation};
