@@ -43,7 +43,7 @@ cargo add geo3d
   without NaN or panics.
 - 🧩 **Easy to use.** Degrees and metres everywhere, with named fields. Latitude always comes first.
 - 🪶 **Light and fast.** No dependencies, no `unsafe` code, and nothing allocates. Works on Rust 1.85
-  and newer, and on microcontrollers too, without the standard library.
+  and newer, on microcontrollers without the standard library, and in the browser (WebAssembly).
 
 ## 🗺️ The basics
 
@@ -714,6 +714,20 @@ grid straight from flash, without copying it.
 💡 If you have the standard library, keep it. Its maths rounds the last digit more carefully. libm
 is 10–20 % faster, and its answers agree with the standard build to within 25 nm for positions
 (out to 40 000 km) and half a square metre on areas the size of a continent.
+
+## 🌐 In the browser
+
+geo3d builds for WebAssembly as it is, so it runs in the browser, in Node and in serverless
+runtimes:
+
+```bash
+cargo build --target wasm32-unknown-unknown
+```
+
+CI builds it for the browser and runs the whole test suite under WebAssembly on every change.
+
+💡 WebAssembly has no maths library of its own, so Rust brings its pure-Rust one, as it does
+without std. Answers can differ from a desktop build in the last digit: within 25 nm for positions.
 
 ## 🚧 Not included (yet)
 

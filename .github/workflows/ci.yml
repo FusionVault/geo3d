@@ -1,6 +1,6 @@
 # CI for geo3d. Zero-dependency crate: fmt, build (default + all features), clippy, test, the
-# examples, docs, a publish dry-run, a no_std build for a microcontroller, and a check that the
-# declared rust-version really builds it.
+# examples, docs, a publish dry-run, a no_std build for a microcontroller, WebAssembly (build and
+# tests), the docs as docs.rs builds them, and a check that the declared rust-version builds it.
 name: ci
 
 on:
@@ -62,6 +62,50 @@ jobs:
         run: |
           if cargo build --no-default-features 2> err.txt; then echo "::error::built with no maths library"; exit 1; fi
           grep -q "geo3d needs a maths library" err.txt
+
+  # In the browser: WebAssembly is 32-bit and has no system maths library, so Rust uses its own
+  # pure-Rust one. Builds for the browser target, then runs the whole test suite on WASI under
+  # wasmtime.
+  wasm:
+    name: wasm · builds for the browser, tests pass under WebAssembly
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown, wasm32-wasip1
+      - uses: Swatinem/rust-cache@v2
+      - uses: taiki-e/install-action@v2
+        with:
+          tool: wasmtime
+      - name: build for the browser
+        run: |
+          cargo build --target wasm32-unknown-unknown
+          cargo build --target wasm32-unknown-unknown --all-features
+          cargo build --target wasm32-unknown-unknown --no-default-features --features libm
+      - name: test under WebAssembly
+        run: cargo test --target wasm32-wasip1 --lib --tests
+        env:
+          CARGO_TARGET_WASM32_WASIP1_RUNNER: wasmtime
+
+  # The docs as docs.rs builds them: nightly, with `--cfg docsrs` (which marks what each optional
+  # feature adds) and the examples scraped in.
+  docsrs:
+    name: docs.rs · nightly docs, feature badges and examples
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@nightly
+      - uses: Swatinem/rust-cache@v2
+      - name: every example opts in to scraping
+        run: |
+          for e in examples/*.rs; do
+            grep -q "name = \"$(basename "$e" .rs)\"" Cargo.toml || { echo "::error::$e needs an [[example]] entry with doc-scrape-examples = true"; exit 1; }
+          done
+      - name: doc
+        run: cargo doc --no-deps --all-features -Zunstable-options -Zrustdoc-scrape-examples
+        env:
+          RUSTDOCFLAGS: --cfg docsrs -D warnings
 
   # Docs are part of every change: a pull request that touches the library must say what changed in
   # CHANGELOG.md (and, by the PR checklist, update the README and API docs where users will see it).
