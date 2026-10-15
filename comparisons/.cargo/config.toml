@@ -1,0 +1,4 @@
+# The egm96 crate's build script reads its raster from here instead of downloading it. Run
+# fetch-geoids.sh first.
+[env]
+EGM96_5_MIN = { value = "data/egm96-5.png", relative = true }

@@ -281,3 +281,37 @@ fn nan_and_infinity_in_give_nan_infinity_or_none_out() {
         assert!(LocalFrame::new(ok).ground_strike(0.0, x).is_none());
     }
 }
+
+#[test]
+fn geoid_heights_at_every_awkward_place() {
+    // A made-up 1° whole-world grid: GeographicLib's PGM header, then 360 × 181 pixels.
+    let mut pgm = b"P5\n# Offset -108\n# Scale 0.003\n360 181\n65535\n".to_vec();
+    for i in 0..360 * 181u32 {
+        pgm.extend_from_slice(&((20_000 + i * 7_919 % 30_000) as u16).to_be_bytes());
+    }
+    let grid = GeoidGrid::from_pgm(pgm).unwrap();
+    let bilinear = grid.clone().with_interpolation(GeoidInterpolation::Bilinear);
+    for geoid in [&grid as &dyn Geoid, &bilinear] {
+        for g in awkward() {
+            let n = geoid.undulation_m(g.lat_deg, g.lon_deg);
+            assert!((-108.0..=-108.0 + 0.003 * 65_535.0).contains(&n), "{g:?}: {n}");
+            let h = geoid.sea_level_height_m(g);
+            let back = geoid.geodetic_from_sea_level(g.lat_deg, g.lon_deg, h);
+            assert!(
+                (back.height_m - g.height_m).abs() <= 1e-9 * g.height_m.abs().max(1.0),
+                "{g:?}"
+            );
+        }
+        for x in [f64::NAN, f64::INFINITY, f64::NEG_INFINITY, 90.000_001, -1e300] {
+            assert!(geoid.undulation_m(x, 10.0).is_nan(), "{x}");
+            assert!(geoid.sea_level_height_m(Geodetic::new(x, 10.0, 0.0)).is_nan(), "{x}");
+        }
+        for x in [f64::NAN, f64::INFINITY, f64::NEG_INFINITY] {
+            assert!(geoid.undulation_m(10.0, x).is_nan(), "{x}");
+            // An unknown height stays unknown; the geoid itself is still fine there.
+            assert!(geoid.sea_level_height_m(Geodetic::new(10.0, 20.0, x)).is_nan() == x.is_nan());
+        }
+        // Huge longitudes wrap like any other.
+        assert!((geoid.undulation_m(10.0, 1e300) - geoid.undulation_m(10.0, 1e300 % 360.0)).abs() < 1e-9);
+    }
+}

@@ -15,6 +15,7 @@ Give geo3d a GPS position, then ask everyday questions:
 - 🗺️ How big is that field?
 - 👀 Can they see each other?
 - 💥 Are they going to collide?
+- 🌊 How high above sea level is it?
 
 It's pure Rust, with no dependencies.
 
@@ -66,7 +67,8 @@ A few rules hold everywhere:
 
 - Latitude comes first: `Geodetic::new(lat, lon, height)`.
 - Bearings go clockwise from north, from 0° to 360°.
-- Heights are above the WGS84 ellipsoid, like GPS. They are not heights above sea level.
+- Heights are above the WGS84 ellipsoid, like GPS, not above sea level. A `Geoid` converts between
+  the two.
 - WGS84 is the default, but any ellipsoid works: `GRS80.to_ecef(p)`.
 - Everything prints: `println!("{p}")` shows `-33.87°, 151.21°, 20 m`.
 
@@ -126,6 +128,27 @@ assert!((back.lat_deg - sydney.lat_deg).abs() < 1e-12);
 💡 Zone 0 is UPS, near the poles. `to_utm_ups_zone` keeps nearby data in one zone. For other
 grids built on the same projection, such as the British National Grid or Gauss–Krüger zones, use
 `TransverseMercator::new(ellipsoid, scale)`.
+
+### Get height above sea level
+
+GPS heights are above the ellipsoid, and sea level can be up to 106 m below it or 85 m above. A
+geoid grid gives the difference. Download one from
+[GeographicLib](https://geographiclib.sourceforge.io/C++/doc/geoid.html#geoidinst): egm96-5 (19 MB)
+holds EGM96, the model most GPS receivers use, and egm2008-1 (470 MB) is the most accurate.
+
+```rust,no_run
+use geo3d::{Geodetic, Geoid, GeoidGrid};
+
+let bytes = std::fs::read("egm96-5.pgm").expect("download it from GeographicLib");
+let egm96 = GeoidGrid::from_pgm(bytes).unwrap();
+
+let fix = Geodetic::new(-33.87, 151.21, 42.5);      // from GPS: 42.5 m above the ellipsoid
+let above_sea = egm96.sea_level_height_m(fix);       // 20.04 m above sea level
+let everest = egm96.geodetic_from_sea_level(27.9881, 86.925, 8_848.86); // 8 820.12 m for GPS
+```
+
+💡 The answers are the same as GeographicLib's, and within 3 mm of the EGM96 model. Any function
+`|lat, lon| metres` is a `Geoid` too, so a national model plugs straight in.
 
 ### Find where something is, relative to you
 
@@ -407,13 +430,14 @@ and then:
 | `ecef2eci` / `eci2ecef` | `e.to_eci(gmst)` / `i.to_ecef(gmst)` |
 | `utmzone` | `UtmUps::standard_zone(g)` |
 | `projfwd` / `projinv` with UTM | `WGS84.to_utm_ups(g)` / `WGS84.from_utm_ups(u)` |
+| `geoidheight` / `egm96geoid` | `grid.undulation_m(lat, lon)`, with a `GeoidGrid` |
 | `angle2dcm` / `dcm2angle` | `Attitude::new(yaw, pitch, roll).to_rotation()` / `Attitude::from_rotation(m)` (MATLAB's matrix is the transpose: NED to body) |
 
 Everything is in degrees, so there's no `deg` flag to remember.
 
 ## 📊 How it compares
 
-We tested geo3d against six other Rust crates, giving them all the same inputs. The
+We tested geo3d against nine other Rust crates, giving them all the same inputs. The
 [full comparison](comparisons/README.md) has every number, and shows how to run it yourself.
 
 ### 🎯 Converting x, y, z back to latitude and longitude
@@ -471,6 +495,18 @@ utm crate uses older formulas: under a millimetre to the grid, but up to 77 cm o
 It also gives zone 61 on the 180° meridian, puts the equator 10 000 km south, and doesn't switch to
 UPS near the poles.
 
+### 🌊 Height above sea level
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="comparisons/charts/geoid-dark.svg">
+  <img alt="Worst geoid height error: geo3d 2.6 mm (EGM96) and 2.2 mm (EGM2008); egm96 crate 1.9 m, egm2008 crate 24 m" src="comparisons/charts/geoid-light.svg">
+</picture>
+
+geo3d reads GeographicLib's standard geoid grids and gives the same answers as GeographicLib:
+within 3 mm of the EGM96 and EGM2008 models everywhere. The egm96 crate uses the same grid, but
+reads it half a grid cell off, so it can be 1.9 m out. The egm2008 crate's built-in grid has
+points 3° apart, and is up to 24 m out.
+
 ### ✈️ Yaw, pitch and roll near straight up
 
 <picture>
@@ -517,11 +553,11 @@ it with no dependencies.
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="comparisons/charts/speed-dark.svg">
-  <img alt="Time per call for 13 operations; geo3d is fastest in 3 and tied in 3" src="comparisons/charts/speed-light.svg">
+  <img alt="Time per call for 14 operations; geo3d is fastest in 3 and tied in 3" src="comparisons/charts/speed-light.svg">
 </picture>
 
-geo3d is the fastest, or level with the fastest, in six of the thirteen tests. It's slower in the
-other seven, and we know why:
+geo3d is the fastest, or level with the fastest, in six of the fourteen tests. It's slower in the
+other eight, and we know why:
 
 - **x, y, z back to latitude and longitude** (two of the tests). geo3d is about 10 % behind map_3d
   and jord here, and further behind nav-types and sguaba. It spends that time on a final check
@@ -532,6 +568,8 @@ other seven, and we know why:
 - **Distance along the ground.** It's about 4 % behind geographiclib-rs.
 - **UTM, both ways.** The utm crate is quicker (1.5× to the grid, 4× back), but uses older formulas
   that are up to 77 cm out on a round trip. geo3d's are good to a few nanometres.
+- **Height above sea level.** The egm96 and egm2008 crates are 2–3× quicker, but up to 1.9 m and
+  24 m out. geo3d fits a cubic to 12 grid points, which keeps it within 3 mm.
 
 💡 To use your CPU's fused multiply-add, build with `RUSTFLAGS="-C target-cpu=native"`.
 
@@ -545,6 +583,7 @@ other seven, and we know why:
 | Distance and travel along the ground | 15 nm, for any two points |
 | Polygon area | within 0.2 m² of GeographicLib, for any polygon |
 | UTM/UPS and map projections | 5 nm (within 2 nm of GeographicLib) |
+| Height above sea level (`GeoidGrid`) | the same as GeographicLib: within 3 mm of EGM96 (egm96-5 grid) and EGM2008 (egm2008-1) |
 | Yaw, pitch and roll | exact, even pointing straight up or down |
 | Uncertainty between frames | exact for ENU, NED and x, y, z; first order for pointing and latitude/longitude |
 | Great-circle tools (distance, route, crossings, centre) and horizon distance | within 0.6 %; exact on a sphere |
@@ -590,6 +629,9 @@ cargo add geo3d --no-default-features --features libm
 
 Everything else stays the same: the same API, nothing allocates, and the other features work too.
 
+Geoid grids work there too. `GeoidGrid::from_pgm(include_bytes!("egm96-15.pgm"))` reads a 2 MB
+grid straight from flash, without copying it.
+
 💡 If you have the standard library, keep it. Its maths rounds the last digit more carefully. libm
 is 10–20 % faster, and its answers agree with the standard build to within 25 nm for positions
 (out to 40 000 km) and half a square metre on areas the size of a continent.
@@ -601,12 +643,15 @@ is 10–20 % faster, and its answers agree with the standard build to within 25 
 - **MGRS grid references** (like `56HLH3443550816`): on our
   [roadmap](https://github.com/FusionVault/geo3d/issues/22). Other projections: use
   [`proj`](https://crates.io/crates/proj) for now.
-- **Height above sea level** and terrain.
+- **Terrain:** the height of the ground itself.
 - **High-precision Earth rotation** (precession and nutation).
 
 ## 📖 Glossary
 
 - **Ellipsoid:** the smooth, slightly squashed ball we measure positions on. GPS uses WGS84.
+- **Geoid:** the shape sea level would take with no tides, winds or currents. It's up to 106 m
+  below the ellipsoid and 85 m above it. Heights above the geoid are heights above sea level.
+- **EGM96 / EGM2008:** the standard models of the geoid. EGM2008 is newer and more detailed.
 - **Geodetic:** latitude, longitude and height.
 - **ECEF:** x, y, z in metres from the centre of the Earth, spinning with it.
 - **ENU / NED:** east-north-up or north-east-down, measured from where you stand.

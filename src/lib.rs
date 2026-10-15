@@ -10,6 +10,7 @@
 //! - 🗺️ How big is that field?
 //! - 👀 Can they see each other?
 //! - 💥 Are they going to collide?
+//! - 🌊 How high above sea level is it?
 //!
 //! It's pure Rust, with no dependencies.
 //!
@@ -57,7 +58,8 @@
 //!
 //! - Latitude comes first: `Geodetic::new(lat, lon, height)`.
 //! - Bearings go clockwise from north, from 0° to 360°.
-//! - Heights are above the WGS84 ellipsoid, like GPS. They are not heights above sea level.
+//! - Heights are above the WGS84 ellipsoid, like GPS, not above sea level. A [`Geoid`] converts
+//!   between the two.
 //! - [`WGS84`] is the default, but any [`Ellipsoid`] works: `GRS80.to_ecef(p)`.
 //! - A few low-level helpers use radians, and their names say so (`lat_rad`, `gmst_rad`).
 //!   [`Vec3::angle_to`] also returns radians.
@@ -93,6 +95,7 @@
 //! | I want to… | Use |
 //! |---|---|
 //! | convert between latitude/longitude and x, y, z | [`geodetic_to_ecef`], [`ecef_to_geodetic`] |
+//! | turn a GPS height into a height above sea level, and back | [`Geoid`], [`GeoidGrid`] |
 //! | use UTM/UPS grid coordinates, or another transverse Mercator grid | [`Ellipsoid::to_utm_ups`], [`Ellipsoid::from_utm_ups`], [`TransverseMercator`], [`PolarStereographic`] |
 //! | find where something is, relative to me | [`LocalFrame::enu_of`], [`LocalFrame::ned_of`] |
 //! | work out which way to point, and back | [`LocalFrame::look_angles`], [`LocalFrame::destination`] |
@@ -162,6 +165,7 @@ pub mod eci;
 mod ellipsoid;
 mod frame;
 mod geodesic;
+mod geoid;
 mod great_circle;
 mod interop;
 mod local;
@@ -180,6 +184,7 @@ pub use datum::Helmert7;
 pub use ellipsoid::{Ellipsoid, AIRY_1830, BESSEL_1841, CLARKE_1866, GRS80, INTERNATIONAL_1924, PZ90, WGS72, WGS84};
 pub use frame::LocalFrame;
 pub use geodesic::{Geodesic, PolygonArea};
+pub use geoid::{Geoid, GeoidGrid, GeoidGridError, GeoidInterpolation};
 pub use local::{Aer, Enu, Ned};
 pub use motion::{closest_approach, Course, Cpa, Track};
 pub use position::{Ecef, Eci, Geodetic};

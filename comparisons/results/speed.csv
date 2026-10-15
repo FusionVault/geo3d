@@ -38,6 +38,9 @@ geodetic_to_ecef,map_3d,29.6
 geodetic_to_ecef,nav-types,36.2
 geodetic_to_ecef,sguaba,53.2
 geodetic_to_ecef,jord,27.7
+geoid,geo3d,44.6
+geoid,egm96,20.9
+geoid,egm2008,13.4
 great_circle_distance,geo3d,60.2
 great_circle_distance,map_3d,46.4
 great_circle_distance,nav-types,38.4

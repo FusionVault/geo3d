@@ -173,6 +173,82 @@ pub mod with_geo3d {
     }
 }
 
+/// geo3d's geoid grids, read once from `data/geoids` (see `fetch-geoids.sh`), as a user would.
+pub mod geo3d_geoids {
+    use super::*;
+    use geo3d::{Geoid, GeoidGrid, GeoidInterpolation};
+    use std::sync::OnceLock;
+
+    type Grid = GeoidGrid<Vec<u8>>;
+
+    fn load(cell: &'static OnceLock<Grid>, name: &str, interpolation: GeoidInterpolation) -> &'static Grid {
+        cell.get_or_init(|| {
+            let path = format!("{}/data/geoids/{name}.pgm", env!("CARGO_MANIFEST_DIR"));
+            let bytes = std::fs::read(&path).unwrap_or_else(|e| panic!("{path}: {e} (run fetch-geoids.sh)"));
+            GeoidGrid::from_pgm(bytes).unwrap().with_interpolation(interpolation)
+        })
+    }
+
+    /// EGM96 from the egm96-5 grid, cubic (the default).
+    #[inline]
+    pub fn egm96_m(lat: f64, lon: f64) -> Option<f64> {
+        static G: OnceLock<Grid> = OnceLock::new();
+        Some(load(&G, "egm96-5", GeoidInterpolation::Cubic).undulation_m(lat, lon))
+    }
+
+    /// EGM96 from the egm96-5 grid, bilinear.
+    #[inline]
+    pub fn egm96_bilinear_m(lat: f64, lon: f64) -> Option<f64> {
+        static G: OnceLock<Grid> = OnceLock::new();
+        Some(load(&G, "egm96-5", GeoidInterpolation::Bilinear).undulation_m(lat, lon))
+    }
+
+    /// EGM96 from the small egm96-15 grid, cubic.
+    #[inline]
+    pub fn egm96_15_m(lat: f64, lon: f64) -> Option<f64> {
+        static G: OnceLock<Grid> = OnceLock::new();
+        Some(load(&G, "egm96-15", GeoidInterpolation::Cubic).undulation_m(lat, lon))
+    }
+
+    /// EGM2008 from the egm2008-1 grid, cubic.
+    #[inline]
+    pub fn egm2008_m(lat: f64, lon: f64) -> Option<f64> {
+        static G: OnceLock<Grid> = OnceLock::new();
+        Some(load(&G, "egm2008-1", GeoidInterpolation::Cubic).undulation_m(lat, lon))
+    }
+
+    /// Height above sea level of a GPS height, with EGM96.
+    #[inline]
+    pub fn sea_level_height_m(p: Lla) -> Option<f64> {
+        static G: OnceLock<Grid> = OnceLock::new();
+        let g = load(&G, "egm96-5", GeoidInterpolation::Cubic);
+        Some(g.sea_level_height_m(geo3d::Geodetic::new(p[0], p[1], p[2])))
+    }
+}
+
+/// The `egm96` crate.
+pub mod with_egm96 {
+    /// Its default: bilinear interpolation in its 5′ raster.
+    #[inline]
+    pub fn geoid_m(lat: f64, lon: f64) -> Option<f64> {
+        Some(egm96::egm96_altitude_offset(lat, lon))
+    }
+
+    /// Its spherical-harmonic synthesis of EGM96 to degree 360: the model itself, but slow.
+    #[inline]
+    pub fn harmonics_m(lat: f64, lon: f64) -> Option<f64> {
+        Some(egm96::egm96_compute_altitude_offset(lat, lon))
+    }
+}
+
+/// The `egm2008` crate: a 3° grid of `f32` built in, bilinear.
+pub mod with_egm2008 {
+    #[inline]
+    pub fn geoid_m(lat: f64, lon: f64) -> Option<f64> {
+        egm2008::geoid_height(lat as f32, lon as f32).ok().map(f64::from)
+    }
+}
+
 pub mod with_map_3d {
     use super::*;
     use map_3d::Ellipsoid::WGS84;
@@ -586,6 +662,21 @@ pub mod with_utm {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// The geoid adapters, at Sydney: geo3d gives GeographicLib's GeoidEval answers (22.4595 m for
+    /// EGM96, 22.3526 m for EGM2008), and the other crates land near them.
+    #[test]
+    fn geoid_adapters_agree_at_sydney() {
+        let (lat, lon) = (-33.87, 151.21);
+        let egm96 = geo3d_geoids::egm96_m(lat, lon).unwrap();
+        assert!((egm96 - 22.4595).abs() < 1e-4, "{egm96}");
+        assert!((geo3d_geoids::egm2008_m(lat, lon).unwrap() - 22.3526).abs() < 1e-4);
+        assert!((with_egm96::geoid_m(lat, lon).unwrap() - egm96).abs() < 0.5);
+        assert!((with_egm96::harmonics_m(lat, lon).unwrap() - egm96).abs() < 0.01);
+        assert!((with_egm2008::geoid_m(lat, lon).unwrap() - 22.3526).abs() < 5.0);
+        let gps = [lat, lon, 42.5];
+        assert!((geo3d_geoids::sea_level_height_m(gps).unwrap() - (42.5 - 22.4595)).abs() < 1e-4);
+    }
 
     /// Every adapter answers the same simple question the same way, so a unit or argument-order
     /// slip in one of them shows up here rather than as a fake accuracy result.
