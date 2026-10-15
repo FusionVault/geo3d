@@ -10,8 +10,9 @@ use crate::vector::{fma, Vec3};
 /// A reference ellipsoid: the smooth, slightly flattened sphere that latitude, longitude and height
 /// are measured on. Defined by its equatorial radius `a` (metres) and flattening `f`.
 ///
-/// Use a named one ([`WGS84`] — what GPS uses — or [`GRS80`], …) or build your own with
-/// [`Ellipsoid::new`]. All the calculations in this crate are methods on it.
+/// Use a named one ([`WGS84`], what GPS uses, or [`GRS80`], [`CGCS2000`], …), any of the 50 in the
+/// EPSG registry with [`Ellipsoid::from_epsg`], or build your own with [`Ellipsoid::new`] or
+/// [`Ellipsoid::from_axes`]. All the calculations in this crate are methods on it.
 #[derive(Clone, Copy, Debug, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Ellipsoid {
@@ -19,22 +20,47 @@ pub struct Ellipsoid {
     f: f64,
 }
 
-/// WGS 84 — GPS, and the frame CesiumJS renders in. The default.
+/// WGS 84: GPS, and the frame CesiumJS renders in. The default. EPSG 7030.
 pub const WGS84: Ellipsoid = Ellipsoid::new(6_378_137.0, 1.0 / 298.257_223_563);
-/// GRS 80 — under most modern national datums (NAD83, GDA94/2020, ETRS89).
+/// GRS 1980: under most modern national datums (NAD83, GDA94 and GDA2020, ETRS89). EPSG 7019.
 pub const GRS80: Ellipsoid = Ellipsoid::new(6_378_137.0, 1.0 / 298.257_222_101);
-/// WGS 72.
-pub const WGS72: Ellipsoid = Ellipsoid::new(6_378_135.0, 1.0 / 298.26);
-/// International 1924 (Hayford).
-pub const INTERNATIONAL_1924: Ellipsoid = Ellipsoid::new(6_378_388.0, 1.0 / 297.0);
-/// Airy 1830 (OSGB36, Great Britain).
-pub const AIRY_1830: Ellipsoid = Ellipsoid::new(6_377_563.396, 1.0 / 299.324_964_6);
-/// Bessel 1841.
-pub const BESSEL_1841: Ellipsoid = Ellipsoid::new(6_377_397.155, 1.0 / 299.152_812_8);
-/// PZ-90 (GLONASS).
+/// CGCS2000: China's datum, which BeiDou uses. The same size and shape as [`GRS80`]. EPSG 1024.
+pub const CGCS2000: Ellipsoid = Ellipsoid::new(6_378_137.0, 1.0 / 298.257_222_101);
+/// PZ-90: GLONASS (PZ-90.02 and PZ-90.11 keep this figure). EPSG 7054.
 pub const PZ90: Ellipsoid = Ellipsoid::new(6_378_136.0, 1.0 / 298.257_839_303);
-/// Clarke 1866 (NAD27).
-pub const CLARKE_1866: Ellipsoid = Ellipsoid::new(6_378_206.4, 1.0 / 294.978_698_2);
+/// GSK-2011: Russia's current datum. EPSG 1025.
+pub const GSK_2011: Ellipsoid = Ellipsoid::new(6_378_136.5, 1.0 / 298.256_415_1);
+/// Krassovsky 1940: Pulkovo 1942 (the Soviet Union and Russia, and much of Eastern Europe) and
+/// China's Beijing 1954. EPSG 7024, where it's spelt Krassowsky.
+#[doc(alias = "krassowsky")]
+pub const KRASSOVSKY_1940: Ellipsoid = Ellipsoid::new(6_378_245.0, 1.0 / 298.3);
+/// IAG 1975: China's Xian 1980 datum. EPSG 7049.
+pub const IAG_1975: Ellipsoid = Ellipsoid::new(6_378_140.0, 1.0 / 298.257);
+/// WGS 72: the World Geodetic System before WGS 84. EPSG 7043.
+pub const WGS72: Ellipsoid = Ellipsoid::new(6_378_135.0, 1.0 / 298.26);
+/// WGS 66: the same figure as the US Navy's NWL 9D, EPSG 7025.
+pub const WGS66: Ellipsoid = Ellipsoid::new(6_378_145.0, 1.0 / 298.25);
+/// WGS 60, the first World Geodetic System. Not in EPSG; from the US Department of Defense
+/// (NIMA TR8350.2, chapter 1).
+pub const WGS60: Ellipsoid = Ellipsoid::new(6_378_165.0, 1.0 / 298.3);
+/// GRS 1967. EPSG 7036.
+pub const GRS67: Ellipsoid = Ellipsoid::new(6_378_160.0, 1.0 / 298.247_167_427);
+/// Australian National Spheroid: Australia's AGD66 and AGD84 datums. GRS 1967 with `1/f` rounded
+/// to 298.25, the same as South American 1969's GRS 1967 Modified. EPSG 7003 (and 7050).
+pub const AUSTRALIAN_NATIONAL: Ellipsoid = Ellipsoid::new(6_378_160.0, 1.0 / 298.25);
+/// International 1924 (Hayford): ED50 in Europe, and many older datums. EPSG 7022.
+pub const INTERNATIONAL_1924: Ellipsoid = Ellipsoid::new(6_378_388.0, 1.0 / 297.0);
+/// Airy 1830: OSGB36, Great Britain's datum. EPSG 7001.
+pub const AIRY_1830: Ellipsoid = Ellipsoid::new(6_377_563.396, 1.0 / 299.324_964_6);
+/// Bessel 1841: Germany's DHDN, and older datums across Central Europe and East Asia. EPSG 7004.
+pub const BESSEL_1841: Ellipsoid = Ellipsoid::new(6_377_397.155, 1.0 / 299.152_812_8);
+/// Clarke 1866: NAD27, North America's older datum. EPSG 7008, which defines it by its two axes.
+pub const CLARKE_1866: Ellipsoid = Ellipsoid::from_axes(6_378_206.4, 6_356_583.8);
+/// Everest 1830 (1937 Adjustment): India, Pakistan, Bangladesh and Nepal (Kalianpur 1937). EPSG
+/// 7015. [`Ellipsoid::from_epsg`] has the other variants.
+pub const EVEREST_1830: Ellipsoid = Ellipsoid::new(6_377_276.345, 1.0 / 300.801_7);
+/// Everest 1830 Modified: Malaysia and Singapore (Kertau 1968). EPSG 7018.
+pub const EVEREST_1830_MODIFIED: Ellipsoid = Ellipsoid::new(6_377_304.063, 1.0 / 300.801_7);
 
 impl Default for Ellipsoid {
     /// [`WGS84`].
@@ -44,10 +70,25 @@ impl Default for Ellipsoid {
 }
 
 impl Ellipsoid {
-    /// An ellipsoid from its equatorial radius (metres) and flattening.
+    /// An ellipsoid from its equatorial radius (metres) and flattening. Most definitions give the
+    /// inverse flattening: `Ellipsoid::new(6_378_137.0, 1.0 / 298.257_223_563)`.
     #[inline]
     pub const fn new(a: f64, f: f64) -> Self {
         Ellipsoid { a, f }
+    }
+
+    /// An ellipsoid from its equatorial and polar radii (metres), for the ones defined that way,
+    /// like [`CLARKE_1866`]. Equal radii give a sphere.
+    ///
+    /// ```
+    /// use geo3d::Ellipsoid;
+    /// let clarke = Ellipsoid::from_axes(6_378_206.4, 6_356_583.8);
+    /// assert!((clarke.b() - 6_356_583.8).abs() < 1e-9);
+    /// assert_eq!(Ellipsoid::from_axes(6_371_000.0, 6_371_000.0).f(), 0.0);
+    /// ```
+    #[inline]
+    pub const fn from_axes(a: f64, b: f64) -> Self {
+        Ellipsoid::new(a, (a - b) / a)
     }
 
     /// Equatorial radius (semi-major axis), metres.

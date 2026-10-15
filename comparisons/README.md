@@ -533,7 +533,7 @@ features, from `cargo tree -e normal`.
 | `unsafe` | `#![forbid(unsafe_code)]` | none, not forbidden | none, not forbidden | marks frame assumptions: users write `unsafe` to build ECEF ↔ ENU/NED transforms; no memory-unsafe code | `#![deny(unsafe_code)]` | none, not forbidden | 2 blocks | none, not forbidden |
 | MSRV | 1.85 | not declared | not declared | 1.89 | 1.85 | 1.70 | 1.88 | not declared |
 | Without std (no_std) | yes, with `libm` | no | no | yes, with `libm` | no | no | no | yes, with its `no_std` feature |
-| Ellipsoids | 8 named, or any | 10 named | WGS84 | WGS84 | 4 named, or any; spheres | any | WGS84 (`Geodesic`); spheres | WGS84 |
+| Ellipsoids | all 50 in the EPSG registry (18 named), or any | 10 named | WGS84 | WGS84 | 4 named, or any; spheres | any | WGS84 (`Geodesic`); spheres | WGS84 |
 | Look angles | yes | yes | no (ENU/NED only) | yes | yes | — | — | — |
 | Ray–ellipsoid ground strike | yes | no | no | no | no | — | — | — |
 | 3D volumes | sphere, cone, cylinder, altitude band | no | no | no | no (caps and polygons on a sphere) | — | no (2D shapes) | — |

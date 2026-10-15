@@ -5,6 +5,15 @@ release is tagged `vX.Y.Z`.
 
 ## Unreleased
 
+- 🌐 **Every EPSG ellipsoid** ([#18](https://github.com/FusionVault/geo3d/issues/18)):
+  - `Ellipsoid::from_epsg(code)` gives all 50 ellipsoids in the EPSG registry, each from the
+    numbers EPSG defines it by, converted to metres where EPSG gives feet;
+  - new named ones: `CGCS2000` (China, BeiDou), `KRASSOVSKY_1940` (Pulkovo 1942, Beijing 1954),
+    `GSK_2011` (Russia), `IAG_1975` (Xian 1980), `GRS67`, `AUSTRALIAN_NATIONAL` (AGD66 and AGD84),
+    `WGS66`, `WGS60`, `EVEREST_1830` and `EVEREST_1830_MODIFIED`. Every named ellipsoid now gives
+    its EPSG code and where it's used;
+  - `Ellipsoid::from_axes(a, b)`, for ellipsoids defined by their two radii.
+- 🐛 `CLARKE_1866` now uses its defining radii. Its polar radius was 1 µm short.
 - 🚀 **Examples, rewritten.** Eight short programs, one real job each: `radar`, `air_traffic`,
   `satellite`, `drone_camera`, `field_survey`, `search_and_rescue`, `flight_route` and `sea_level`.
   They replace `tracking`, and CI runs them all. The README lists them.

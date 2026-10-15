@@ -70,7 +70,8 @@ A few rules hold everywhere:
 - Bearings go clockwise from north, from 0° to 360°.
 - Heights are above the WGS84 ellipsoid, like GPS, not above sea level. A `Geoid` converts between
   the two.
-- WGS84 is the default, but any ellipsoid works: `GRS80.to_ecef(p)`.
+- WGS84 is the default, but any ellipsoid works: `GRS80.to_ecef(p)`. All 50 in the EPSG registry are
+  built in.
 - Everything prints: `println!("{p}")` shows `-33.87°, 151.21°, 20 m`.
 
 New to these words? The [glossary](#-glossary) explains them.
@@ -92,6 +93,26 @@ assert!((back.lat_deg - sydney.lat_deg).abs() < 1e-11);
 
 let on_grs80 = GRS80.to_ecef(sydney);  // other ellipsoids work the same way
 ```
+
+### Use another country's ellipsoid
+
+The common ones are named, and every ellipsoid in the [EPSG registry](https://epsg.org) can be
+looked up by its code:
+
+```rust
+use geo3d::{Ellipsoid, Geodetic, CGCS2000, KRASSOVSKY_1940};
+
+let beijing = Geodetic::new(39.9042, 116.4074, 50.0);
+let on_cgcs2000 = CGCS2000.to_ecef(beijing);        // China's datum, which BeiDou uses
+let on_krassovsky = KRASSOVSKY_1940.to_ecef(beijing); // the older Beijing 1954 and Pulkovo 1942
+
+let everest = Ellipsoid::from_epsg(7044).unwrap();    // Everest 1830 (1962 Definition), Pakistan
+let custom = Ellipsoid::from_axes(6_378_206.4, 6_356_583.8); // or define one by its two radii
+assert_eq!(Ellipsoid::from_epsg(7024), Some(KRASSOVSKY_1940));
+```
+
+💡 An ellipsoid is only the shape. Coordinates on an older datum, like Pulkovo 1942, are also
+shifted against WGS84 by up to a few hundred metres. To move between datums, use `Helmert7`.
 
 ### Print positions
 
@@ -475,6 +496,7 @@ and then:
 | `ecef2eci` / `eci2ecef` | `e.to_eci(gmst)` / `i.to_ecef(gmst)` |
 | `utmzone` | `UtmUps::standard_zone(g)` |
 | `projfwd` / `projinv` with UTM | `WGS84.to_utm_ups(g)` / `WGS84.from_utm_ups(u)` |
+| `referenceEllipsoid(7024)` / `Ellipsoid.from_name(name)` | `Ellipsoid::from_epsg(7024)`, or a named one like `KRASSOVSKY_1940` |
 | `geoidheight` / `egm96geoid` | `grid.undulation_m(lat, lon)`, with a `GeoidGrid` |
 | `angle2dcm` / `dcm2angle` | `Attitude::new(yaw, pitch, roll).to_rotation()` / `Attitude::from_rotation(m)` (MATLAB's matrix is the transpose: NED to body) |
 
@@ -645,6 +667,7 @@ other eight, and we know why:
 | Great-circle tools (distance, route, crossings, centre) and horizon distance | within 0.6 %; exact on a sphere |
 | Closest approach, range rate and intercepts | exact for objects moving in straight lines (intercepts to a few nanometres, even at equal speeds) |
 | Datum shifts | exact for the published numbers |
+| Ellipsoids | EPSG's own defining numbers, all 50 checked against the registry |
 | Satellite frame (`eci`) | exact rotation; up to 400 m from treating UTC as UT1 |
 
 "Exact" means exact apart from normal floating-point rounding. The tests check every row against
@@ -720,6 +743,8 @@ is 10–20 % faster, and its answers agree with the standard build to within 25 
 - **n-vector:** the unit vector pointing straight up out of the surface at a position. Maths with
   n-vectors has no trouble at the poles or the antimeridian.
 - **Datum:** a reference frame for coordinates. Helmert numbers convert between two of them.
+- **EPSG:** the standard registry of datums, ellipsoids and coordinate systems. Each one has a
+  number, like 7030 for the WGS84 ellipsoid.
 - **Map projection:** a way of flattening the curved Earth onto a map, in metres.
 - **UTM / UPS:** a world grid in metres: 60 north–south strips (UTM), plus two polar caps (UPS).
 - **no_std:** Rust without its standard library, for chips with no operating system.

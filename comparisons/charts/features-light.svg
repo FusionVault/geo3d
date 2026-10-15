@@ -1,9 +1,9 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="900" height="758" viewBox="0 0 900 758" font-family="system-ui, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" role="img" aria-label="Feature matrix: geo3d is the only crate with ground strike, 3D volumes, closest approach, covariance and datum shifts">
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="788" viewBox="0 0 900 788" font-family="system-ui, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" role="img" aria-label="Feature matrix: geo3d is the only crate with ground strike, 3D volumes, closest approach, covariance and datum shifts">
 <title>Feature matrix: geo3d is the only crate with ground strike, 3D volumes, closest approach, covariance and datum shifts</title>
-<rect x="0.5" y="0.5" width="899" height="757" rx="10" fill="#fcfcfb" stroke="#e1e0d9"/>
+<rect x="0.5" y="0.5" width="899" height="787" rx="10" fill="#fcfcfb" stroke="#e1e0d9"/>
 <text x="24.0" y="34.0" font-size="16" font-weight="600" fill="#0b0b0b" text-anchor="start">Features</text>
 <text x="24.0" y="56.0" font-size="12.5" font-weight="400" fill="#52514e" text-anchor="start">What each crate offers, checked in its source at the versions compared.</text>
-<rect x="341.0" y="84.0" width="66.9" height="630.0" rx="6" fill="#e7eff7"/>
+<rect x="341.0" y="84.0" width="66.9" height="660.0" rx="6" fill="#e7eff7"/>
 <text x="374.4" y="104.0" font-size="12" font-weight="600" fill="#0b0b0b" text-anchor="middle">geo3d</text>
 <text x="441.3" y="104.0" font-size="12" font-weight="500" fill="#0b0b0b" text-anchor="middle">map_3d</text>
 <text x="508.2" y="104.0" font-size="12" font-weight="500" fill="#0b0b0b" text-anchor="middle">nav-types</text>
@@ -135,7 +135,7 @@
 <line x1="24" y1="474.0" x2="876" y2="474.0" stroke="#e9e8e2"/>
 <text x="24.0" y="493.0" font-size="12.5" font-weight="400" fill="#0b0b0b" text-anchor="start">Any ellipsoid</text>
 <path d="M369.4,489.0 L372.9,492.5 L379.9,484.5" stroke="#0b0b0b" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
-<text x="441.3" y="493.0" font-size="12" font-weight="500" fill="#52514e" text-anchor="middle">10 named</text>
+<text x="441.3" y="493.0" font-size="12.5" font-weight="400" fill="#6f6d68" text-anchor="middle">—</text>
 <text x="508.2" y="493.0" font-size="12.5" font-weight="400" fill="#6f6d68" text-anchor="middle">—</text>
 <text x="575.1" y="493.0" font-size="12.5" font-weight="400" fill="#6f6d68" text-anchor="middle">—</text>
 <path d="M636.9,489.0 L640.4,492.5 L647.4,484.5" stroke="#0b0b0b" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
@@ -143,37 +143,37 @@
 <text x="775.7" y="493.0" font-size="12.5" font-weight="400" fill="#6f6d68" text-anchor="middle">—</text>
 <text x="842.6" y="493.0" font-size="12.5" font-weight="400" fill="#6f6d68" text-anchor="middle">—</text>
 <line x1="24" y1="504.0" x2="876" y2="504.0" stroke="#e9e8e2"/>
-<text x="24.0" y="523.0" font-size="12.5" font-weight="400" fill="#0b0b0b" text-anchor="start">Path tools (cross-track, crossings, centre)</text>
-<path d="M369.4,519.0 L372.9,522.5 L379.9,514.5" stroke="#0b0b0b" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
-<text x="441.3" y="523.0" font-size="12.5" font-weight="400" fill="#6f6d68" text-anchor="middle">—</text>
-<text x="508.2" y="523.0" font-size="12.5" font-weight="400" fill="#6f6d68" text-anchor="middle">—</text>
-<text x="575.1" y="523.0" font-size="12.5" font-weight="400" fill="#6f6d68" text-anchor="middle">—</text>
-<path d="M636.9,519.0 L640.4,522.5 L647.4,514.5" stroke="#0b0b0b" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
-<text x="708.8" y="523.0" font-size="12.5" font-weight="400" fill="#6f6d68" text-anchor="middle">—</text>
-<text x="775.7" y="523.0" font-size="12" font-weight="500" fill="#52514e" text-anchor="middle">some</text>
-<text x="842.6" y="523.0" font-size="12.5" font-weight="400" fill="#6f6d68" text-anchor="middle">—</text>
+<text x="24.0" y="523.0" font-size="12.5" font-weight="400" fill="#0b0b0b" text-anchor="start">Named ellipsoids</text>
+<text x="374.4" y="523.0" font-size="12" font-weight="500" fill="#52514e" text-anchor="middle">all 50 EPSG</text>
+<text x="441.3" y="523.0" font-size="12" font-weight="500" fill="#52514e" text-anchor="middle">10</text>
+<text x="508.2" y="523.0" font-size="12" font-weight="500" fill="#52514e" text-anchor="middle">WGS84</text>
+<text x="575.1" y="523.0" font-size="12" font-weight="500" fill="#52514e" text-anchor="middle">WGS84</text>
+<text x="641.9" y="523.0" font-size="12" font-weight="500" fill="#52514e" text-anchor="middle">4</text>
+<text x="708.8" y="523.0" font-size="12" font-weight="500" fill="#52514e" text-anchor="middle">WGS84</text>
+<text x="775.7" y="523.0" font-size="12" font-weight="500" fill="#52514e" text-anchor="middle">WGS84</text>
+<text x="842.6" y="523.0" font-size="12" font-weight="500" fill="#52514e" text-anchor="middle">WGS84</text>
 <line x1="24" y1="534.0" x2="876" y2="534.0" stroke="#e9e8e2"/>
-<text x="24.0" y="553.0" font-size="12.5" font-weight="400" fill="#0b0b0b" text-anchor="start">Attitude (yaw, pitch, roll)</text>
+<text x="24.0" y="553.0" font-size="12.5" font-weight="400" fill="#0b0b0b" text-anchor="start">Path tools (cross-track, crossings, centre)</text>
 <path d="M369.4,549.0 L372.9,552.5 L379.9,544.5" stroke="#0b0b0b" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
 <text x="441.3" y="553.0" font-size="12.5" font-weight="400" fill="#6f6d68" text-anchor="middle">—</text>
 <text x="508.2" y="553.0" font-size="12.5" font-weight="400" fill="#6f6d68" text-anchor="middle">—</text>
-<path d="M570.1,549.0 L573.6,552.5 L580.6,544.5" stroke="#0b0b0b" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+<text x="575.1" y="553.0" font-size="12.5" font-weight="400" fill="#6f6d68" text-anchor="middle">—</text>
 <path d="M636.9,549.0 L640.4,552.5 L647.4,544.5" stroke="#0b0b0b" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
 <text x="708.8" y="553.0" font-size="12.5" font-weight="400" fill="#6f6d68" text-anchor="middle">—</text>
-<text x="775.7" y="553.0" font-size="12.5" font-weight="400" fill="#6f6d68" text-anchor="middle">—</text>
+<text x="775.7" y="553.0" font-size="12" font-weight="500" fill="#52514e" text-anchor="middle">some</text>
 <text x="842.6" y="553.0" font-size="12.5" font-weight="400" fill="#6f6d68" text-anchor="middle">—</text>
 <line x1="24" y1="564.0" x2="876" y2="564.0" stroke="#e9e8e2"/>
-<text x="24.0" y="583.0" font-size="12.5" font-weight="400" fill="#0b0b0b" text-anchor="start">UTM/UPS grid</text>
+<text x="24.0" y="583.0" font-size="12.5" font-weight="400" fill="#0b0b0b" text-anchor="start">Attitude (yaw, pitch, roll)</text>
 <path d="M369.4,579.0 L372.9,582.5 L379.9,574.5" stroke="#0b0b0b" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
 <text x="441.3" y="583.0" font-size="12.5" font-weight="400" fill="#6f6d68" text-anchor="middle">—</text>
 <text x="508.2" y="583.0" font-size="12.5" font-weight="400" fill="#6f6d68" text-anchor="middle">—</text>
-<text x="575.1" y="583.0" font-size="12.5" font-weight="400" fill="#6f6d68" text-anchor="middle">—</text>
-<text x="641.9" y="583.0" font-size="12.5" font-weight="400" fill="#6f6d68" text-anchor="middle">—</text>
+<path d="M570.1,579.0 L573.6,582.5 L580.6,574.5" stroke="#0b0b0b" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M636.9,579.0 L640.4,582.5 L647.4,574.5" stroke="#0b0b0b" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
 <text x="708.8" y="583.0" font-size="12.5" font-weight="400" fill="#6f6d68" text-anchor="middle">—</text>
 <text x="775.7" y="583.0" font-size="12.5" font-weight="400" fill="#6f6d68" text-anchor="middle">—</text>
-<text x="842.6" y="583.0" font-size="12" font-weight="500" fill="#52514e" text-anchor="middle">UTM only</text>
+<text x="842.6" y="583.0" font-size="12.5" font-weight="400" fill="#6f6d68" text-anchor="middle">—</text>
 <line x1="24" y1="594.0" x2="876" y2="594.0" stroke="#e9e8e2"/>
-<text x="24.0" y="613.0" font-size="12.5" font-weight="400" fill="#0b0b0b" text-anchor="start">Heights above sea level (geoid)</text>
+<text x="24.0" y="613.0" font-size="12.5" font-weight="400" fill="#0b0b0b" text-anchor="start">UTM/UPS grid</text>
 <path d="M369.4,609.0 L372.9,612.5 L379.9,604.5" stroke="#0b0b0b" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
 <text x="441.3" y="613.0" font-size="12.5" font-weight="400" fill="#6f6d68" text-anchor="middle">—</text>
 <text x="508.2" y="613.0" font-size="12.5" font-weight="400" fill="#6f6d68" text-anchor="middle">—</text>
@@ -181,9 +181,9 @@
 <text x="641.9" y="613.0" font-size="12.5" font-weight="400" fill="#6f6d68" text-anchor="middle">—</text>
 <text x="708.8" y="613.0" font-size="12.5" font-weight="400" fill="#6f6d68" text-anchor="middle">—</text>
 <text x="775.7" y="613.0" font-size="12.5" font-weight="400" fill="#6f6d68" text-anchor="middle">—</text>
-<text x="842.6" y="613.0" font-size="12.5" font-weight="400" fill="#6f6d68" text-anchor="middle">—</text>
+<text x="842.6" y="613.0" font-size="12" font-weight="500" fill="#52514e" text-anchor="middle">UTM only</text>
 <line x1="24" y1="624.0" x2="876" y2="624.0" stroke="#e9e8e2"/>
-<text x="24.0" y="643.0" font-size="12.5" font-weight="400" fill="#0b0b0b" text-anchor="start">Range rate (Doppler)</text>
+<text x="24.0" y="643.0" font-size="12.5" font-weight="400" fill="#0b0b0b" text-anchor="start">Heights above sea level (geoid)</text>
 <path d="M369.4,639.0 L372.9,642.5 L379.9,634.5" stroke="#0b0b0b" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
 <text x="441.3" y="643.0" font-size="12.5" font-weight="400" fill="#6f6d68" text-anchor="middle">—</text>
 <text x="508.2" y="643.0" font-size="12.5" font-weight="400" fill="#6f6d68" text-anchor="middle">—</text>
@@ -193,24 +193,34 @@
 <text x="775.7" y="643.0" font-size="12.5" font-weight="400" fill="#6f6d68" text-anchor="middle">—</text>
 <text x="842.6" y="643.0" font-size="12.5" font-weight="400" fill="#6f6d68" text-anchor="middle">—</text>
 <line x1="24" y1="654.0" x2="876" y2="654.0" stroke="#e9e8e2"/>
-<text x="24.0" y="673.0" font-size="12.5" font-weight="400" fill="#0b0b0b" text-anchor="start">Intercept: when, where, slowest speed</text>
+<text x="24.0" y="673.0" font-size="12.5" font-weight="400" fill="#0b0b0b" text-anchor="start">Range rate (Doppler)</text>
 <path d="M369.4,669.0 L372.9,672.5 L379.9,664.5" stroke="#0b0b0b" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
 <text x="441.3" y="673.0" font-size="12.5" font-weight="400" fill="#6f6d68" text-anchor="middle">—</text>
 <text x="508.2" y="673.0" font-size="12.5" font-weight="400" fill="#6f6d68" text-anchor="middle">—</text>
 <text x="575.1" y="673.0" font-size="12.5" font-weight="400" fill="#6f6d68" text-anchor="middle">—</text>
-<text x="641.9" y="673.0" font-size="12" font-weight="500" fill="#52514e" text-anchor="middle">sphere</text>
+<text x="641.9" y="673.0" font-size="12.5" font-weight="400" fill="#6f6d68" text-anchor="middle">—</text>
 <text x="708.8" y="673.0" font-size="12.5" font-weight="400" fill="#6f6d68" text-anchor="middle">—</text>
 <text x="775.7" y="673.0" font-size="12.5" font-weight="400" fill="#6f6d68" text-anchor="middle">—</text>
 <text x="842.6" y="673.0" font-size="12.5" font-weight="400" fill="#6f6d68" text-anchor="middle">—</text>
 <line x1="24" y1="684.0" x2="876" y2="684.0" stroke="#e9e8e2"/>
-<text x="24.0" y="703.0" font-size="12.5" font-weight="400" fill="#0b0b0b" text-anchor="start">Prints positions, with {:.N}</text>
+<text x="24.0" y="703.0" font-size="12.5" font-weight="400" fill="#0b0b0b" text-anchor="start">Intercept: when, where, slowest speed</text>
 <path d="M369.4,699.0 L372.9,702.5 L379.9,694.5" stroke="#0b0b0b" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
 <text x="441.3" y="703.0" font-size="12.5" font-weight="400" fill="#6f6d68" text-anchor="middle">—</text>
 <text x="508.2" y="703.0" font-size="12.5" font-weight="400" fill="#6f6d68" text-anchor="middle">—</text>
-<text x="575.1" y="703.0" font-size="12" font-weight="500" fill="#52514e" text-anchor="middle">no {:.N}</text>
-<text x="641.9" y="703.0" font-size="12.5" font-weight="400" fill="#6f6d68" text-anchor="middle">—</text>
+<text x="575.1" y="703.0" font-size="12.5" font-weight="400" fill="#6f6d68" text-anchor="middle">—</text>
+<text x="641.9" y="703.0" font-size="12" font-weight="500" fill="#52514e" text-anchor="middle">sphere</text>
 <text x="708.8" y="703.0" font-size="12.5" font-weight="400" fill="#6f6d68" text-anchor="middle">—</text>
 <text x="775.7" y="703.0" font-size="12.5" font-weight="400" fill="#6f6d68" text-anchor="middle">—</text>
 <text x="842.6" y="703.0" font-size="12.5" font-weight="400" fill="#6f6d68" text-anchor="middle">—</text>
-<text x="24.0" y="736.0" font-size="11.5" font-weight="400" fill="#6f6d68" text-anchor="start">— : not offered.</text>
+<line x1="24" y1="714.0" x2="876" y2="714.0" stroke="#e9e8e2"/>
+<text x="24.0" y="733.0" font-size="12.5" font-weight="400" fill="#0b0b0b" text-anchor="start">Prints positions, with {:.N}</text>
+<path d="M369.4,729.0 L372.9,732.5 L379.9,724.5" stroke="#0b0b0b" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+<text x="441.3" y="733.0" font-size="12.5" font-weight="400" fill="#6f6d68" text-anchor="middle">—</text>
+<text x="508.2" y="733.0" font-size="12.5" font-weight="400" fill="#6f6d68" text-anchor="middle">—</text>
+<text x="575.1" y="733.0" font-size="12" font-weight="500" fill="#52514e" text-anchor="middle">no {:.N}</text>
+<text x="641.9" y="733.0" font-size="12.5" font-weight="400" fill="#6f6d68" text-anchor="middle">—</text>
+<text x="708.8" y="733.0" font-size="12.5" font-weight="400" fill="#6f6d68" text-anchor="middle">—</text>
+<text x="775.7" y="733.0" font-size="12.5" font-weight="400" fill="#6f6d68" text-anchor="middle">—</text>
+<text x="842.6" y="733.0" font-size="12.5" font-weight="400" fill="#6f6d68" text-anchor="middle">—</text>
+<text x="24.0" y="766.0" font-size="11.5" font-weight="400" fill="#6f6d68" text-anchor="start">— : not offered.</text>
 </svg>
