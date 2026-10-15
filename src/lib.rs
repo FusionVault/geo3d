@@ -34,7 +34,8 @@
 //!   without NaN or panics.
 //! - 🧩 **Easy to use.** Degrees and metres everywhere, with named fields. Latitude always comes first.
 //! - 🪶 **Light and fast.** No dependencies, no `unsafe` code, and nothing allocates. Works on Rust
-//!   1.85 and newer, and on microcontrollers too, without the standard library.
+//!   1.85 and newer, on microcontrollers without the standard library, and in the browser
+//!   (WebAssembly).
 //!
 //! # 🗺️ The basics
 //!
@@ -141,10 +142,13 @@
 //! | `geo-types` | [`Geodetic`] ↔ `geo_types::Point` (x is longitude, y is latitude) |
 //!
 //! For a microcontroller, `cargo add geo3d --no-default-features --features libm`. With the
-//! standard library, keep `std`: its maths rounds the last digit more carefully.
+//! standard library, keep `std`: its maths rounds the last digit more carefully. Everything a
+//! feature adds is marked with it on docs.rs.
 
 #![cfg_attr(not(any(feature = "std", test)), no_std)]
 #![forbid(unsafe_code)]
+// On docs.rs, mark what each optional feature adds ("Available on crate feature serde only").
+#![cfg_attr(docsrs, feature(doc_cfg))]
 #![warn(missing_docs)]
 
 #[cfg(not(any(feature = "std", feature = "libm")))]

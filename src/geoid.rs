@@ -702,7 +702,9 @@ mod tests {
         assert_eq!(with("4 3", "4 1"), Some(NotGlobal));
         assert_eq!(with("4 3", "6 3"), Some(WrongLength));
         assert_eq!(with("4 3", "99999999999999999999 3"), Some(NotPgm));
-        assert_eq!(with("4 3", "4611686018427387904 3"), Some(WrongLength));
+        // A width that parses, but whose grid can't fit in memory, on 32- and 64-bit alike.
+        let huge = format!("{} 3", usize::MAX / 2 + 1);
+        assert_eq!(with("4 3", &huge), Some(WrongLength));
         assert_eq!(with("65535\n", "65535"), Some(NotPgm));
         assert_eq!(GeoidGrid::from_pgm(&good[..good.len() - 1]).err(), Some(WrongLength));
         assert_eq!(GeoidGrid::from_pgm(b"").err(), Some(NotPgm));

@@ -5,6 +5,13 @@ release is tagged `vX.Y.Z`.
 
 ## Unreleased
 
+- 🌐 **WebAssembly** ([#19](https://github.com/FusionVault/geo3d/issues/19)). CI builds for the
+  browser (`wasm32-unknown-unknown`, with and without std, and with every feature), and runs the
+  whole test suite under WebAssembly (`wasm32-wasip1`, in wasmtime). A geoid test that assumed a
+  64-bit `usize` now holds on 32-bit too.
+- 📚 **docs.rs.** Items that need an optional feature now say so ("Available on crate feature
+  serde only"), and a nightly CI job builds the docs as docs.rs does. The examples show on the
+  items they use again: the rewrite had stopped docs.rs from scraping them.
 - 🌐 **Every EPSG ellipsoid** ([#18](https://github.com/FusionVault/geo3d/issues/18)):
   - `Ellipsoid::from_epsg(code)` gives all 50 ellipsoids in the EPSG registry, each from the
     numbers EPSG defines it by, converted to metres where EPSG gives feet;

@@ -15,7 +15,7 @@ repository = "https://github.com/FusionVault/geo3d"
 readme = "README.md"
 documentation = "https://docs.rs/geo3d"
 keywords = ["geodesy", "ecef", "wgs84", "gps", "coordinates"]
-categories = ["science::geo", "mathematics", "aerospace", "science::robotics", "no-std::no-alloc"]
+categories = ["science::geo", "aerospace", "science::robotics", "no-std::no-alloc", "wasm"]
 # Repo tooling that has no place in the published crate.
 exclude = [".github/", ".gitignore", "rustfmt.toml"]
 
@@ -67,8 +67,41 @@ criterion = { version = "0.5", default-features = false }
 # docs.rs: build with every feature so the serde and interop impls show up in the docs.
 [package.metadata.docs.rs]
 all-features = true
-# Lets docs.rs show the examples' calls on the items they use.
+# Lets docs.rs show the examples' calls on the items they use. Each example has to opt in below,
+# because the crate has dev-dependencies (the docsrs CI job checks none is missed).
 cargo-args = ["-Zunstable-options", "-Zrustdoc-scrape-examples"]
+
+[[example]]
+name = "air_traffic"
+doc-scrape-examples = true
+
+[[example]]
+name = "drone_camera"
+doc-scrape-examples = true
+
+[[example]]
+name = "field_survey"
+doc-scrape-examples = true
+
+[[example]]
+name = "flight_route"
+doc-scrape-examples = true
+
+[[example]]
+name = "radar"
+doc-scrape-examples = true
+
+[[example]]
+name = "satellite"
+doc-scrape-examples = true
+
+[[example]]
+name = "sea_level"
+doc-scrape-examples = true
+
+[[example]]
+name = "search_and_rescue"
+doc-scrape-examples = true
 
 [[bench]]
 name = "geo3d"

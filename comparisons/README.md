@@ -520,6 +520,8 @@ whether something is inside a zone, when two objects come closest, how sure you 
 shift datums. It does
 this with no dependencies and no `unsafe` code.
 
+Every crate here builds for WebAssembly. geo3d also runs its whole test suite there, in CI.
+
 <details>
 <summary>📋 Show the numbers</summary>
 
