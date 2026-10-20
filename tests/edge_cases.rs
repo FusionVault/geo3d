@@ -378,3 +378,44 @@ fn range_rate_and_intercepts_never_panic() {
         assert!(!t.position.x.is_finite());
     }
 }
+
+/// On the polar axis and in the equatorial plane the height has a closed form: |z| − b and r − a,
+/// each exact in floating point (Sterbenz's lemma). So it comes back exactly, not a nanometre off,
+/// as `to_geodetic` promises.
+#[test]
+fn heights_on_the_polar_axis_and_in_the_equatorial_plane_are_exact() {
+    use geo3d::{Ecef, WGS84};
+    // where x or y is 0, r is exact, so a round trip gives the height back exactly
+    for (lat, lon, h) in [
+        (0.0, 0.0, 100.0),
+        (0.0, 90.0, 100.0),
+        (0.0, 180.0, 2_500.0),
+        (0.0, -90.0, -50.0),
+        (0.0, 0.0, 400_000.0),
+    ] {
+        let g = WGS84.to_geodetic(WGS84.to_ecef(Geodetic::new(lat, lon, h)));
+        assert_eq!((g.lat_deg, g.height_m), (0.0, h), "equator at {lon}°, {h} m");
+    }
+    // anywhere in the equatorial plane outside the evolute, the height is r − a, correctly rounded
+    for (x, y) in [
+        (6_378_237.0, 0.0),
+        (-3_512_417.777_974, 5_326_861.165_709),
+        (4_000_000.0, 5_000_000.0),
+    ] {
+        let g = WGS84.to_geodetic(Ecef::new(x, y, 0.0));
+        let r = f64::hypot(x, y);
+        assert_eq!((g.lat_deg, g.height_m), (0.0, r - WGS84.a()), "({x}, {y}, 0)");
+    }
+    // on the polar axis, the height is |z| − b
+    for z in [6_356_852.314_245, -6_357_002.314_245, 7_000_000.0, -6_000_000.0] {
+        let g = WGS84.to_geodetic(Ecef::new(0.0, 0.0, z));
+        assert_eq!(
+            (g.lat_deg, g.height_m),
+            (90f64.copysign(z), z.abs() - WGS84.b()),
+            "z = {z}"
+        );
+    }
+    // the centre keeps its answer
+    let centre = WGS84.to_geodetic(Ecef::new(0.0, 0.0, 0.0));
+    assert_eq!((centre.lat_deg, centre.height_m), (90.0, -WGS84.b()));
+}
