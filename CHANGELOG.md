@@ -3,7 +3,7 @@
 All notable changes to geo3d. We use [semantic versioning](https://semver.org), and each
 release is tagged `vX.Y.Z`.
 
-## Unreleased
+## 0.3.1 — 2026-10-20
 
 - 🗺️ **Fast point-in-polygon: `Footprint` and `Prism`** ([#60](https://github.com/FusionVault/geo3d/issues/60)), behind the new `footprint` feature:
   - **`Footprint`** prepares a polygon once, with holes and several parts. Then `containment` places a point as inside, on the boundary or outside.

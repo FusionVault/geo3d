@@ -56,12 +56,12 @@ gives its units and has an example.
 
 **3. Keep it light.** No new required dependencies, and no `unsafe` code. Integrations with other
 crates go behind an optional feature. The library must also build without the standard library:
-use `core::`, never `std::`, and don't allocate.
+use `core::`, never `std::`, and don't allocate. The one exception is an optional feature that needs an allocator and says so, as `footprint` does for its edge index.
 
 ## 🎨 Style
 
 - The public API uses degrees and metres. Names end in their unit: `_deg`, `_m`, `_mps`.
-- Latitude comes before longitude, always.
+- Latitude comes before longitude, always. The one exception is `Geodetic::from_lon_lat`, which takes GeoJSON's order on purpose, for the formats that put longitude first.
 - Keep doc comments short and plain. Write for someone who has never heard of ECEF.
 - `cargo fmt` sets the layout (lines up to 120 characters).
 
