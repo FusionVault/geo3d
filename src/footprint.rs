@@ -50,6 +50,66 @@ impl From<Xy> for robust::Coord<f64> {
     }
 }
 
+/// Adds what the edge from `$s` to `$e` contributes to `$c`'s winding number to `$winding`, or
+/// returns [`Containment::OnBoundary`] from the enclosing function when `$c` is on the edge. An
+/// upward edge includes its start and excludes its end, a downward edge the reverse, a horizontal
+/// edge counts only for the boundary, and a crossing is strictly to the right. The one edge rule,
+/// for an indexed ring and a ring used once alike; a macro so each loop keeps its plain branches.
+macro_rules! edge_winding {
+    ($s:expr, $e:expr, $c:expr, $winding:ident) => {{
+        let (s, e, c): (Xy, Xy, Xy) = ($s, $e, $c);
+        if s.y <= c.y {
+            if e.y >= c.y {
+                let o = robust::orient2d(s.into(), e.into(), c.into());
+                if o > 0.0 && e.y != c.y {
+                    $winding += 1;
+                } else if o == 0.0 && between(c.x, s.x, e.x) {
+                    return Containment::OnBoundary;
+                }
+            }
+        } else if e.y <= c.y {
+            let o = robust::orient2d(s.into(), e.into(), c.into());
+            if o < 0.0 {
+                $winding -= 1;
+            } else if o == 0.0 && between(c.x, s.x, e.x) {
+                return Containment::OnBoundary;
+            }
+        }
+    }};
+}
+
+/// Tallies one polygon into `$inside` and `$boundaries`, its exterior placing the point at
+/// `$exterior` and each `$h` of `$holes` at `$place`: inside a polygon is inside its exterior and in
+/// none of its holes, asked only while it can still be. The one rule for combining rings, for a
+/// footprint and a polygon used once alike; see [`tallied`] for the answer. A macro so each loop
+/// keeps its plain branches.
+macro_rules! tally_polygon {
+    ($exterior:expr, $holes:expr, |$h:ident| $place:expr, $inside:ident, $boundaries:ident) => {
+        match $exterior {
+            Containment::Outside => {}
+            Containment::OnBoundary => $boundaries += 1,
+            Containment::Inside => {
+                let mut in_polygon = true;
+                for $h in $holes {
+                    match $place {
+                        Containment::Outside => {}
+                        Containment::OnBoundary => {
+                            $boundaries += 1;
+                            in_polygon = false;
+                            break;
+                        }
+                        Containment::Inside => {
+                            in_polygon = false;
+                            break;
+                        }
+                    }
+                }
+                $inside |= in_polygon;
+            }
+        }
+    };
+}
+
 /// One ring: its edges, and for each bucket of its latitude range the edges that overlap it.
 #[derive(Clone, Debug, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
@@ -129,31 +189,58 @@ impl Ring {
         let mut winding = 0i32;
         for &i in &self.buckets[self.bucket(c.y)] {
             let (s, e) = self.edges[i as usize];
-            // an upward edge includes its start and excludes its end, a downward edge the reverse,
-            // a horizontal edge counts only for the boundary, and a crossing is strictly to the right
-            if s.y <= c.y {
-                if e.y >= c.y {
-                    let o = robust::orient2d(s.into(), e.into(), c.into());
-                    if o > 0.0 && e.y != c.y {
-                        winding += 1;
-                    } else if o == 0.0 && between(c.x, s.x, e.x) {
-                        return Containment::OnBoundary;
-                    }
-                }
-            } else if e.y <= c.y {
-                let o = robust::orient2d(s.into(), e.into(), c.into());
-                if o < 0.0 {
-                    winding -= 1;
-                } else if o == 0.0 && between(c.x, s.x, e.x) {
-                    return Containment::OnBoundary;
-                }
-            }
+            edge_winding!(s, e, c, winding);
         }
-        if winding == 0 {
-            Containment::Outside
+        by_winding(winding)
+    }
+}
+
+#[inline]
+fn by_winding(winding: i32) -> Containment {
+    if winding == 0 {
+        Containment::Outside
+    } else {
+        Containment::Inside
+    }
+}
+
+/// Where `c` lies against the ring through `vertices`, edge by edge with no index. It is closed
+/// as a [`Ring`] is: whether or not the last vertex repeats the first, and a ring of one vertex is
+/// that point.
+#[inline]
+fn ring_once(vertices: impl IntoIterator<Item = Xy>, c: Xy) -> Containment {
+    let mut vertices = vertices.into_iter();
+    let Some(first) = vertices.next() else {
+        return Containment::Outside;
+    };
+    let (mut last, mut winding, mut single) = (first, 0i32, true);
+    for v in vertices {
+        edge_winding!(last, v, c, winding);
+        (last, single) = (v, false);
+    }
+    if single {
+        return if first == c {
+            Containment::OnBoundary
         } else {
-            Containment::Inside
-        }
+            Containment::Outside
+        };
+    }
+    if last != first {
+        edge_winding!(last, first, c, winding);
+    }
+    by_winding(winding)
+}
+
+/// What the boundaries and insides tallied over a footprint's polygons make: a point on the
+/// boundaries of an odd number of polygons is on the boundary.
+#[inline]
+fn tallied(inside: bool, boundaries: usize) -> Containment {
+    if boundaries % 2 == 1 {
+        Containment::OnBoundary
+    } else if inside {
+        Containment::Inside
+    } else {
+        Containment::Outside
     }
 }
 
@@ -267,36 +354,15 @@ impl Footprint {
         }
         let (mut inside, mut boundaries) = (false, 0usize);
         for (exterior, holes) in &self.polygons {
-            match exterior.containment(c) {
-                Containment::Outside => {}
-                Containment::OnBoundary => boundaries += 1,
-                Containment::Inside => {
-                    let mut in_polygon = true;
-                    for hole in holes {
-                        match hole.containment(c) {
-                            Containment::Outside => {}
-                            Containment::OnBoundary => {
-                                boundaries += 1;
-                                in_polygon = false;
-                                break;
-                            }
-                            Containment::Inside => {
-                                in_polygon = false;
-                                break;
-                            }
-                        }
-                    }
-                    inside |= in_polygon;
-                }
-            }
+            tally_polygon!(
+                exterior.containment(c),
+                holes,
+                |hole| hole.containment(c),
+                inside,
+                boundaries
+            );
         }
-        if boundaries % 2 == 1 {
-            Containment::OnBoundary
-        } else if inside {
-            Containment::Inside
-        } else {
-            Containment::Outside
-        }
+        tallied(inside, boundaries)
     }
 
     /// The south-west and north-east corners of the footprint's bounding box, or `None` for an
@@ -309,6 +375,71 @@ impl Footprint {
             )
         })
     }
+}
+
+/// Where `point` lies against one polygon used once, tested edge by edge with no index: its rings
+/// are its exterior and then its holes, each its vertices in order.
+///
+/// It gives a [`Footprint`]'s answer for the same rings, by the same exact rule, valid or not. It
+/// allocates nothing, so a ring can be read straight from where it lies, such as a row of WKB. A
+/// polygon tested against many points is faster as a [`Footprint`]: its edges are indexed once.
+///
+/// ```
+/// use geo3d::{polygon_containment, Containment, Geodetic};
+/// let at = |lon, lat| Geodetic::from_lon_lat(lon, lat, 0.0);
+/// let square = [at(151.0, -34.0), at(152.0, -34.0), at(152.0, -33.0), at(151.0, -33.0)];
+/// let hole = [at(151.4, -33.6), at(151.6, -33.6), at(151.6, -33.4), at(151.4, -33.4)];
+/// assert_eq!(polygon_containment([&square[..], &hole], at(151.2, -33.8)), Containment::Inside);
+/// assert_eq!(polygon_containment([&square[..], &hole], at(151.5, -33.5)), Containment::Outside);
+/// ```
+#[inline]
+pub fn polygon_containment<R>(rings: impl IntoIterator<Item = R>, point: Geodetic) -> Containment
+where
+    R: IntoIterator,
+    R::Item: core::borrow::Borrow<Geodetic>,
+{
+    multi_polygon_containment([rings], point)
+}
+
+/// Where `point` lies against several polygons used once, each its rings as in
+/// [`polygon_containment`]. A point on the boundaries of an odd number of them is on the boundary,
+/// as in a [`Footprint`].
+#[inline]
+pub fn multi_polygon_containment<P, R>(polygons: impl IntoIterator<Item = P>, point: Geodetic) -> Containment
+where
+    P: IntoIterator<Item = R>,
+    R: IntoIterator,
+    R::Item: core::borrow::Borrow<Geodetic>,
+{
+    let c = Xy {
+        x: point.lon_deg,
+        y: point.lat_deg,
+    };
+    // a footprint's bounding box puts a point that is not a number outside; so does this
+    if !(c.x.is_finite() && c.y.is_finite()) {
+        return Containment::Outside;
+    }
+    let place = |ring: R| {
+        ring_once(
+            ring.into_iter().map(|g| {
+                let g = core::borrow::Borrow::<Geodetic>::borrow(&g);
+                Xy {
+                    x: g.lon_deg,
+                    y: g.lat_deg,
+                }
+            }),
+            c,
+        )
+    };
+    let (mut inside, mut boundaries) = (false, 0usize);
+    for rings in polygons {
+        let mut rings = rings.into_iter();
+        // a polygon with no rings takes no part
+        if let Some(exterior) = rings.next() {
+            tally_polygon!(place(exterior), rings, |hole| place(hole), inside, boundaries);
+        }
+    }
+    tallied(inside, boundaries)
 }
 
 #[cfg(feature = "geo-types")]

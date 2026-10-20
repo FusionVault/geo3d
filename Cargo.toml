@@ -121,6 +121,11 @@ name = "footprint"
 harness = false
 required-features = ["footprint", "geo-types"]
 
+[[bench]]
+name = "polygon_once"
+harness = false
+required-features = ["footprint", "geo-types"]
+
 # Clippy's default set, warned here and denied in CI (`-D warnings`). A lint that is wrong for one
 # site is allowed at that site with a reason.
 [lints.clippy]

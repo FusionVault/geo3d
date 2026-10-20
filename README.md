@@ -374,6 +374,10 @@ assert!(airspace.contains(Geodetic::from_lon_lat(151.5, -33.5, 2_000.0)));
 first. With `geo-types` too, a `geo_types::Polygon` or `MultiPolygon` converts straight into a
 `Footprint`.
 
+A polygon tested only once, such as one row of a column of polygons, needs no index. Use
+`polygon_containment`: it takes rings as any iterator of positions, allocates nothing, and gives
+a `Footprint`'s answer by the same rule.
+
 ### Check if two objects will collide
 
 ```rust
@@ -711,7 +715,7 @@ None of them are needed: a plain `cargo add geo3d` pulls in nothing else.
 | `glam` | conversions to `glam::DVec3`, `Cov3` to `glam::DMat3`, and `Quaternion` to `glam::DQuat` |
 | `nalgebra` | conversions to `nalgebra` vectors and points, `Cov3` to `Matrix3`, and `Quaternion` |
 | `geo-types` | `Geodetic` ↔ `geo_types::Point` (x is longitude, y is latitude), and with `footprint`, `Polygon` and `MultiPolygon` into a `Footprint` |
-| `footprint` | a prepared `Footprint` for fast, exact point-in-polygon tests, and the `Prism` volume. It needs an allocator, not the standard library |
+| `footprint` | a prepared `Footprint` for fast, exact point-in-polygon tests, `polygon_containment` for a polygon used once, and the `Prism` volume. It needs an allocator, not the standard library |
 
 ```bash
 cargo add geo3d --features glam,serde
