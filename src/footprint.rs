@@ -114,6 +114,7 @@ impl Ring {
     }
 
     /// Where `c` lies against this ring.
+    #[inline]
     fn containment(&self, c: Xy) -> Containment {
         if self.edges.is_empty() {
             return match self.single {
@@ -253,6 +254,7 @@ impl Footprint {
 
     /// Where `point` lies: inside, on the boundary, or outside (holes included). Its height is
     /// ignored.
+    #[inline]
     pub fn containment(&self, point: Geodetic) -> Containment {
         let c = Xy {
             x: point.lon_deg,
