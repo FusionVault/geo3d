@@ -4,7 +4,9 @@
 
 use geo::algorithm::coordinate_position::CoordPos;
 use geo::{Coord, CoordinatePosition, Geometry, LineString, MultiPolygon, Polygon};
-use geo3d::{AltitudeBand, Containment, Footprint, Geodetic, Prism, Volume};
+use geo3d::{
+    multi_polygon_containment, polygon_containment, AltitudeBand, Containment, Footprint, Geodetic, Prism, Volume,
+};
 
 fn ring(pts: &[(f64, f64)]) -> LineString<f64> {
     LineString::from(pts.to_vec())
@@ -71,52 +73,58 @@ fn expected(pos: CoordPos) -> Containment {
     }
 }
 
-/// Every point placed as geo places it: on a grid that lands on edges and vertices, on every vertex
-/// and edge midpoint, and at random.
-#[test]
-fn a_footprint_places_every_point_exactly_as_geo_does() {
+/// Points to place against `g`: a grid that lands on edges and vertices, every vertex and edge
+/// midpoint, and points at random.
+fn points_for(g: &Geometry<f64>) -> Vec<Coord<f64>> {
     let mut seed = 7u64;
     let mut next = || {
         seed = seed.wrapping_mul(6364136223846793005).wrapping_add(1442695040888963407);
         (seed >> 11) as f64 / (1u64 << 53) as f64
     };
+    let mut pts: Vec<Coord<f64>> = Vec::new();
+    for i in 0..=48 {
+        for j in 0..=48 {
+            pts.push(Coord {
+                x: f64::from(i) / 4.0 - 1.0,
+                y: f64::from(j) / 4.0 - 1.0,
+            });
+        }
+    }
+    let rings: Vec<&LineString<f64>> = match g {
+        Geometry::Polygon(p) => std::iter::once(p.exterior()).chain(p.interiors()).collect(),
+        Geometry::MultiPolygon(m) => {
+            m.0.iter()
+                .flat_map(|p| std::iter::once(p.exterior()).chain(p.interiors()))
+                .collect()
+        }
+        _ => unreachable!(),
+    };
+    for r in rings {
+        for l in r.lines() {
+            pts.push(l.start);
+            pts.push(Coord {
+                x: (l.start.x + l.end.x) / 2.0,
+                y: (l.start.y + l.end.y) / 2.0,
+            });
+        }
+    }
+    for _ in 0..2000 {
+        pts.push(Coord {
+            x: next() * 12.0 - 1.0,
+            y: next() * 12.0 - 1.0,
+        });
+    }
+    pts
+}
+
+/// Every point placed as geo places it: on a grid that lands on edges and vertices, on every vertex
+/// and edge midpoint, and at random.
+#[test]
+fn a_footprint_places_every_point_exactly_as_geo_does() {
     let mut checked = 0;
     for g in shapes() {
         let fp = footprint(&g);
-        let mut pts: Vec<Coord<f64>> = Vec::new();
-        for i in 0..=48 {
-            for j in 0..=48 {
-                pts.push(Coord {
-                    x: f64::from(i) / 4.0 - 1.0,
-                    y: f64::from(j) / 4.0 - 1.0,
-                });
-            }
-        }
-        let rings: Vec<&LineString<f64>> = match &g {
-            Geometry::Polygon(p) => std::iter::once(p.exterior()).chain(p.interiors()).collect(),
-            Geometry::MultiPolygon(m) => {
-                m.0.iter()
-                    .flat_map(|p| std::iter::once(p.exterior()).chain(p.interiors()))
-                    .collect()
-            }
-            _ => unreachable!(),
-        };
-        for r in rings {
-            for l in r.lines() {
-                pts.push(l.start);
-                pts.push(Coord {
-                    x: (l.start.x + l.end.x) / 2.0,
-                    y: (l.start.y + l.end.y) / 2.0,
-                });
-            }
-        }
-        for _ in 0..2000 {
-            pts.push(Coord {
-                x: next() * 12.0 - 1.0,
-                y: next() * 12.0 - 1.0,
-            });
-        }
-        for c in pts {
+        for c in points_for(&g) {
             let got = fp.containment(Geodetic::from_lon_lat(c.x, c.y, 0.0));
             assert_eq!(got, expected(g.coordinate_position(&c)), "{c:?} against {g:?}");
             checked += 1;
@@ -226,4 +234,98 @@ fn a_point_that_is_not_finite_is_outside() {
     // a footprint whose vertices are not finite answers without panicking
     let broken = Footprint::polygon(&[at(0.0, 0.0), at(f64::NAN, 0.0), at(10.0, 10.0)], &[]);
     let _ = broken.containment(at(5.0, 5.0));
+}
+
+/// Rings no valid polygon has: a bow tie, a ring traced twice, a hole outside its shell, two holes
+/// that overlap, and two parts that overlap.
+fn invalid_shapes() -> Vec<Geometry<f64>> {
+    let square = ring(&[(0.0, 0.0), (10.0, 0.0), (10.0, 10.0), (0.0, 10.0), (0.0, 0.0)]);
+    let twice = ring(&[
+        (0.0, 0.0),
+        (10.0, 0.0),
+        (10.0, 10.0),
+        (0.0, 10.0),
+        (0.0, 0.0),
+        (10.0, 0.0),
+        (10.0, 10.0),
+        (0.0, 10.0),
+        (0.0, 0.0),
+    ]);
+    let bowtie = ring(&[(0.0, 0.0), (10.0, 10.0), (10.0, 0.0), (0.0, 10.0), (0.0, 0.0)]);
+    let a = ring(&[(2.0, 2.0), (6.0, 2.0), (6.0, 6.0), (2.0, 6.0), (2.0, 2.0)]);
+    let b = ring(&[(4.0, 4.0), (8.0, 4.0), (8.0, 8.0), (4.0, 8.0), (4.0, 4.0)]);
+    let outside = ring(&[(10.5, 1.0), (10.9, 1.0), (10.9, 2.0), (10.5, 1.0)]);
+    vec![
+        Polygon::new(bowtie, vec![]).into(),
+        Polygon::new(twice, vec![]).into(),
+        Polygon::new(square.clone(), vec![outside]).into(),
+        Polygon::new(square, vec![a.clone(), b.clone()]).into(),
+        MultiPolygon::new(vec![Polygon::new(a, vec![]), Polygon::new(b, vec![])]).into(),
+    ]
+}
+
+/// A polygon's rings as geo3d positions.
+fn rings_of(p: &Polygon<f64>) -> Vec<Vec<Geodetic>> {
+    std::iter::once(p.exterior())
+        .chain(p.interiors())
+        .map(|r| r.0.iter().map(|c| Geodetic::from_lon_lat(c.x, c.y, 0.0)).collect())
+        .collect()
+}
+
+/// A polygon used once is placed exactly as its footprint places it, for every shape, valid or not,
+/// and every point: the two share one rule.
+#[test]
+fn a_polygon_used_once_is_placed_exactly_as_its_footprint_places_it() {
+    let mut checked = 0;
+    for g in shapes().into_iter().chain(invalid_shapes()) {
+        let fp = footprint(&g);
+        for c in points_for(&g) {
+            let at = Geodetic::from_lon_lat(c.x, c.y, 0.0);
+            let got = match &g {
+                Geometry::Polygon(p) => polygon_containment(rings_of(p), at),
+                Geometry::MultiPolygon(m) => multi_polygon_containment(m.0.iter().map(rings_of), at),
+                _ => unreachable!(),
+            };
+            assert_eq!(got, fp.containment(at), "{c:?} against {g:?}");
+            checked += 1;
+        }
+    }
+    assert!(checked > 50_000, "{checked} points checked");
+}
+
+/// A ring is closed whether or not its last vertex repeats its first, either direction works, a
+/// ring of one vertex is that point, and a polygon with no rings, or a point that is not a number,
+/// is outside.
+#[test]
+fn a_polygon_used_once_closes_its_rings_and_has_the_footprints_edge_cases() {
+    let at = |lon, lat| Geodetic::from_lon_lat(lon, lat, 0.0);
+    let open = [at(0.0, 0.0), at(10.0, 0.0), at(10.0, 10.0), at(0.0, 10.0)];
+    let reversed: Vec<Geodetic> = open.iter().rev().copied().collect();
+    for ring in [&open[..], &reversed] {
+        assert_eq!(
+            polygon_containment([ring.iter().copied()], at(5.0, 5.0)),
+            Containment::Inside
+        );
+        assert_eq!(
+            polygon_containment([ring.iter().copied()], at(0.0, 5.0)),
+            Containment::OnBoundary
+        );
+        assert_eq!(
+            polygon_containment([ring.iter().copied()], at(11.0, 5.0)),
+            Containment::Outside
+        );
+    }
+    assert_eq!(
+        polygon_containment([[at(1.0, 2.0)]], at(1.0, 2.0)),
+        Containment::OnBoundary
+    );
+    assert_eq!(
+        polygon_containment([[at(1.0, 2.0)]], at(1.0, 3.0)),
+        Containment::Outside
+    );
+    let none: [[Geodetic; 0]; 0] = [];
+    assert_eq!(polygon_containment(none, at(1.0, 2.0)), Containment::Outside);
+    for c in [at(f64::NAN, 5.0), at(5.0, f64::NAN), at(f64::INFINITY, 5.0)] {
+        assert_eq!(polygon_containment([open], c), Containment::Outside);
+    }
 }

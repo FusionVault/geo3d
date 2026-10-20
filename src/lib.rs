@@ -205,7 +205,7 @@ pub use ellipsoid::{
     GRS67, GRS80, GSK_2011, IAG_1975, INTERNATIONAL_1924, KRASSOVSKY_1940, PZ90, WGS60, WGS66, WGS72, WGS84,
 };
 #[cfg(feature = "footprint")]
-pub use footprint::{Containment, Footprint};
+pub use footprint::{multi_polygon_containment, polygon_containment, Containment, Footprint};
 pub use frame::LocalFrame;
 pub use geodesic::{Geodesic, PolygonArea};
 pub use geoid::{Geoid, GeoidGrid, GeoidGridError, GeoidInterpolation};
