@@ -3,6 +3,13 @@
 All notable changes to geo3d. We use [semantic versioning](https://semver.org), and each
 release is tagged `vX.Y.Z`.
 
+## Unreleased
+
+- 🗺️ **A point-in-polygon test for a polygon used once** ([#68](https://github.com/FusionVault/geo3d/issues/68)): `polygon_containment` and `multi_polygon_containment`, behind the `footprint` feature.
+  - It tests edge by edge with no index, and allocates nothing. A ring is any iterator of positions, so a polygon can be tested straight from where it lies, such as one row of a column of WKB.
+  - A small polygon takes about 13 ns a test, level with `geo::Contains` on a polygon already built, and 16 times faster than preparing a `Footprint` for the one test.
+  - It gives a `Footprint`'s answer for the same rings, valid or not: the two share one edge rule and one rule for combining rings. `Footprint` is as fast as before; it compiles to the same instructions.
+
 ## 0.3.2 — 2026-10-20
 
 - 🎯 **Exact heights on the polar axis and in the equatorial plane** ([#63](https://github.com/FusionVault/geo3d/issues/63)), as `to_geodetic` promises. There the height is `|z| − b` or `r − a`, rounded once. Before, it came back up to a nanometre off: `(0°, 0°, 100 m)` round-tripped to `99.99999999969262` m. Every other position gives the same answer as 0.3.1, to the bit (checked on a million).

@@ -140,7 +140,7 @@
 //! | `glam` | conversions to `glam::DVec3`, [`Cov3`] to `glam::DMat3`, and [`Quaternion`] to `glam::DQuat` |
 //! | `nalgebra` | conversions to `nalgebra` vectors and points, [`Cov3`] to `Matrix3`, and [`Quaternion`] |
 //! | `geo-types` | [`Geodetic`] ↔ `geo_types::Point` (x is longitude, y is latitude), and with `footprint`, `Polygon` and `MultiPolygon` into a footprint |
-//! | `footprint` | a prepared `Footprint` for fast, exact point-in-polygon tests, and the `Prism` volume. It needs an allocator, not the standard library |
+//! | `footprint` | a prepared `Footprint` for fast, exact point-in-polygon tests, `polygon_containment` for a polygon used once, and the `Prism` volume. It needs an allocator, not the standard library |
 //!
 //! For a microcontroller, `cargo add geo3d --no-default-features --features libm`. With the
 //! standard library, keep `std`: its maths rounds the last digit more carefully. Everything a

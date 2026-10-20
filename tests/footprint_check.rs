@@ -325,7 +325,15 @@ fn a_polygon_used_once_closes_its_rings_and_has_the_footprints_edge_cases() {
     );
     let none: [[Geodetic; 0]; 0] = [];
     assert_eq!(polygon_containment(none, at(1.0, 2.0)), Containment::Outside);
-    for c in [at(f64::NAN, 5.0), at(5.0, f64::NAN), at(f64::INFINITY, 5.0)] {
+    for c in [
+        at(f64::NAN, 5.0),
+        at(5.0, f64::NAN),
+        at(f64::INFINITY, 5.0),
+        at(f64::NEG_INFINITY, 5.0),
+        at(f64::NEG_INFINITY, 0.0),
+        at(5.0, f64::INFINITY),
+        at(5.0, f64::NEG_INFINITY),
+    ] {
         assert_eq!(polygon_containment([open], c), Containment::Outside);
     }
 }
