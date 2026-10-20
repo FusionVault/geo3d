@@ -292,8 +292,20 @@ impl Footprint {
     /// Several polygons, each its exterior ring and its holes, as in
     /// [`polygon`](Footprint::polygon).
     ///
-    /// A point on the boundaries of an odd number of them is on the boundary, and on an even number
-    /// it is inside: two polygons that share an edge cover it.
+    /// A point on the boundaries of an odd number of them is on the boundary. On an even number it
+    /// is outside, unless it is inside another of them. This is `geo`'s rule. So a point on an edge
+    /// that two of them share is outside: merge the two into one polygon when it should be inside.
+    ///
+    /// ```
+    /// use geo3d::{Containment, Footprint, Geodetic};
+    /// let at = |lon, lat| Geodetic::from_lon_lat(lon, lat, 0.0);
+    /// let west = [at(0.0, 0.0), at(1.0, 0.0), at(1.0, 1.0), at(0.0, 1.0)];
+    /// let east = [at(1.0, 0.0), at(2.0, 0.0), at(2.0, 1.0), at(1.0, 1.0)];
+    /// let both = Footprint::multi_polygon(&[(&west, &[]), (&east, &[])]);
+    /// assert_eq!(both.containment(at(0.5, 0.5)), Containment::Inside);
+    /// assert_eq!(both.containment(at(1.0, 0.5)), Containment::Outside); // on the edge both share
+    /// assert_eq!(both.containment(at(0.0, 0.5)), Containment::OnBoundary); // on one boundary
+    /// ```
     pub fn multi_polygon(polygons: &[(&[Geodetic], &[&[Geodetic]])]) -> Self {
         let xy = |ring: &[Geodetic]| {
             ring.iter()

@@ -3,6 +3,10 @@
 All notable changes to geo3d. We use [semantic versioning](https://semver.org), and each
 release is tagged `vX.Y.Z`.
 
+## Unreleased
+
+- 📝 **`Footprint::multi_polygon`'s doc says what its rule does** ([#71](https://github.com/FusionVault/geo3d/issues/71)): a point on the boundaries of an even number of polygons is outside, unless it is inside another of them, as in `geo`. The doc said it was inside. An example now pins it. The behaviour does not change.
+
 ## 0.3.3 — 2026-10-20
 
 - 🗺️ **A point-in-polygon test for a polygon used once** ([#68](https://github.com/FusionVault/geo3d/issues/68)): `polygon_containment` and `multi_polygon_containment`, behind the `footprint` feature.
