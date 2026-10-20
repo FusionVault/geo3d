@@ -148,7 +148,7 @@ impl Ellipsoid {
     ///
     /// The answer is within 3 nm of the true position from deep inside the Earth up to 1 000 km,
     /// and within 20 nm out to geostationary height. That is the limit of 64-bit floating point.
-    /// It handles the polar axis, the equatorial plane and the Earth's centre exactly. The centre
+    /// It handles the polar axis, the equatorial plane and the Earth's centre exactly: on the polar axis the height is |z| − b, and in the equatorial plane r − a, each rounded once. The centre
     /// gives latitude 90° and height −b.
     ///
     /// It uses a closed form with no iteration (Vermeille 2002, refined by Karney for
@@ -176,6 +176,17 @@ impl Ellipsoid {
         let r = fma(x, x, y * y).sqrt();
         let (slam, clam) = if r != 0.0 { (y / r, x / r) } else { (0.0, 1.0) };
         let mut h = fma(r, r, z * z).sqrt(); // distance from the centre
+                                             // On the polar axis, and in the equatorial plane outside the evolute, the answer has a
+                                             // closed form, and |z| − b and r − a round once, exactly when the two are close (Sterbenz).
+                                             // The general solution below would leave up to a nanometre there.
+        if f > 0.0 && h <= 2.0 * a / f64::EPSILON {
+            if r == 0.0 && z != 0.0 {
+                return Geodetic::new(90f64.copysign(z), 0.0, z.abs() - self.b());
+            }
+            if z == 0.0 && r >= a * e2 {
+                return Geodetic::new(0.0, atan2d(y, x), r - a);
+            }
+        }
         let (sphi, cphi);
         if h.is_nan() || h > 2.0 * a / f64::EPSILON {
             // Absurdly far away: the Earth is a point and `h` is already the height.

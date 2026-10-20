@@ -3,6 +3,10 @@
 All notable changes to geo3d. We use [semantic versioning](https://semver.org), and each
 release is tagged `vX.Y.Z`.
 
+## Unreleased
+
+- 🎯 **Exact heights on the polar axis and in the equatorial plane** ([#63](https://github.com/FusionVault/geo3d/issues/63)), as `to_geodetic` promises. There the height is `|z| − b` or `r − a`, rounded once. Before, it came back up to a nanometre off: `(0°, 0°, 100 m)` round-tripped to `99.99999999969262` m. Every other position gives the same answer as 0.3.1, to the bit (checked on a million).
+
 ## 0.3.1 — 2026-10-20
 
 - 🗺️ **Fast point-in-polygon: `Footprint` and `Prism`** ([#60](https://github.com/FusionVault/geo3d/issues/60)), behind the new `footprint` feature:
