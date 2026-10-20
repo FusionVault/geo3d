@@ -3,7 +3,7 @@
 All notable changes to geo3d. We use [semantic versioning](https://semver.org), and each
 release is tagged `vX.Y.Z`.
 
-## Unreleased
+## 0.3.2 — 2026-10-20
 
 - 🎯 **Exact heights on the polar axis and in the equatorial plane** ([#63](https://github.com/FusionVault/geo3d/issues/63)), as `to_geodetic` promises. There the height is `|z| − b` or `r − a`, rounded once. Before, it came back up to a nanometre off: `(0°, 0°, 100 m)` round-tripped to `99.99999999969262` m. Every other position gives the same answer as 0.3.1, to the bit (checked on a million).
 - ⚡ **`Footprint::containment` is inlined** ([#65](https://github.com/FusionVault/geo3d/issues/65)), as geo3d's other hot functions are, so a caller's loop tests points without a call into the crate. That makes it 5% to 6% faster per point in a caller's loop, measured.
