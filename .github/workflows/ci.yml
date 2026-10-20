@@ -53,9 +53,9 @@ jobs:
       - name: build for thumbv7em-none-eabihf
         run: |
           cargo build --target thumbv7em-none-eabihf --no-default-features --features libm
-          cargo build --target thumbv7em-none-eabihf --no-default-features --features libm,serde,mint,glam,nalgebra,geo-types
+          cargo build --target thumbv7em-none-eabihf --no-default-features --features libm,serde,mint,glam,nalgebra,geo-types,footprint
       - name: clippy without std
-        run: cargo clippy --lib --no-default-features --features libm,serde,mint,glam,nalgebra,geo-types -- -D warnings
+        run: cargo clippy --lib --no-default-features --features libm,serde,mint,glam,nalgebra,geo-types,footprint -- -D warnings
       - name: test with libm
         run: cargo test --no-default-features --features libm
       - name: a helpful error without std or libm

@@ -30,6 +30,19 @@ impl Geodetic {
         }
     }
 
+    /// Build from longitude first, then latitude, in degrees, and height in metres: the order of
+    /// GeoJSON, WKT and GeoArrow, whose `x` is the longitude. Use it at those boundaries, so the two
+    /// cannot be swapped by accident.
+    ///
+    /// ```
+    /// use geo3d::Geodetic;
+    /// assert_eq!(Geodetic::from_lon_lat(151.2, -33.9, 10.0), Geodetic::new(-33.9, 151.2, 10.0));
+    /// ```
+    #[inline]
+    pub const fn from_lon_lat(lon_deg: f64, lat_deg: f64, height_m: f64) -> Self {
+        Geodetic::new(lat_deg, lon_deg, height_m)
+    }
+
     /// Latitude in radians.
     #[inline]
     pub fn lat_rad(self) -> f64 {

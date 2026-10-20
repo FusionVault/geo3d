@@ -33,6 +33,9 @@ glam = { version = "0.33", default-features = false, features = ["f64"], optiona
 nalgebra = { version = "0.35", default-features = false, optional = true }
 # 0.7.9 is the first with a `std` feature to switch off.
 geo-types = { version = "0.7.9", default-features = false, optional = true }
+# Optional: Shewchuk's exact orientation test, for the prepared footprint (feature `footprint`).
+# Pure Rust with no dependencies of its own; `geo` uses the same crate.
+robust = { version = "1.2", optional = true }
 
 [features]
 default = ["std"]
@@ -42,7 +45,7 @@ default = ["std"]
 std = ["serde?/std", "glam?/std", "nalgebra?/std", "geo-types?/std"]
 # The floating-point maths from the `libm` crate, for builds without the standard library. Used
 # only when `std` is off.
-libm = ["dep:libm", "glam?/libm", "nalgebra?/libm"]
+libm = ["dep:libm", "glam?/libm", "nalgebra?/libm", "robust?/no_std"]
 serde = ["dep:serde"]
 # Math-Interoperability-Types bridge — and, transitively, glam/nalgebra/cgmath, which speak `mint`.
 mint = ["dep:mint"]
@@ -50,13 +53,19 @@ mint = ["dep:mint"]
 glam = ["dep:glam"]
 # `nalgebra::Vector3<f64>` / `Point3<f64>` conversions (and `Cov3` ↔ `Matrix3<f64>`).
 nalgebra = ["dep:nalgebra"]
-# `geo_types::Point<f64>` / `Coord<f64>` conversions for `Geodetic` (2D GIS pipelines).
+# `geo_types::Point<f64>` / `Coord<f64>` conversions for `Geodetic` (2D GIS pipelines), and
+# `Polygon` / `MultiPolygon` into a `Footprint` when `footprint` is on.
 geo-types = ["dep:geo-types"]
+# A prepared `Footprint` for fast, exact point-in-polygon tests, and the `Prism` volume built on it.
+# Its edge index allocates, so it needs an allocator (`alloc`), not the standard library.
+footprint = ["dep:robust", "serde?/alloc"]
 
 [dev-dependencies]
 serde_json = "1"
 # Cross-validation only: an independent implementation of the frame conversions (tests/cross_check.rs).
 map_3d = "=0.1.7"
+# Cross-validation only: `geo`'s coordinate_position, the reference for the footprint (tests/footprint_check.rs).
+geo = "0.31"
 # Cross-validation only: GeographicLib's geodesics in Rust, the reference for ours (tests/geodesic_check.rs).
 geographiclib-rs = "=0.2.7"
 # Example only: propagate a satellite with SGP4, whose TEME output is geo3d's `Eci` (examples/satellite.rs).
@@ -106,6 +115,11 @@ doc-scrape-examples = true
 [[bench]]
 name = "geo3d"
 harness = false
+
+[[bench]]
+name = "footprint"
+harness = false
+required-features = ["footprint", "geo-types"]
 
 # Clippy's default set, warned here and denied in CI (`-D warnings`). A lint that is wrong for one
 # site is allowed at that site with a reason.

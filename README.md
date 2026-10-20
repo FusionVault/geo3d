@@ -351,6 +351,29 @@ assert!(bubble.contains(p) && camera.contains(p) && zone.contains(p));
 💡 A `Cylinder`'s radius is measured along the ground, as airspace is defined, at any height.
 `AltitudeBand` adds a height range to any 2D shape: `band.within_prism(inside_polygon, height)`.
 
+### Check if a point is inside a polygon, fast
+
+With the `footprint` feature, a `Footprint` prepares a polygon once, holes and several parts
+included, and then places each point in about 25 ns for a 50-vertex ring and 57 ns for a
+5,000-vertex coastline. That is 2× to 55× faster than testing every edge. The answer is exact:
+inside, on the boundary, or outside. A `Prism` extrudes it through an `AltitudeBand` for an
+airspace volume.
+
+```rust,ignore
+use geo3d::{AltitudeBand, Containment, Footprint, Geodetic, Prism, Volume};
+
+let at = |lon, lat| Geodetic::from_lon_lat(lon, lat, 0.0); // GeoJSON order: longitude first
+let sector = Footprint::polygon(&[at(151.0, -34.0), at(152.0, -34.0), at(152.0, -33.0), at(151.0, -33.0)], &[]);
+assert_eq!(sector.containment(at(151.5, -33.5)), Containment::Inside);
+
+let airspace = Prism::new(sector, AltitudeBand::new(Some(1_500.0), Some(3_000.0)));
+assert!(airspace.contains(Geodetic::from_lon_lat(151.5, -33.5, 2_000.0)));
+```
+
+💡 Edges are straight in longitude and latitude, as in GeoJSON. Split a ring that crosses ±180°
+first. With `geo-types` too, a `geo_types::Polygon` or `MultiPolygon` converts straight into a
+`Footprint`.
+
 ### Check if two objects will collide
 
 ```rust
@@ -687,7 +710,8 @@ None of them are needed: a plain `cargo add geo3d` pulls in nothing else.
 | `mint` | conversions to `mint` types, and through them to `cgmath` and others |
 | `glam` | conversions to `glam::DVec3`, `Cov3` to `glam::DMat3`, and `Quaternion` to `glam::DQuat` |
 | `nalgebra` | conversions to `nalgebra` vectors and points, `Cov3` to `Matrix3`, and `Quaternion` |
-| `geo-types` | `Geodetic` ↔ `geo_types::Point` (x is longitude, y is latitude) |
+| `geo-types` | `Geodetic` ↔ `geo_types::Point` (x is longitude, y is latitude), and with `footprint`, `Polygon` and `MultiPolygon` into a `Footprint` |
+| `footprint` | a prepared `Footprint` for fast, exact point-in-polygon tests, and the `Prism` volume. It needs an allocator, not the standard library |
 
 ```bash
 cargo add geo3d --features glam,serde
