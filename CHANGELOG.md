@@ -3,7 +3,7 @@
 All notable changes to geo3d. We use [semantic versioning](https://semver.org), and each
 release is tagged `vX.Y.Z`.
 
-## Unreleased
+## 0.3.3 — 2026-10-20
 
 - 🗺️ **A point-in-polygon test for a polygon used once** ([#68](https://github.com/FusionVault/geo3d/issues/68)): `polygon_containment` and `multi_polygon_containment`, behind the `footprint` feature.
   - It tests edge by edge with no index, and allocates nothing. A ring is any iterator of positions, so a polygon can be tested straight from where it lies, such as one row of a column of WKB.
