@@ -75,6 +75,46 @@ impl Volume for AltitudeBand {
     }
 }
 
+/// A [`Footprint`](crate::Footprint) extruded through an [`AltitudeBand`]: an airspace sector, a
+/// restricted area, a building's floors. Inside means inside the band and inside the footprint or
+/// on its boundary, as every [`Volume`] counts its boundary.
+///
+/// ```
+/// use geo3d::{AltitudeBand, Footprint, Geodetic, Prism, Volume};
+/// let at = |lon, lat| Geodetic::from_lon_lat(lon, lat, 0.0);
+/// let sector = Footprint::polygon(&[at(151.0, -34.0), at(152.0, -34.0), at(152.0, -33.0), at(151.0, -33.0)], &[]);
+/// let airspace = Prism::new(sector, AltitudeBand::new(Some(1_500.0), Some(3_000.0)));
+/// assert!(airspace.contains(Geodetic::from_lon_lat(151.5, -33.5, 2_000.0)));
+/// assert!(!airspace.contains(Geodetic::from_lon_lat(151.5, -33.5, 3_500.0))); // above it
+/// ```
+#[cfg(feature = "footprint")]
+#[derive(Clone, Debug, PartialEq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+pub struct Prism {
+    /// The shape on the ground.
+    pub footprint: crate::Footprint,
+    /// The heights it spans.
+    pub band: AltitudeBand,
+}
+
+#[cfg(feature = "footprint")]
+impl Prism {
+    /// The footprint extruded through the band.
+    #[inline]
+    pub fn new(footprint: crate::Footprint, band: AltitudeBand) -> Self {
+        Prism { footprint, band }
+    }
+}
+
+#[cfg(feature = "footprint")]
+impl Volume for Prism {
+    #[inline]
+    fn contains(&self, point: Geodetic) -> bool {
+        // the band first: one comparison against a polygon test
+        self.band.contains_height(point.height_m) && self.footprint.containment(point) != crate::Containment::Outside
+    }
+}
+
 /// A ball of `radius_m` around a centre — a range, coverage or proximity bubble. Distance is the
 /// straight line through space.
 #[derive(Clone, Copy, Debug, PartialEq)]

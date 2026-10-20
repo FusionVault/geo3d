@@ -139,7 +139,8 @@
 //! | `mint` | conversions to `mint` types, and through them to `cgmath` and others |
 //! | `glam` | conversions to `glam::DVec3`, [`Cov3`] to `glam::DMat3`, and [`Quaternion`] to `glam::DQuat` |
 //! | `nalgebra` | conversions to `nalgebra` vectors and points, [`Cov3`] to `Matrix3`, and [`Quaternion`] |
-//! | `geo-types` | [`Geodetic`] ↔ `geo_types::Point` (x is longitude, y is latitude) |
+//! | `geo-types` | [`Geodetic`] ↔ `geo_types::Point` (x is longitude, y is latitude), and with `footprint`, `Polygon` and `MultiPolygon` into a footprint |
+//! | `footprint` | a prepared `Footprint` for fast, exact point-in-polygon tests, and the `Prism` volume. It needs an allocator, not the standard library |
 //!
 //! For a microcontroller, `cargo add geo3d --no-default-features --features libm`. With the
 //! standard library, keep `std`: its maths rounds the last digit more carefully. Everything a
@@ -150,6 +151,10 @@
 // On docs.rs, mark what each optional feature adds ("Available on crate feature serde only").
 #![cfg_attr(docsrs, feature(doc_cfg))]
 #![warn(missing_docs)]
+
+// a prepared footprint allocates its edge index
+#[cfg(feature = "footprint")]
+extern crate alloc;
 
 #[cfg(not(any(feature = "std", feature = "libm")))]
 compile_error!(
@@ -175,6 +180,8 @@ mod display;
 pub mod eci;
 mod ellipsoid;
 mod epsg;
+#[cfg(feature = "footprint")]
+mod footprint;
 mod frame;
 mod geodesic;
 mod geoid;
@@ -197,6 +204,8 @@ pub use ellipsoid::{
     Ellipsoid, AIRY_1830, AUSTRALIAN_NATIONAL, BESSEL_1841, CGCS2000, CLARKE_1866, EVEREST_1830, EVEREST_1830_MODIFIED,
     GRS67, GRS80, GSK_2011, IAG_1975, INTERNATIONAL_1924, KRASSOVSKY_1940, PZ90, WGS60, WGS66, WGS72, WGS84,
 };
+#[cfg(feature = "footprint")]
+pub use footprint::{Containment, Footprint};
 pub use frame::LocalFrame;
 pub use geodesic::{Geodesic, PolygonArea};
 pub use geoid::{Geoid, GeoidGrid, GeoidGridError, GeoidInterpolation};
@@ -207,6 +216,8 @@ pub use projection::{MapPoint, PolarStereographic, TransverseMercator, UtmUps};
 pub use quaternion::Quaternion;
 pub use vector::Vec3;
 pub use visibility::STANDARD_REFRACTION_K;
+#[cfg(feature = "footprint")]
+pub use volume::Prism;
 pub use volume::{AltitudeBand, Cone, Cylinder, Sphere, Volume};
 
 /// Latitude/longitude/height → x, y, z on [`WGS84`]. Shorthand for [`WGS84.to_ecef`](Ellipsoid::to_ecef).

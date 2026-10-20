@@ -5,6 +5,14 @@ release is tagged `vX.Y.Z`.
 
 ## Unreleased
 
+- 🗺️ **Fast point-in-polygon: `Footprint` and `Prism`** ([#60](https://github.com/FusionVault/geo3d/issues/60)), behind the new `footprint` feature:
+  - **`Footprint`** prepares a polygon once, with holes and several parts. Then `containment` places a point as inside, on the boundary or outside.
+  - **Each ring's edges are indexed by latitude,** so a point meets only the edges that cross its latitude, after a bounding-box reject. A point takes about 25 ns on a 50-vertex ring, against 55 ns for `geo::Contains`. On a 5,000-vertex coastline it takes 57 ns, against 3.1 µs.
+  - **The answer is exact,** with Shewchuk's orientation test (the `robust` crate, now an optional dependency), and matches `geo`'s `coordinate_position` point for point.
+  - **`Prism`** extrudes a footprint through an `AltitudeBand`, as a `Volume`.
+  - With `geo-types`, a `Polygon` or `MultiPolygon` converts into a `Footprint`.
+  - The feature needs an allocator, not the standard library.
+- 🧭 **`Geodetic::from_lon_lat`** builds a position longitude first, the order of GeoJSON, WKT and GeoArrow, so the two cannot be swapped at those boundaries.
 - 🔍 **Accuracy pass.** A review of every formula for precision traps, with each finding checked
   against exact answers. Fixed:
   - `line_of_sight_with_refraction` bent the whole path, even far above the air, so it called a
